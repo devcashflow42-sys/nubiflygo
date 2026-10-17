@@ -10,7 +10,6 @@
     projects: '/project',
     notes: '/note',
     files: '/archive',
-    reports: '/report',
     apikeys: '/apikeys',
     automation: '/automation',
     settings: '/settings',
@@ -18,7 +17,7 @@
   };
   const PATH_TO_ROUTE = {
     main: 'dashboard', project: 'projects', note: 'notes',
-    archive: 'files', report: 'reports', apikeys: 'apikeys', automation: 'automation',
+    archive: 'files', apikeys: 'apikeys', automation: 'automation',
     settings: 'settings', notifications: 'notifications'
   };
 
@@ -194,7 +193,6 @@
       if (n) parts.push({ label: n.title || t('common.untitled'), here: true });
       else parts[parts.length-1].here = true;
     }
-    if (state.route === 'reports') parts.push({ label: t('nav.reports'), here: true });
     if (state.route === 'apikeys') parts.push({ label: t('nav.apiKeys'), here: true });
     if (state.route === 'automation') parts.push({ label: t('nav.automation'), here: true });
     if (state.route === 'settings') parts.push({ label: 'Configuración', here: true });

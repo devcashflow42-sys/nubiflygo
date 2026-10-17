@@ -30,7 +30,6 @@
       'project-form': viewProjectForm,
       notes: viewNotes,
       files: viewFiles,
-      reports: viewReports,
       apikeys: viewApiKeys,
       automation: viewAutomation,
       settings: viewSettings,
