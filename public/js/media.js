@@ -420,6 +420,7 @@
       if (file.size > UPLOAD_MAX_MB * 1024 * 1024) { const er = new Error('Supera ' + UPLOAD_MAX_MB + ' MB'); er.status = 413; throw er; }
       task.status = 'preparing'; paintTask(task);
       const info = task.info || (task.info = await analyzeFile(file));
+      if (info.thumb && !task.fromThumb) { task.fromThumb = true; setPreview(task, info.thumb); }
       if (task.status === 'canceled') throw canceledError();
       const fd = new FormData();
       fd.append('file', file);
@@ -625,7 +626,11 @@
     const board = document.getElementById('board');
     if (board) board.classList.remove('is-uploading');
     // Lo terminado se olvida; lo que sigue subiendo pasa al panel pequeño.
-    dlg.tasks = dlg.tasks.filter(t => t.status !== 'done' && t.status !== 'canceled' && t.status !== 'error');
+    dlg.tasks = dlg.tasks.filter(t => {
+      const keep = t.status !== 'done' && t.status !== 'canceled' && t.status !== 'error';
+      if (!keep) releasePreview(t);
+      return keep;
+    });
     paintPanel();
     if (!quiet) rerender();
   }
@@ -637,6 +642,28 @@
     const bytes = all.reduce((n, t) => n + (t.file.size || 0), 0);
     dlg.listHead.hidden = !all.length;
     dlg.sum.textContent = all.length + (all.length === 1 ? ' archivo' : ' archivos') + ' · ' + ok + (ok === 1 ? ' listo' : ' listos') + ' · ' + formatBytes(bytes);
+  }
+  /* Vista previa de la tarjeta: la foto misma (al instante) o la portada que
+     genera analyzeFile (carátula de la canción, fotograma del video). */
+  const PREVIEW_MAX = 25 * 1024 * 1024;   // fotos enormes: se espera la miniatura
+  function setPreview(t, blob) {
+    try {
+      if (t.previewUrl) URL.revokeObjectURL(t.previewUrl);
+      t.previewUrl = URL.createObjectURL(blob);
+    } catch (e) { return; }
+    const r = dlg.rows.get(t.id);
+    if (r) paintPreview(t, r);
+  }
+  function releasePreview(t) { if (t.previewUrl) { try { URL.revokeObjectURL(t.previewUrl); } catch (e) {} t.previewUrl = null; } }
+  function paintPreview(t, r) {
+    if (!t.previewUrl || r.previewUrl === t.previewUrl) return;
+    r.previewUrl = t.previewUrl;
+    const img = el('img', { src: t.previewUrl, alt: '', decoding: 'async' });
+    img.addEventListener('load', () => r.ico.classList.add('is-loaded'));
+    img.addEventListener('error', () => { img.remove(); r.ico.classList.remove('has-img', 'is-loaded'); });
+    const old = r.ico.querySelector('img'); if (old) old.remove();
+    r.ico.prepend(img);
+    r.ico.classList.add('has-img');
   }
   function statusText(t) {
     const size = formatBytes(t.file.size);
@@ -668,6 +695,8 @@
       r.node.append(r.ico, el('div', { class: 'upd-main' }, [ r.name, el('div', { class: 'upd-meta' }, [ r.bytes, el('span', { class: 'upd-dot', 'aria-hidden': 'true' }, '•'), r.state ]) ]), r.btn, r.bar);
       dlg.rows.set(t.id, r);
       dlg.list.prepend(r.node);
+      if (!t.previewUrl && kind === 'image' && /^image\/(jpeg|png|gif|webp|avif|bmp)$/.test(t.file.type) && t.file.size <= PREVIEW_MAX) setPreview(t, t.file);
+      paintPreview(t, r);
     }
     const [bytes, state] = statusText(t);
     r.bytes.textContent = bytes;
@@ -700,6 +729,7 @@
     if (queued >= 0) { up.queue.splice(queued, 1); up.total = Math.max(0, up.total - 1); dropTask(t.id); }
     t.status = 'canceled';
     if (t.xhr) t.xhr.abort();
+    releasePreview(t);
     dlg.tasks = dlg.tasks.filter(x => x !== t);
     paintTask(t);
     paintPanel();
@@ -707,6 +737,7 @@
   }
   function retryTask(t) {
     dropTask(t.id);
+    releasePreview(t);
     up.failed = Math.max(0, up.failed - 1);
     dlg.tasks = dlg.tasks.filter(x => x !== t);
     const r = dlg.rows.get(t.id); if (r) { r.node.remove(); dlg.rows.delete(t.id); }
@@ -721,6 +752,7 @@
     store.files = (store.files || []).filter(x => x.id !== t.item.id);
     (store.projects || []).forEach(p => { if (p.documents) p.documents = p.documents.filter(x => x.id !== t.item.id); });
     t.status = 'canceled';
+    releasePreview(t);
     dlg.tasks = dlg.tasks.filter(x => x !== t);
     paintTask(t);
     toast('Archivo eliminado');
