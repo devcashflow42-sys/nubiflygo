@@ -124,7 +124,7 @@ async function ensureUiPrefs() {
   await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS ui_prefs JSONB NOT NULL DEFAULT '{}'::jsonb`);
   uiPrefsReady = true;
 }
-const WIDGET_IDS = ['music', 'timer'];
+const WIDGET_IDS = ['music'];
 function cleanUiPrefs(v) {
   if (!v || typeof v !== 'object' || Array.isArray(v)) return null;
   const out = {};

@@ -238,7 +238,6 @@
     const ICN_THEME = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>';
     const ICN_SETTINGS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
     const ICN_PLAN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20l-2-11-5 4-3-7-3 7-5-4-2 11z"/></svg>';
-    const ICN_TIMER = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.17a2 2 0 0 0-.59-1.42L12 12l-4.41 4.41A2 2 0 0 0 7 17.83V22"/><path d="M7 2v4.17a2 2 0 0 0 .59 1.42L12 12l4.41-4.41A2 2 0 0 0 17 6.17V2"/></svg>';
     const ICN_LOGOUT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>';
 
     function ini() {
@@ -292,13 +291,6 @@
     } }, [
       el('span', { html: ICN_PLAN, style: { display: 'inline-flex' } }), el('span', {}, isAdmin ? 'Administrador' : (isGuest ? 'Crear cuenta gratis' : 'Plan de pago')), planBtn
     ].filter(Boolean));
-    // Temporizador flotante (widget junto al reproductor; sigue contando
-    // aunque cambies de sección).
-    const tState = window.TimerWidget ? window.TimerWidget.state() : null;
-    const timerRow = window.openTimer ? el('button', { type: 'button', class: 'popup-item', style: ROW, onclick: function () { close(); setTimeout(function () { window.openTimer(); }, 10); } }, [
-      el('span', { html: ICN_TIMER, style: { display: 'inline-flex' } }), el('span', {}, 'Temporizador'),
-      tState && tState.open && tState.status !== 'idle' ? rightVal(tState.status === 'running' ? 'En marcha' : tState.status === 'paused' ? 'En pausa' : 'Terminó') : null
-    ].filter(Boolean)) : null;
     const logoutRow = el('button', { type: 'button', class: 'popup-item danger', style: ROW, onclick: function () { close(); setTimeout(function () { if (window.logout) window.logout(); }, 10); } }, [
       el('span', { html: ICN_LOGOUT, style: { display: 'inline-flex' } }), el('span', {}, 'Cerrar sesión')
     ]);
@@ -306,7 +298,7 @@
     const p = el('div', { class: 'popup', id: 'profile-popup', role: 'menu', style: { width: 'min(272px, calc(100vw - 28px))', padding: '6px' } }, [
       card,
       el('div', { class: 'popup-sep' }),
-      themeRow, settingsRow, timerRow, planRow,
+      themeRow, settingsRow, planRow,
       el('div', { class: 'popup-sep' }),
       logoutRow
     ]);

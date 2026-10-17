@@ -1,5 +1,5 @@
 /* widgets.css — Widgets flotantes estilo Dynamic Island (reproductor de
-   música y temporizador). Cápsulas con sombra suave y efecto vidrio, en tema
+   música). Cápsulas con sombra suave y efecto vidrio, en tema
    claro y oscuro. El contenedor (.fw-dock) lo coloca widgets/manager.js:
    abajo por defecto; se arrastra libremente hacia arriba o hacia abajo
    (--fw-lift = altura sobre su posición de abajo). */
@@ -12,7 +12,7 @@
   display: flex; flex-direction: column; gap: 0;   /* una sola cápsula: sin hueco entre filas */
   pointer-events: none;                    /* fuera de la cápsula se puede tocar la página */
   /* El contenedor ES la cápsula: un único radio y una única sombra envuelven
-     al reproductor y al temporizador, que por dentro son filas planas. */
+     al reproductor, que por dentro es una fila plana. */
   border-radius: 28px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, .12), 0 16px 36px -12px rgba(0, 0, 0, .45);
 }
@@ -47,7 +47,7 @@
 }
 .fw.is-expanded { cursor: default; }
 /* Esquinas: solo la fila de arriba redondea arriba y la de abajo, abajo; una
-   sola fila (reproductor o temporizador solo) redondea las cuatro. Así las dos
+   sola fila (el reproductor solo) redondea las cuatro. Así las dos
    filas forman una única cápsula sin hueco. */
 .fw-dock > .fw:first-child { border-top-left-radius: 28px; border-top-right-radius: 28px; }
 .fw-dock > .fw:last-child { border-bottom-left-radius: 28px; border-bottom-right-radius: 28px; }
@@ -101,8 +101,6 @@
 .fw-btn:focus-visible, .fw-chip:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
 .fw-btn:focus-visible { border-radius: 50%; }
 .fw-chip:focus-visible { border-radius: 999px; }
-/* Botón naranja del temporizador: anillo de foco naranja (blanco no se vería en tema claro). */
-.tw-main:focus-visible { outline-color: var(--tw-accent); }
 
 /* Fila de acciones y chips */
 .fw-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
@@ -139,7 +137,6 @@
 }
 /* Con el reproductor, cada widget es su propia cápsula (con su sombra). */
 .fw-dock:has(.fw-music) { box-shadow: none; border-radius: 0; gap: 18px; }
-.fw-dock:has(.fw-music) > .fw-timer { border-radius: 28px; box-shadow: 0 1px 2px rgba(0, 0, 0, .12), 0 16px 36px -12px rgba(0, 0, 0, .45); }
 .fw-dock:has(.fw-music) > .fw + .fw::after { display: none; }
 .fw-music .fw-compact { display: block; padding: 0; min-height: 0; }
 .fw-music:focus-visible { outline-offset: 2px; border-radius: 32px; }
@@ -283,67 +280,17 @@
   .mw-sheet { gap: 9px; padding: 0 10px; }
 }
 
-/* ─────────────── Temporizador (imagen 2) ───────────────
-   Cápsula clara en tema claro y oscura en tema oscuro; acento naranja. */
-.fw-timer {
-  --tw-accent: #e8590c;
-  --fw-fg: var(--fg);
-  --fw-muted: var(--fg-muted);
-  --fw-hover: color-mix(in srgb, var(--fg) 9%, transparent);
-  --fw-line: var(--border-strong, var(--border));
-  background: color-mix(in srgb, var(--surface) 94%, transparent);
-  border: 0;
-}
-@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .fw-timer { -webkit-backdrop-filter: saturate(1.6) blur(18px); backdrop-filter: saturate(1.6) blur(18px); }
-}
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .fw-timer { --tw-accent: #ff9f43; } }
-:root[data-theme="dark"] .fw-timer { --tw-accent: #ff9f43; }
-
-.tw-icon { position: relative; width: 44px; height: 44px; flex-shrink: 0; display: grid; place-items: center; color: var(--tw-accent); margin-left: 2px; }
-.tw-icon > svg:not(.tw-ring) { width: 20px; height: 20px; }
-.tw-ring { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
-.tw-ring circle { fill: none; stroke-width: 2.6; }
-.tw-ring-bg { stroke: color-mix(in srgb, var(--tw-accent) 18%, transparent); }
-.tw-ring-fg { stroke: var(--tw-accent); stroke-linecap: round; transition: stroke-dashoffset .3s linear; }
-.fw-timer.is-running .tw-icon > svg:not(.tw-ring) { animation: tw-tip 4s var(--fw-ease) infinite; }
-@keyframes tw-tip { 0%, 80% { transform: rotate(0); } 92%, 100% { transform: rotate(180deg); } }
-
-.tw-meta { flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 10px; }
-.tw-time { font-size: 26px; font-weight: 700; letter-spacing: -.01em; font-variant-numeric: tabular-nums; line-height: 1; }
-.tw-label { font-size: 12px; font-weight: 600; color: var(--fw-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.fw-timer.is-paused .tw-time { opacity: .55; }
-.fw-timer.is-done .tw-time, .fw-timer.is-done .tw-label { color: var(--tw-accent); }
-.tw-ctrls { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
-.tw-main { background: var(--tw-accent); color: #fff; }
-.tw-main:hover { background: color-mix(in srgb, var(--tw-accent) 86%, #000); }
-.fw-timer.is-done { animation: tw-pulse 1.1s ease-in-out 4; }
-@keyframes tw-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--tw-accent) 0%, transparent), 0 14px 34px -12px rgba(0, 0, 0, .3); }
-  50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--tw-accent) 30%, transparent), 0 14px 34px -12px rgba(0, 0, 0, .3); }
-}
-
-.tw-progress { display: flex; flex-direction: column; gap: 6px; }
-.tw-bar { height: 6px; border-radius: 6px; overflow: hidden; background: color-mix(in srgb, var(--tw-accent) 16%, transparent); }
-.tw-fill { height: 100%; width: 0; border-radius: 6px; background: var(--tw-accent); transition: width .3s linear; }
-.tw-ends { font-size: 12px; color: var(--fw-muted); font-variant-numeric: tabular-nums; }
-.tw-presets { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
-.tw-preset { justify-content: center; padding: 0 4px; }
-
 /* ─── Teléfonos pequeños ─── */
 @media (max-width: 380px) {
   .fw-compact { gap: 8px; padding-right: 6px; }
   .fw-btn { width: 34px; height: 34px; }
   .fw-btn-main { width: 38px; height: 38px; }
-  .tw-time { font-size: 23px; }
-  .tw-presets { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
 /* ─── Movimiento reducido: sin rebotes, giros ni desplazamientos ─── */
 @media (prefers-reduced-motion: reduce) {
   .fw, .fw-more, .fw-more-in, .mw-sheet { transition-duration: .01ms !important; }
-  .fw-music.is-playing .mw-eq i,
-  .fw-timer.is-running .tw-icon > svg, .fw-timer.is-done { animation: none !important; }
+  .fw-music.is-playing .mw-eq i { animation: none !important; }
   .fw-music.is-playing .mw-title.is-marquee .mw-title-in { animation: none; }
 }
 
@@ -443,8 +390,6 @@ body.dock-top #view > .project-toolbar { margin-bottom: calc(var(--dock-h, 64px)
 .mw-sheet.is-switching .mw-meta { animation: mw-meta-in .5s cubic-bezier(.22, 1, .36, 1); }
 @keyframes mw-cover-in { from { opacity: 0; transform: scale(.84) rotate(-5deg); } to { opacity: 1; transform: none; } }
 @keyframes mw-meta-in { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: none; } }
-/* El temporizador usa el mismo brillo en su anillo (los dos flotantes se ven iguales). */
-.tw-ring-fg { filter: drop-shadow(0 0 3px color-mix(in srgb, var(--tw-accent) 55%, transparent)); }
 @media (prefers-reduced-motion: reduce) {
   .mw-playwrap.is-reset .mw-ring-fg { transition: none; }
   .mw-playwrap.is-done .mw-ring,

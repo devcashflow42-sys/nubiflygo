@@ -5,7 +5,7 @@
      · FloatingWidgetManager → contenedor flotante, orden, widget expandido,
                                posición (abajo/arriba) y preferencias en la cuenta
      · WidgetDragController  → arrastrar con mouse o dedo para reordenar
-   Los widgets (MusicPlayerWidget, TimerWidget) se registran aquí con
+   Los widgets (MusicPlayerWidget) se registran aquí con
    FloatingWidget.create(...) y el manager decide dónde y cómo se muestran.
    El contenedor se puede arrastrar libremente hacia arriba o hacia abajo y
    se queda donde se suelta (con imán en los extremos).
@@ -85,12 +85,12 @@
   };
 
   /* ───────────────────────── FloatingWidgetManager ───────────────────────── */
-  const IDS = ['music', 'timer'];
+  const IDS = ['music'];
   const M = {
     dock: null, live: null,
     widgets: new Map(),          // id → widget registrado
     mounted: new Set(),          // ids visibles
-    order: ['music', 'timer'],   // por defecto: reproductor arriba, temporizador abajo
+    order: ['music'],
     y: 0,                        // altura del contenedor: 0 = abajo … 1 = arriba (bajo la barra de la sección)
     lift: 0, maxLift: 0,         // esa altura en píxeles (se recalcula con el tamaño de la pantalla)
     base: 0, topLimit: 0,        // límites en pantalla: borde inferior (altura 0) y superior

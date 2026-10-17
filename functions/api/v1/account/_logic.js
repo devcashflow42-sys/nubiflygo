@@ -290,7 +290,7 @@ async function ensureUiPrefsColumn(db) {
 }
 
 // Solo se aceptan claves conocidas y valores válidos (nada de datos libres).
-const WIDGET_IDS = ['music', 'timer'];
+const WIDGET_IDS = ['music'];
 function cleanUiPrefs(v) {
   if (!v || typeof v !== 'object' || Array.isArray(v)) return null;
   const out = {};
