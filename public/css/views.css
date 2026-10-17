@@ -715,50 +715,48 @@
 .up-head .up-count { margin-left: auto; }
 .up-open { padding: 2px 10px; }
 
-/* ─── Diálogo «Subir archivos» ───
-   Zona para soltar/elegir y una tarjeta por archivo (icono por tipo, bytes,
-   estado y barra de avance). En teléfono sale como hoja desde abajo. */
-.upd-root {
-  position: fixed; inset: 0; z-index: 95;             /* debajo de los diálogos de confirmación (100) */
-  display: flex; align-items: center; justify-content: center;
-  padding: 20px;
-  padding-block: calc(20px + env(safe-area-inset-top, 0px)) calc(20px + env(safe-area-inset-bottom, 0px));
-  background: rgba(0, 0, 0, .4);
-  animation: fade .15s ease;
-}
-.upd-root.is-leaving { opacity: 0; transition: opacity .15s ease; }
+/* ─── Página «Subir archivos» ───
+   Ocupa todo el panel central (la sección de atrás se oculta mientras tanto);
+   en teléfono, toda la pantalla. Barra fija arriba, zona para soltar/elegir
+   y la lista de subidas a lo ancho. */
+.board.is-uploading > .board-top, .board.is-uploading > #view { display: none; }
 .upd {
   --upd-k: var(--fg-faint);
-  width: 100%; max-width: 480px; max-height: min(720px, 100%);
-  display: flex; flex-direction: column;
+  flex: 1; display: flex; flex-direction: column; min-height: 100%;
   background: var(--surface); color: var(--fg);
-  border: 1px solid var(--border); border-radius: 22px;
-  box-shadow: 0 24px 70px -24px rgba(0, 0, 0, .4);
-  animation: pop .2s cubic-bezier(.2, .9, .3, 1.1);
-  overflow: hidden;
+  animation: upd-page-in .28s cubic-bezier(.22, 1, .36, 1);
 }
+.upd.is-standalone { position: fixed; inset: 0; z-index: 90; overflow: auto; }
+@keyframes upd-page-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 .upd-head {
+  position: sticky; top: 0; z-index: 2;
   display: flex; align-items: center; gap: 14px;
-  padding: 18px 18px 16px 20px;
+  padding: 16px 24px 16px 14px;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  -webkit-backdrop-filter: saturate(1.4) blur(12px); backdrop-filter: saturate(1.4) blur(12px);
   border-bottom: 1px solid var(--border);
 }
+.upd-back svg { width: 18px; height: 18px; }
 .upd-head-ico {
   width: 44px; height: 44px; flex-shrink: 0; display: grid; place-items: center;
   border: 1px solid var(--border); border-radius: 50%; color: var(--fg);
 }
 .upd-head-ico svg { width: 22px; height: 22px; }
 .upd-head-txt { flex: 1; min-width: 0; }
-.upd-head-txt h3 { margin: 0; font-size: 16.5px; font-weight: 600; letter-spacing: -.01em; }
+.upd-head-txt h2 { margin: 0; font-size: 17px; font-weight: 600; letter-spacing: -.01em; }
 .upd-head-txt p { margin: 3px 0 0; font-size: 13.5px; color: var(--fg-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.upd-close { align-self: flex-start; }
-.upd-close svg { width: 16px; height: 16px; }
-.upd-body { padding: 18px 20px 20px; overflow: auto; display: flex; flex-direction: column; gap: 12px; overscroll-behavior: contain; }
+.upd-body { flex: 1; padding: 24px; display: flex; flex-direction: column; gap: 24px; }
 .upd-input { display: none; }
+.upd-uploads { display: flex; flex-direction: column; gap: 12px; }
+.upd-list-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.upd-list-head[hidden] { display: none; }
+.upd-list-head h3 { margin: 0; font-size: 14px; font-weight: 600; }
+.upd-sum { font-size: 12.5px; color: var(--fg-muted); font-variant-numeric: tabular-nums; }
 
 .upd-zone {
   display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px;
-  padding: 26px 18px 22px;
-  border: 1.5px dashed var(--border-strong); border-radius: 16px;
+  padding: 44px 24px 36px;
+  border: 1.5px dashed var(--border-strong); border-radius: 18px;
   background: var(--surface-2);
   cursor: pointer; transition: border-color .15s ease, background-color .15s ease;
 }
@@ -766,9 +764,9 @@
 .upd-zone:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .upd-zone.is-over { border-color: var(--accent); background: var(--accent-soft); }
 .upd-zone-ico { color: var(--fg-muted); margin-bottom: 4px; }
-.upd-zone-ico svg { width: 26px; height: 26px; }
+.upd-zone-ico svg { width: 30px; height: 30px; }
 .upd-zone.is-over .upd-zone-ico { color: var(--accent); }
-.upd-zone strong { font-size: 14.5px; font-weight: 600; }
+.upd-zone strong { font-size: 15.5px; font-weight: 600; }
 .upd-zone-sub { font-size: 12.5px; color: var(--fg-faint); max-width: 320px; }
 .upd-browse { margin-top: 10px; border: 1px solid var(--border-strong); background: var(--surface); }
 
@@ -833,21 +831,17 @@
 .upd-item.is-done .upd-act:hover { color: var(--danger); }
 
 @media (max-width: 640px) {
-  .upd-root { align-items: flex-end; padding: 0; padding-top: calc(24px + env(safe-area-inset-top, 0px)); }
-  .upd {
-    max-width: none; max-height: 100%; border-radius: 22px 22px 0 0; border-bottom: 0;
-    animation: upd-up .26s cubic-bezier(.22, 1, .36, 1);
-  }
-  @keyframes upd-up { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
-  .upd-head { padding: 16px 14px 14px 16px; }
-  .upd-body { padding: 16px 16px calc(20px + env(safe-area-inset-bottom, 0px)); }
+  .upd-head { padding: 12px 14px 12px 6px; gap: 10px; }
+  .upd-head-ico { width: 38px; height: 38px; }
+  .upd-head-ico svg { width: 19px; height: 19px; }
+  .upd-body { padding: 16px 14px calc(24px + env(safe-area-inset-bottom, 0px)); gap: 18px; }
+  .upd-zone { padding: 28px 14px 22px; }
   .upd-item { column-gap: 12px; padding: 12px 8px 12px 14px; }
   .upd-meta { flex-wrap: wrap; row-gap: 2px; }       /* «Subiendo…» nunca se corta */
   .upd-act { width: 40px; height: 40px; }            /* tamaño táctil */
-  .upd-zone { padding: 22px 14px 18px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .upd, .upd-item, .upd-root { animation: none; }
+  .upd, .upd-item { animation: none; }
   .upd-spin { animation-duration: 2.4s; }
   .upd-fill { transition: none; }
 }

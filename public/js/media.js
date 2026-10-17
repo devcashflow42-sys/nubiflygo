@@ -540,14 +540,17 @@
     });
   }
 
-  /* ─── Diálogo «Subir archivos» ───
-     Zona para soltar o elegir archivos y una tarjeta por archivo con su icono
-     por tipo, bytes enviados, barra de avance y cancelar / reintentar / borrar.
-     Se puede cerrar mientras sube: la subida sigue y queda el panel pequeño. */
+  /* ─── Página «Subir archivos» ───
+     Ocupa todo el panel central (en teléfono, toda la pantalla): barra con
+     flecha para volver, zona para soltar o elegir archivos y una tarjeta por
+     archivo con su icono por tipo, bytes enviados, barra de avance y
+     cancelar / reintentar / borrar. Se puede salir mientras sube: la subida
+     sigue y queda el panel pequeño. */
   const ICN_X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
   const ICN_TRASH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>';
   const ICN_RETRY = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><polyline points="3 3 3 8 8 8"/></svg>';
   const ICN_CLOUD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 8.5h.5a4 4 0 0 1 .5 7.97"/><polyline points="9 14 12 11 15 14"/><line x1="12" y1="11" x2="12" y2="20"/></svg>';
+  const ICN_BACK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>';
   const ICN_OK = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="currentColor"/><polyline points="7.5 12.5 10.5 15.5 16.5 9" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   const ICN_ERR = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="currentColor"/><line x1="12" y1="7" x2="12" y2="13" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="16.6" r="1.4" fill="#fff"/></svg>';
   const fileExt = (name) => { const m = /\.([a-z0-9]{1,5})$/i.exec(name || ''); return m ? m[1].toUpperCase() : ''; };
@@ -584,39 +587,56 @@
 
     const proj = dlg.opts.projectId && (store.projects || []).find(x => x.id === dlg.opts.projectId);
     dlg.list = el('div', { class: 'upd-list', 'aria-live': 'polite' });
-    const box = el('div', { class: 'upd', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'upd-title' }, [
-      el('div', { class: 'upd-head' }, [
+    dlg.sum = el('span', { class: 'upd-sum' });
+    dlg.listHead = el('div', { class: 'upd-list-head' }, [ el('h3', {}, 'Subidas'), dlg.sum ]);
+    const page = el('section', { class: 'upd', 'aria-labelledby': 'upd-title' }, [
+      el('header', { class: 'upd-head' }, [
+        el('button', { type: 'button', class: 'icon-btn upd-back', 'aria-label': 'Volver', title: 'Volver', html: ICN_BACK, onclick: () => closeUploadDialog() }),
         el('span', { class: 'upd-head-ico', html: ICN_CLOUD }),
         el('div', { class: 'upd-head-txt' }, [
-          el('h3', { id: 'upd-title' }, 'Subir archivos'),
+          el('h2', { id: 'upd-title' }, 'Subir archivos'),
           el('p', {}, proj ? 'Se guardarán en el proyecto «' + proj.name + '»' : 'Elige y sube los archivos que quieras')
-        ]),
-        el('button', { type: 'button', class: 'icon-btn upd-close', 'aria-label': 'Cerrar', html: ICN_X, onclick: closeUploadDialog })
+        ])
       ]),
-      el('div', { class: 'upd-body' }, [ zone, dlg.list ]),
+      el('div', { class: 'upd-body' }, [ zone, el('div', { class: 'upd-uploads' }, [ dlg.listHead, dlg.list ]) ]),
       inp
     ]);
-    dlg.root = el('div', { class: 'upd-root' }, [ box ]);
-    dlg.root.addEventListener('pointerdown', (e) => { if (e.target === dlg.root) dlg.root._down = true; });
-    dlg.root.addEventListener('click', (e) => { if (e.target === dlg.root && dlg.root._down) closeUploadDialog(); if (dlg.root) dlg.root._down = false; });
-    dlg.root.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !document.querySelector('#modal-root.show')) { e.stopPropagation(); closeUploadDialog(); } });
-    // Soltar archivos en cualquier parte del diálogo, no solo en la zona.
-    box.addEventListener('dragover', (e) => e.preventDefault());
-    box.addEventListener('drop', (e) => { if (e.target.closest('.upd-zone')) return; e.preventDefault(); const l = Array.from((e.dataTransfer && e.dataTransfer.files) || []); if (l.length) queueUploads(l, dlg.opts); });
-    document.body.appendChild(dlg.root);
+    page.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !document.querySelector('#modal-root.show')) { e.stopPropagation(); closeUploadDialog(); } });
+    // Soltar archivos en cualquier parte de la página, no solo en la zona.
+    page.addEventListener('dragover', (e) => e.preventDefault());
+    page.addEventListener('drop', (e) => { if (e.target.closest('.upd-zone')) return; e.preventDefault(); const l = Array.from((e.dataTransfer && e.dataTransfer.files) || []); if (l.length) queueUploads(l, dlg.opts); });
+    // Se monta en el panel central en lugar de la sección (que queda oculta).
+    const board = document.getElementById('board');
+    dlg.root = page;
+    if (board) { board.classList.add('is-uploading'); board.appendChild(page); board.scrollTop = 0; }
+    else { page.classList.add('is-standalone'); document.body.appendChild(page); }
+    try { window.scrollTo(0, 0); } catch (e) {}
     dlg.rows.clear();
     dlg.tasks.forEach(paintTask);
-    setTimeout(() => browse.focus(), 30);
+    paintSummary();
+    setTimeout(() => browse.focus({ preventScroll: true }), 30);
   }
-  function closeUploadDialog() {
+  // quiet: al cambiar de sección (no hace falta redibujar, la sección nueva ya se pinta).
+  function closeUploadDialog(quiet) {
     if (!dlg.root) return;
     const r = dlg.root;
-    dlg.root = null; dlg.list = null; dlg.rows.clear();
-    r.classList.add('is-leaving');
-    setTimeout(() => r.remove(), 160);
+    dlg.root = null; dlg.list = null; dlg.sum = null; dlg.listHead = null; dlg.rows.clear();
+    r.remove();
+    const board = document.getElementById('board');
+    if (board) board.classList.remove('is-uploading');
     // Lo terminado se olvida; lo que sigue subiendo pasa al panel pequeño.
     dlg.tasks = dlg.tasks.filter(t => t.status !== 'done' && t.status !== 'canceled' && t.status !== 'error');
     paintPanel();
+    if (!quiet) rerender();
+  }
+  // Resumen de la lista: cuántos archivos, cuántos listos y el total.
+  function paintSummary() {
+    if (!dlg.sum) return;
+    const all = dlg.tasks.filter(t => t.status !== 'canceled');
+    const ok = all.filter(t => t.status === 'done').length;
+    const bytes = all.reduce((n, t) => n + (t.file.size || 0), 0);
+    dlg.listHead.hidden = !all.length;
+    dlg.sum.textContent = all.length + (all.length === 1 ? ' archivo' : ' archivos') + ' · ' + ok + (ok === 1 ? ' listo' : ' listos') + ' · ' + formatBytes(bytes);
   }
   function statusText(t) {
     const size = formatBytes(t.file.size);
@@ -632,6 +652,7 @@
   }
   function paintTask(t) {
     if (!dlg.list) return;
+    paintSummary();
     if (t.status === 'canceled') { const r = dlg.rows.get(t.id); if (r) { r.node.remove(); dlg.rows.delete(t.id); } return; }
     let r = dlg.rows.get(t.id);
     if (!r) {
@@ -732,6 +753,7 @@
   window.queueUploads = queueUploads;
   window.pickAndUpload = pickAndUpload;
   window.openUploadDialog = openUploadDialog;
+  window.closeUploadPage = closeUploadDialog;
   window.analyzeFile = analyzeFile;
   window.fmtDuration = fmtDuration;
 })();

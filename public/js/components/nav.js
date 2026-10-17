@@ -52,6 +52,7 @@
   window.syncUrl = syncUrl;
 
   function go(route, params = {}) {
+    if (window.closeUploadPage) window.closeUploadPage(true);   // sale de «Subir archivos»
     state.route = route;
     if ('projectId' in params) { state.projectId = params.projectId; state.projectTab = 'docs'; }
     if ('noteId' in params) state.noteId = params.noteId;
@@ -64,6 +65,7 @@
 
   // Atrás/adelante del navegador: vuelve a la sección correspondiente.
   window.addEventListener('popstate', function () {
+    if (window.closeUploadPage) window.closeUploadPage(true);
     applyUrl(location.pathname);
     render();
   });
