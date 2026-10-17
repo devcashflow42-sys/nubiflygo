@@ -137,37 +137,95 @@
   function goBilling() {
     try { if (typeof state !== 'undefined') state.settingsTab = 'billing'; if (typeof go === 'function') go('settings'); } catch (e) {}
   }
+  /* ─── Tarjeta de almacenamiento del menú lateral (reemplaza «Plan actual») ───
+     · Escritorio: «3.0 MB usados de 2 GB», barra por tipo de archivo
+       (imágenes, videos, música, documentos, otros) con su leyenda.
+     · Teléfono/tablet (cajón): barra de rayitas que se llenan según el
+       espacio usado; si pasa del 80 % avisa «casi lleno».
+     · Plan y botón: Mejorar plan · Gestionar suscripción · Crear cuenta. */
+  const GB = 1024 * 1024 * 1024;
+  const PLAN_QUOTA = { free: 2 * GB, gratis: 2 * GB, pro: 100 * GB, mega: 1024 * GB, super: 5 * 1024 * GB };
+  const STG_TYPES = [
+    { id: 'image', label: 'Imágenes', color: '#2f7de1' },
+    { id: 'video', label: 'Videos', color: '#5bb8e8' },
+    { id: 'audio', label: 'Música', color: '#35b98f' },
+    { id: 'doc', label: 'Documentos', color: '#f2b92c' },
+    { id: 'other', label: 'Otros', color: '#8b5cf6' }
+  ];
+  const ICN_CLOUD_S = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.5 19H8a5.5 5.5 0 1 1 1.06-10.9A6.5 6.5 0 0 1 21 11.5 3.75 3.75 0 0 1 17.5 19z"/></svg>';
+  function fmtQuota(b) { return b >= 1024 * GB ? (b / (1024 * GB)) + ' TB' : (b / GB) + ' GB'; }
+  // Uso por tipo con los archivos que ya conoce la página (los de proyectos incluidos).
+  function storageUsage() {
+    const by = { image: 0, video: 0, audio: 0, doc: 0, other: 0 };
+    let total = 0;
+    (typeof store !== 'undefined' && Array.isArray(store.files) ? store.files : []).forEach(f => {
+      const n = Number(f.size) || 0;
+      const k = window.mediaKind ? window.mediaKind(f.mime || f.type, f.title) : 'other';
+      by[k === 'pdf' ? 'doc' : k === 'archive' ? 'other' : (by[k] != null ? k : 'other')] += n;
+      total += n;
+    });
+    return { by, total };
+  }
+  let lastUser = null;
   window.paintPlanCard = function (u) {
     const slot = document.getElementById('plan-card');
     if (!slot) return;
+    if (u === undefined) u = lastUser;
+    lastUser = u;
     slot.innerHTML = '';
     if (!u) return;
-    let plan, text, btn, action;
-    if (u.is_admin) { plan = 'Sin límites'; text = 'Cuenta de administrador: todas las funciones disponibles.'; btn = 'Ver facturación'; action = goBilling; }
-    else if (u.is_guest) { plan = 'Invitado'; text = 'Tu prueba es temporal. Crea una cuenta gratis para conservar tus archivos.'; btn = 'Crear cuenta gratis'; action = function () { window.location.href = '/login'; }; }
-    else if (u.has_paid_plan) {
-      const l = String(u.plan_label || u.plan || 'Pro'); plan = l.charAt(0).toUpperCase() + l.slice(1);
-      const until = u.plan_expires_at && window.fmtPlanDay ? window.fmtPlanDay(u.plan_expires_at) : '';
-      text = until ? (u.plan_cancel_at_period_end ? 'Cancelado: activo hasta el ' + until + '.' : 'Suscripción activa hasta el ' + until + '.') : 'Tienes acceso a todas las funciones de tu plan.';
-      btn = 'Gestionar suscripción'; action = goBilling;
-    }
-    else { plan = 'Gratis'; text = 'Mejora a Pro para obtener las funciones más recientes y exclusivas.'; btn = 'Mejorar a Pro'; action = goBilling; }
+    let plan, btn, action;
+    if (u.is_admin) { plan = 'Sin límites'; btn = 'Ver facturación'; action = goBilling; }
+    else if (u.is_guest) { plan = 'Invitado'; btn = 'Crear cuenta gratis'; action = function () { window.location.href = '/login'; }; }
+    else if (u.has_paid_plan) { const l = String(u.plan_label || u.plan || 'Pro'); plan = l.charAt(0).toUpperCase() + l.slice(1); btn = 'Gestionar suscripción'; action = goBilling; }
+    else { plan = 'Gratis'; btn = 'Mejorar plan'; action = goBilling; }
     const upgrade = !u.is_admin && !u.has_paid_plan;
-    // Suscriptor (pagó): tarjeta dorada con corona, y corona junto a su foto.
     const crown = !!u.has_paid_plan && window.ICN_CROWN;
     const row = document.querySelector('.sidebar-foot .user-row');
     if (row) { row.classList.toggle('is-paid', !!u.has_paid_plan); row.title = u.has_paid_plan ? 'Mi cuenta · Plan ' + plan : 'Mi cuenta'; }
-    // Versión completa (menú abierto)
-    slot.appendChild(el('div', { class: 'plan-card' + (crown ? ' is-paid' : '') }, [
-      el('div', { class: 'plan-head' }, [
-        el('span', { class: 'plan-ico', html: crown || ICN_SPARK }),
-        el('div', { class: 'plan-meta' }, [ el('div', { class: 'plan-k' }, 'Plan actual:'), el('div', { class: 'plan-v' }, plan) ])
+
+    const quota = u.is_admin ? 0 : (PLAN_QUOTA[String(u.plan || 'free').toLowerCase()] || PLAN_QUOTA.free);
+    const use = storageUsage();
+    const pct = quota ? Math.min(100, use.total / quota * 100) : 0;
+    const full = pct >= 80;
+    const pctTxt = !quota ? '' : pct > 0 && pct < 1 ? 'menos del 1 %' : Math.round(pct) + ' %';
+    const ofTxt = quota ? 'usados de ' + fmtQuota(quota) : 'usados · sin límite';
+    const mkBtn = () => el('button', { type: 'button', class: 'plan-btn', onclick: action }, [ upgrade ? el('span', { class: 'plan-bolt', html: ICN_BOLT }) : null, btn ].filter(Boolean));
+
+    // Barra por tipo (escritorio): cada tramo es la parte de lo usado.
+    const bar = el('div', { class: 'stg-bar', role: 'img', 'aria-label': formatBytes(use.total) + ' ' + ofTxt });
+    const legend = el('ul', { class: 'stg-legend' });
+    STG_TYPES.forEach(tp => {
+      const n = use.by[tp.id];
+      if (!n) return;
+      bar.appendChild(el('span', { class: 'stg-seg', style: { flexGrow: String(n), background: tp.color }, title: tp.label + ': ' + formatBytes(n) }));
+      legend.appendChild(el('li', {}, [ el('i', { style: { background: tp.color } }), el('span', { class: 'stg-l' }, tp.label), el('span', { class: 'stg-n' }, formatBytes(n)) ]));
+    });
+    const desk = el('div', { class: 'stg-desk' }, [
+      el('div', { class: 'stg-amount' }, [ el('strong', {}, formatBytes(use.total)), el('span', {}, ' ' + ofTxt) ]),
+      bar,
+      legend.children.length ? legend : el('p', { class: 'stg-empty' }, 'Aún no has subido archivos.')
+    ]);
+
+    // Rayitas (cajón del teléfono): 20 marcas, se llenan según el % usado.
+    const TICKS = 20, on = quota ? Math.max(use.total > 0 ? 1 : 0, Math.round(pct / 100 * TICKS)) : 0;
+    const ticks = el('div', { class: 'stg-ticks', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': String(Math.round(pct)), 'aria-label': 'Espacio usado' });
+    for (let i = 0; i < TICKS; i++) ticks.appendChild(el('i', { class: i < on ? 'on' : '' }));
+    const mob = el('div', { class: 'stg-mob' }, [
+      el('p', { class: 'stg-sub' }, full && upgrade ? 'Mejora tu plan para tener más espacio.' : formatBytes(use.total) + ' de ' + (quota ? fmtQuota(quota) : 'espacio ilimitado') + (pctTxt ? ' · ' + pctTxt : '')),
+      ticks
+    ]);
+
+    slot.appendChild(el('section', { class: 'plan-card stg' + (crown ? ' is-paid' : '') + (full ? ' is-full' : ''), 'aria-label': 'Almacenamiento' }, [
+      el('div', { class: 'stg-head' }, [
+        el('span', { class: 'stg-ico', html: ICN_CLOUD_S }),
+        el('span', { class: 'stg-title' }, full ? 'Espacio casi lleno' : 'Almacenamiento'),
+        el('span', { class: 'stg-plan' + (crown ? ' is-paid' : '') }, [ crown ? el('span', { class: 'stg-crown', html: crown }) : null, plan ].filter(Boolean))
       ]),
-      el('p', { class: 'plan-text' }, text),
-      el('button', { type: 'button', class: 'plan-btn', onclick: action }, [ upgrade ? el('span', { class: 'plan-bolt', html: ICN_BOLT }) : null, btn ].filter(Boolean))
+      desk, mob, mkBtn()
     ]));
     // Versión mini (menú colapsado): solo el icono redondo
-    slot.appendChild(el('button', { type: 'button', class: 'plan-mini' + (crown ? ' is-paid' : ''), title: 'Plan actual: ' + plan, 'aria-label': 'Plan actual: ' + plan, onclick: action, html: crown || ICN_SPARK }));
+    slot.appendChild(el('button', { type: 'button', class: 'plan-mini' + (crown ? ' is-paid' : ''), title: 'Almacenamiento: ' + formatBytes(use.total) + ' ' + ofTxt + ' · Plan ' + plan, 'aria-label': 'Almacenamiento y plan', onclick: action, html: crown || ICN_CLOUD_S }));
   };
 
   // Limpieza: versiones anteriores guardaban la foto solo en este dispositivo.

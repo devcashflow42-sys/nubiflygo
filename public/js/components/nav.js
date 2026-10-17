@@ -1,5 +1,5 @@
 'use strict';
-/* components/nav.js — Router y chrome: go, renderNav, renderCrumbs, renderTopActions, renderInfo, iconFor. */
+/* components/nav.js — Router y chrome: go, renderNav, renderCrumbs, renderTopActions, iconFor. */
 
   /* ───────────── Router ───────────── */
   // Cada sección tiene su propia URL limpia (enlace directo / compartir).
@@ -226,57 +226,6 @@
   }
 
   /* ───────────── Info panel ───────────── */
-  function renderInfo() {
-    const info = $('#info');
-    info.innerHTML = '';
-    // La vista de Configuración ocupa todo el ancho: no se pinta el panel lateral.
-    if (state.route === 'settings') return;
-    info.appendChild(el('div', { class: 'info-head' }, [
-      el('h3', {}, t('info.title')),
-    ]));
-
-    // Archivos reales del usuario (incluye los de proyectos) + documentos de texto.
-    const files = Array.isArray(store.files) ? store.files : [];
-    const textDocs = store.projects.reduce((n, p) => n + ((p.documents || []).filter(d => d.kind !== 'file').length), 0);
-    const totalDocs = files.length + textDocs;
-    const totalBytes = files.reduce((n, f) => n + (Number(f.size) || 0), 0);
-
-    const docsTile = el('div', { class: 'stat-mini' }, [
-      el('div', { class: 'stat-mini-label', html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> ' + t('info.documents') }),
-      el('div', { class: 'stat-mini-value' }, [ document.createTextNode(totalDocs + ' '), el('span', { class: 'unit' }, totalDocs === 1 ? t('info.fileUnit') : t('info.filesUnit')) ])
-    ]);
-    const sizeTile = el('div', { class: 'stat-mini' }, [
-      el('div', { class: 'stat-mini-label', html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg> ' + t('info.storage') }),
-      el('div', { class: 'stat-mini-value' }, formatBytes(totalBytes))
-    ]);
-    info.appendChild(docsTile);
-    info.appendChild(sizeTile);
-
-    const section = el('div', { class: 'info-section' }, [ el('h4', {}, t('info.summary')) ]);
-    const kv = el('dl', { class: 'kv' });
-    kv.appendChild(el('dt', {}, t('info.projects'))); kv.appendChild(el('dd', {}, String(store.projects.length)));
-    kv.appendChild(el('dt', {}, t('info.notes'))); kv.appendChild(el('dd', {}, String(store.notes.length)));
-    kv.appendChild(el('dt', {}, t('info.apiKeys'))); kv.appendChild(el('dd', {}, String(store.apiKeys.length)));
-    section.appendChild(kv);
-    info.appendChild(section);
-
-    const recent = el('div', { class: 'info-section' }, [ el('h4', {}, t('info.recentActivity')) ]);
-    const list = el('div', { class: 'recent-list' });
-    const items = store.activity.slice(0, 8);
-    if (items.length === 0) {
-      list.appendChild(el('div', { style: { color: 'var(--fg-faint)', fontSize: '12.5px', padding: '6px 8px' } }, t('info.noActivity')));
-    } else {
-      items.forEach(a => {
-        list.appendChild(el('a', {}, [
-          el('span', { html: iconFor(a.kind) }),
-          el('span', { class: 'nm' }, a.text),
-          el('span', { class: 'ts' }, timeAgo(a.at))
-        ]));
-      });
-    }
-    recent.appendChild(list);
-    info.appendChild(recent);
-  }
   function iconFor(kind) {
     if (kind === 'project') return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/></svg>';
     if (kind === 'note') return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';

@@ -300,26 +300,47 @@
     .info { min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
   }
 
-  /* ─── Tarjeta «Plan actual» (barra lateral) ─── */
+  /* ─── Tarjeta de almacenamiento + plan (barra lateral) ───
+     Escritorio: cantidad usada, barra por tipo y leyenda.
+     Cajón del teléfono/tablet: barra de rayitas (ver responsive.css). */
   .plan-slot:empty { display: none; }
   .plan-card {
+    position: relative; overflow: hidden;
     margin: 0 0 12px; padding: 14px;
     border-radius: 14px;
-    border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--border));
-    background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 16%, var(--surface)), color-mix(in srgb, #8b5cf6 9%, var(--surface)));
+    border: 1px solid var(--border);
+    background: var(--surface);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .04), 0 8px 22px -14px rgba(0, 0, 0, .18);
   }
-  .plan-head { display: flex; align-items: center; gap: 12px; }
-  .plan-ico, .plan-mini {
-    width: 42px; height: 42px; border-radius: 50%; flex-shrink: 0;
-    display: grid; place-items: center;
-    background: var(--surface); color: var(--accent);
-    border: 1px solid color-mix(in srgb, var(--accent) 25%, var(--border));
+  .stg-head { display: flex; align-items: center; gap: 8px; }
+  .stg-ico { display: inline-flex; color: var(--fg); }
+  .stg-ico svg { width: 18px; height: 18px; }
+  .stg-title { flex: 1; min-width: 0; font-size: 13.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .stg-plan {
+    display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0;
+    padding: 2px 8px; border-radius: 999px;
+    font-size: 11.5px; font-weight: 600; color: var(--fg-muted);
+    border: 1px solid var(--border-strong); background: var(--surface);
   }
-  .plan-ico svg, .plan-mini svg { width: 20px; height: 20px; }
-  .plan-meta { min-width: 0; }
-  .plan-k { font-size: 12.5px; color: var(--fg-muted); }
-  .plan-v { font-size: 15px; font-weight: 700; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .plan-text { margin: 10px 0 12px; font-size: 12.5px; line-height: 1.45; color: var(--fg-muted); }
+  .stg-crown { display: inline-flex; }
+  /* Escritorio: el menú es angosto; el plan ya lo dice el botón (y la tarjeta dorada). */
+  @media (min-width: 901px) { .stg-plan { display: none; } }
+  .stg-crown svg { width: 12px; height: 12px; }
+  .stg-amount { margin: 12px 0 10px; font-size: 12.5px; color: var(--fg-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .stg-amount strong { font-size: 19px; font-weight: 700; color: var(--fg); letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
+  .stg-bar {
+    display: flex; gap: 2px; height: 10px; border-radius: 999px; overflow: hidden; isolation: isolate;
+    background: var(--surface-sunken);
+  }
+  .stg-seg { flex: 1 1 0; min-width: 5px; height: 100%; }   /* la barra redondea los extremos */
+  .stg-legend { list-style: none; margin: 10px 0 12px; padding: 0; display: grid; gap: 5px; }
+  .stg-legend li { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--fg-muted); min-width: 0; }
+  .stg-legend i { width: 8px; height: 8px; border-radius: 3px; flex-shrink: 0; }
+  .stg-l { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .stg-n { color: var(--fg); font-weight: 500; font-variant-numeric: tabular-nums; }
+  .stg-empty { margin: 10px 0 12px; font-size: 12px; color: var(--fg-faint); }
+  .stg-mob { display: none; }
+  .plan-card.is-full .stg-ico, .plan-card.is-full .stg-title { color: var(--danger); }
   .plan-btn {
     width: 100%; height: 38px; border-radius: 10px; cursor: pointer;
     display: inline-flex; align-items: center; justify-content: center; gap: 7px;
@@ -332,6 +353,13 @@
   .plan-btn:hover { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
   .plan-bolt { display: inline-flex; color: var(--accent); }
   .plan-bolt svg { width: 15px; height: 15px; }
+  .plan-ico, .plan-mini {
+    width: 42px; height: 42px; border-radius: 50%; flex-shrink: 0;
+    display: grid; place-items: center;
+    background: var(--surface); color: var(--accent);
+    border: 1px solid color-mix(in srgb, var(--accent) 25%, var(--border));
+  }
+  .plan-ico svg, .plan-mini svg { width: 20px; height: 20px; }
   .plan-mini { display: none; margin: 0 auto 10px; cursor: pointer; }
   /* Menú colapsado (solo escritorio): se muestra el icono redondo */
   @media (min-width: 901px) {
@@ -339,7 +367,7 @@
     .app[data-drawer="collapsed"] .plan-mini { display: grid; }
   }
   /* Pantallas bajas: la tarjeta se compacta para no tapar el menú */
-  @media (max-height: 640px) and (min-width: 901px) { .plan-text { display: none; } }
+  @media (max-height: 700px) and (min-width: 901px) { .stg-legend { display: none; } .stg-bar { margin-bottom: 12px; } }
 
   /* ─── Listas plegables del menú (Proyectos, Notas) ───
      El enlace y su botón ▾ van en un grupo; el botón queda a la derecha de la

@@ -17,9 +17,9 @@
     renderNav();
     renderCrumbs();
     renderTopActions();
-    renderInfo();
-    // La Configuración ocupa todo el ancho (sin panel de info a la derecha).
-    app.setAttribute('data-info', state.route === 'settings' ? 'hidden' : 'shown');
+    // Sin panel «Información» a la derecha: el almacenamiento vive en el menú.
+    app.setAttribute('data-info', 'hidden');
+    if (window.paintPlanCard) { try { window.paintPlanCard(); } catch (e) {} }
     // Hide default board-top for views that bring their own toolbar
     const bt = document.querySelector('.board-top');
     const minimal = (state.route === 'projects' && state.projectId) || state.route === 'project-form';
