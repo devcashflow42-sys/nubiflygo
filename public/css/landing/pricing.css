@@ -1,0 +1,48 @@
+/* Planes: diseño de tarjetas amplias inspirado en la referencia. */
+#pricing{max-width:1240px}
+#pricing .sec-head{text-align:center;display:flex;flex-direction:column;align-items:center}
+#pricing .sec-head h2{font-size:clamp(32px,4.5vw,54px);letter-spacing:-.045em;margin-top:12px}
+#pricing .sec-head .lead{margin-top:16px;max-width:58ch}
+.cur-wrap{display:flex;justify-content:center;margin-top:28px}
+.cur-toggle{display:inline-flex;gap:4px;padding:4px;border:1px solid var(--line-strong);border-radius:999px;background:var(--surface);box-shadow:0 5px 24px rgba(20,23,40,.04)}
+.cur-toggle button{font-family:var(--f-body);font-size:13px;font-weight:600;color:var(--muted);background:transparent;border:0;padding:8px 24px;border-radius:999px;cursor:pointer;transition:background .2s,color .2s}
+.cur-toggle button.active{background:var(--accent);color:var(--on-accent)}
+.price-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:22px;margin-top:54px;align-items:stretch}
+.plan{--plan-purple:#6746ef;position:relative;isolation:isolate;overflow:hidden;grid-column:span 2;background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:32px 29px 27px;display:flex;flex-direction:column;gap:0;min-height:505px;cursor:pointer;box-shadow:0 14px 34px -28px rgba(27,31,52,.22),0 2px 8px rgba(27,31,52,.025);transition:border-color .25s,box-shadow .3s,transform .3s}
+.plan:nth-child(4){grid-column:2/span 2}
+.plan:nth-child(5){grid-column:4/span 2}
+.plan>*{position:relative;z-index:1}
+.plan::before{content:"";position:absolute;inset:-10% -12% auto;height:46%;z-index:0;pointer-events:none;background:radial-gradient(ellipse at 75% 0%,rgba(111,85,240,.25),transparent 52%),radial-gradient(ellipse at 100% 46%,rgba(100,179,255,.16),transparent 54%);opacity:0;transition:opacity .35s}
+.plan:hover{border-color:var(--line-strong);transform:translateY(-3px);box-shadow:0 18px 38px -26px rgba(27,31,52,.22)}
+.plan:focus-visible{outline:3px solid #795bf4;outline-offset:4px}
+.plan.popular{border-color:var(--line)}
+.plan.selected{border-color:#8f75f5;box-shadow:0 26px 50px -28px rgba(97,67,207,.48),0 0 0 1px rgba(111,85,240,.12);transform:translateY(-5px)}
+.plan.selected::before{opacity:1;background:radial-gradient(ellipse at 73% -3%,rgba(118,88,246,.42),transparent 55%),radial-gradient(ellipse at 98% 34%,rgba(101,185,255,.25),transparent 56%);animation:planGlow 9s ease-in-out infinite alternate}
+@keyframes planGlow{from{transform:translateX(-3%) scale(1)}to{transform:translateX(3%) scale(1.08)}}
+.badge-pop{position:absolute;top:29px;right:24px;background:#f0edff;color:#593ac7;font-family:var(--f-body);font-size:11px;font-weight:700;letter-spacing:.02em;text-transform:none;padding:5px 11px;border-radius:999px;white-space:nowrap;z-index:2}
+.plan h3{order:0;font-size:19px;letter-spacing:-.025em;max-width:68%;min-height:27px}
+.price{order:1;display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-top:23px;min-height:61px}
+.price .amount{font-family:var(--f-display);font-weight:600;font-size:clamp(38px,3.4vw,49px);letter-spacing:-.065em;line-height:1.1;color:var(--fg)}
+.price-meta{font-family:var(--f-body);font-size:11px;line-height:1.5;color:var(--muted)}
+.plan-desc{order:2;color:var(--muted);font-size:13px;line-height:1.55;margin-top:16px;min-height:42px}
+.plan>.btn{order:3;width:100%;justify-content:center;margin-top:16px;min-height:48px;border-radius:9px;font-size:13px;font-weight:650;white-space:normal;text-align:center;line-height:1.25}
+.plan .btn-primary{background:#f4f5f8;color:var(--fg);border-color:transparent}
+.plan .btn-primary:hover{background:#eae9f5;filter:none;transform:none}
+.plan.selected .btn-primary{background:var(--plan-purple);color:#fff;border-color:transparent;box-shadow:0 6px 15px rgba(103,70,239,.19)}
+.plan.selected .btn-primary:hover{background:#5938da;filter:none}
+.plan-feats{order:4;list-style:none;padding:25px 0 0;margin:27px 0 0;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:14px}
+.plan-feats li{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--muted);line-height:1.45}
+.plan-feats li::before{content:"✓";display:grid;place-items:center;flex:none;width:17px;height:17px;margin-top:1px;border:1.5px solid #9ca2ab;border-radius:50%;font-family:Arial,sans-serif;font-size:10px;font-weight:700;line-height:1;color:var(--muted)}
+.plan-feats svg{display:none}
+.plan-more{order:5;font-size:12px;color:var(--muted);text-decoration:underline;text-underline-offset:3px;align-self:flex-start;margin-top:auto;padding-top:24px}
+.plan-more:hover{color:var(--fg)}
+.price-note{text-align:center;font-size:12px;color:var(--muted);margin-top:32px;font-family:var(--f-mono)}
+@media (max-width:1050px){.price-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.plan,.plan:nth-child(4),.plan:nth-child(5){grid-column:auto}.plan:last-child{grid-column:1/-1;max-width:calc(50% - 11px);width:100%;justify-self:center}}
+@media (max-width:650px){#pricing{padding-inline:20px}.price-grid{grid-template-columns:1fr;gap:18px;margin-top:36px}.plan,.plan:nth-child(4),.plan:nth-child(5),.plan:last-child{grid-column:1;max-width:none;min-height:0;padding:27px 24px}.plan h3{max-width:65%}.price .amount{font-size:44px}.plan-feats{margin-top:23px}.plan-more{margin-top:0}}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .plan{--plan-purple:#7959f5}:root:not([data-theme="light"]) .plan .btn-primary{background:#272a32;color:var(--fg)}:root:not([data-theme="light"]) .plan.selected .btn-primary{background:var(--plan-purple);color:#fff}:root:not([data-theme="light"]) .badge-pop{background:#30264e;color:#d9d0ff}:root:not([data-theme="light"]) .plan.popular:not(.selected){border-color:var(--line)}}
+:root[data-theme="dark"] .plan{--plan-purple:#7959f5}
+:root[data-theme="dark"] .plan .btn-primary{background:#272a32;color:var(--fg)}
+:root[data-theme="dark"] .plan.selected .btn-primary{background:var(--plan-purple);color:#fff}
+:root[data-theme="dark"] .badge-pop{background:#30264e;color:#d9d0ff}
+:root[data-theme="dark"] .plan.popular:not(.selected){border-color:var(--line)}
+@media (prefers-reduced-motion:reduce){.plan,.plan::before,.cur-toggle button{transition:none}.plan.selected::before{animation:none}}

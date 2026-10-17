@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>NubiFlyGo</title>
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/assets/favicon.svg">
+  <link rel="mask-icon" href="/assets/favicon.svg" color="#15171A">
+
+  <!-- Reset mínimo antes de cargar las hojas de estilo (evita parpadeo) -->
+  <style>
+    :root{color-scheme:light;box-sizing:border-box}
+    body{margin:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#F5F6F4;color:#15171A}
+    [hidden]:not([hidden="until-found" i]){display:none!important}
+  </style>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+
+  <!-- Hojas de estilo de la landing (en orden) -->
+  <link rel="stylesheet" href="css/landing/variables.css">
+  <link rel="stylesheet" href="css/landing/base.css">
+  <link rel="stylesheet" href="css/landing/nav.css">
+  <link rel="stylesheet" href="css/landing/hero.css">
+  <link rel="stylesheet" href="css/landing/sections.css">
+  <link rel="stylesheet" href="css/landing/console.css">
+  <link rel="stylesheet" href="css/landing/pricing.css">
+  <link rel="stylesheet" href="css/landing/reviews.css">
+  <link rel="stylesheet" href="css/landing/faq.css">
+  <link rel="stylesheet" href="css/landing/footer.css">
+  <link rel="stylesheet" href="css/landing/motion.css">
+</head>
+<body>
+
+<!-- ===================== NAV ===================== -->
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="#top"><span class="mark"><svg class="brand-cloud" viewBox="0 0 512 300" width="19" fill="currentColor" aria-hidden="true"><path d="M 505.22 172.06 C 502.62 161.46 496.62 146.51 490.10 137.12 C 483.58 127.74 475.07 121.14 466.12 115.75 C 457.17 110.36 447.52 106.45 436.40 104.80 C 425.28 103.15 408.33 112.53 399.38 105.84 C 390.43 99.15 387.56 74.30 382.70 64.65 C 377.83 55.01 375.83 53.96 370.18 47.97 C 364.53 41.97 358.28 34.85 348.81 28.68 C 339.33 22.51 325.78 14.86 313.35 10.95 C 300.93 7.04 288.59 4.61 274.25 5.21 C 259.91 5.82 242.18 8.69 227.32 14.60 C 212.46 20.51 197.43 29.81 185.09 40.67 C 172.75 51.53 160.93 66.22 153.29 79.77 C 145.64 93.33 140.69 109.40 139.21 122.00 C 137.73 134.60 141.90 147.20 144.42 155.37 C 146.94 163.54 150.25 166.32 154.33 171.01 C 158.41 175.71 160.33 179.27 168.93 183.53 C 177.53 187.79 191.26 194.48 205.95 196.56 C 220.63 198.65 255.30 194.82 257.04 196.04 C 258.78 197.26 228.28 202.38 216.37 203.86 C 204.47 205.34 195.26 205.60 185.61 204.90 C 175.97 204.21 166.84 202.73 158.50 199.69 C 150.16 196.65 141.90 191.78 135.56 186.66 C 129.22 181.53 124.61 176.40 120.44 168.93 C 116.27 161.46 111.75 152.07 110.53 141.82 C 109.32 131.56 110.27 117.40 113.14 107.41 C 116.01 97.41 130.87 86.38 127.74 81.86 C 124.61 77.34 103.67 79.68 94.37 80.29 C 85.07 80.90 80.99 81.51 71.95 85.51 C 62.91 89.50 48.14 98.19 40.15 104.28 C 32.15 110.36 28.33 116.18 23.98 122.00 C 19.64 127.83 16.95 132.52 14.08 139.21 C 11.21 145.90 8.26 154.68 6.78 162.15 C 5.30 169.62 4.26 175.10 5.21 184.05 C 6.17 193.00 8.60 206.21 12.51 215.85 C 16.42 225.50 21.81 234.19 28.68 241.92 C 35.54 249.66 43.27 257.04 53.70 262.26 C 64.13 267.47 78.21 271.82 91.24 273.21 C 104.28 274.60 117.05 273.29 131.91 270.60 C 146.77 267.90 165.28 262.52 180.40 257.04 C 195.52 251.57 204.56 247.48 222.63 237.75 C 240.71 228.02 272.16 207.34 288.85 198.65 C 305.53 189.96 310.40 187.79 322.74 185.61 C 335.08 183.44 353.15 184.40 362.88 185.61 C 372.62 186.83 375.31 189.52 381.13 192.91 C 386.95 196.30 401.55 202.82 397.82 205.95 C 394.08 209.08 376.01 203.51 358.71 211.68 C 341.42 219.85 310.14 244.88 294.06 254.96 C 277.99 265.04 273.90 266.86 262.26 272.16 C 250.61 277.46 235.67 283.29 224.20 286.76 C 212.73 290.24 195.69 291.80 193.43 293.02 C 191.17 294.23 200.47 295.02 210.64 294.06 C 220.81 293.11 241.58 290.85 254.44 287.28 C 267.30 283.72 259.74 275.12 287.80 272.68 C 315.87 270.25 395.12 273.81 422.84 272.68 C 450.56 271.55 445.00 269.38 454.13 265.91 C 463.25 262.43 470.55 258.00 477.59 251.83 C 484.63 245.66 491.67 237.40 496.36 228.89 C 501.05 220.37 504.27 210.21 505.74 200.73 C 507.22 191.26 507.83 182.66 505.22 172.06 Z"/></svg></span> NubiFlyGo</a>
+    <nav class="nav-links" id="navLinks">
+      <a href="#features" data-i18n="landing.nav.features">Funciones</a>
+      <a href="#api" data-i18n="landing.nav.api">API</a>
+      <a href="#why" data-i18n="landing.nav.projects">Proyectos</a>
+      <a href="#reviews" data-i18n="landing.nav.reviews">Opiniones</a>
+      <a href="#pricing" data-i18n="landing.nav.pricing">Precios</a>
+      <a href="#faq" data-i18n="landing.nav.faq">FAQ</a>
+    </nav>
+    <div class="nav-right">
+      <div id="lang-switch"></div>
+      <a class="login-link" href="/login" data-i18n="landing.nav.login">Iniciar sesión</a>
+      <a class="btn btn-primary" href="/login" data-i18n="landing.nav.signup">Registrarse</a>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+  <!-- ===================== HERO ===================== -->
+  <section class="wrap hero">
+    <span class="badge"><b data-i18n="landing.hero.badgeNew">Nuevo</b> <span data-i18n="landing.hero.badgeText">Tu espacio de trabajo, en un solo lugar</span></span>
+    <h1 class="type-h1"><span class="type-inner"><span id="typed">Organiza proyectos y documentos.</span><span class="caret" aria-hidden="true"></span></span></h1>
+    <p class="lead" data-i18n="landing.hero.lead">NubiFlyGo reúne tus proyectos, notas e informes en una sola interfaz. Sube archivos de cualquier tipo, publícalos dentro de cada proyecto y conecta tus propias API keys para automatizar lo demás.</p>
+    <div class="hero-cta">
+      <a class="btn btn-primary" href="/login"><span data-i18n="landing.hero.ctaStart">Empezar gratis</span>
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>
+      </a>
+      <a class="btn btn-ghost" href="#features" data-i18n="landing.hero.ctaHow">Ver cómo funciona</a>
+    </div>
+    <p class="hero-note">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+      <span data-i18n="landing.hero.note">Sin tarjeta · Tus llaves se quedan contigo · 2&nbsp;500+ espacios creados</span>
+    </p>
+  </section>
+
+  <!-- ===================== INTEGRACIONES ===================== -->
+  <div class="strip">
+    <div class="wrap">
+      <p data-i18n="landing.strip.title">Conecta tus propias llaves de los servicios que ya usas</p>
+    </div>
+    <div class="logo-marquee">
+      <div class="logo-track">
+        <span>OpenAI</span><span>Anthropic</span><span>Google Gemini</span><span>Groq</span><span>Mistral</span><span>Cohere</span><span>Meta Llama</span><span>xAI</span><span>Perplexity</span><span>DeepSeek</span><span>Hugging Face</span><span>Together AI</span><span>Replicate</span><span>Fireworks AI</span><span>Stability AI</span><span>ElevenLabs</span><span>AssemblyAI</span><span>Deepgram</span><span>Runway</span><span>Midjourney</span><span>Pinecone</span><span>Weaviate</span><span>Qdrant</span><span>Chroma</span><span>LangChain</span><span>LlamaIndex</span><span>Ollama</span><span>Vercel</span><span>Netlify</span><span>Supabase</span><span>Firebase</span><span>AWS</span><span>Azure</span><span>Google Cloud</span><span>Cloudflare</span><span>DigitalOcean</span><span>NVIDIA</span><span>Databricks</span><span>Snowflake</span><span>MongoDB</span><span>Redis</span><span>PostgreSQL</span><span>Notion</span><span>Slack</span><span>GitHub</span><span>GitLab</span><span>Figma</span><span>Linear</span><span>Zapier</span><span>Make</span><span>Airtable</span><span>Stripe</span><span>Twilio</span><span>SendGrid</span><span>Resend</span><span>Postman</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== FUNCIONES ===================== -->
+  <section class="wrap" id="features">
+    <div class="sec-head">
+      <span class="eyebrow" data-i18n="landing.features.eyebrow">Funciones</span>
+      <h2 data-i18n="landing.features.title">Todo lo que necesitas para trabajar con tus archivos</h2>
+      <p class="lead" data-i18n="landing.features.lead">Cada proyecto es un espacio propio donde guardas, publicas y conectas lo que necesitas.</p>
+    </div>
+    <div class="feat-grid">
+      <div class="card">
+        <div class="ic-lg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></div>
+        <h3 data-i18n="landing.features.f1Title">Proyectos organizados</h3>
+        <p data-i18n="landing.features.f1Text">Crea un espacio por cada proyecto y mantén archivos, notas e informes separados y fáciles de encontrar.</p>
+        <div class="tags"><span class="tag" data-i18n="landing.features.f1Tags.0">carpetas</span><span class="tag" data-i18n="landing.features.f1Tags.1">etiquetas</span><span class="tag" data-i18n="landing.features.f1Tags.2">búsqueda</span></div>
+      </div>
+      <div class="card">
+        <div class="ic-lg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg></div>
+        <h3 data-i18n="landing.features.f2Title">Documentos y archivos</h3>
+        <p data-i18n="landing.features.f2Text">Sube y publica archivos de varios tipos dentro de cada proyecto: PDF, Word, imágenes, hojas de cálculo y más.</p>
+        <div class="tags"><span class="tag" data-i18n="landing.features.f2Tags.0">PDF</span><span class="tag" data-i18n="landing.features.f2Tags.1">DOCX</span><span class="tag" data-i18n="landing.features.f2Tags.2">PNG</span><span class="tag" data-i18n="landing.features.f2Tags.3">XLSX</span></div>
+      </div>
+      <div class="card">
+        <div class="ic-lg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="15" r="4.5"/><path d="M11.2 11.8 20 3"/><path d="m16.5 6.5 3 3M14 9l2.5 2.5"/></svg></div>
+        <h3 data-i18n="landing.features.f3Title">Tus API keys</h3>
+        <p data-i18n="landing.features.f3Text">Guarda y usa tus propias llaves de API por proyecto. Se quedan contigo y nunca se comparten.</p>
+        <div class="tags"><span class="tag" data-i18n="landing.features.f3Tags.0">por proyecto</span><span class="tag" data-i18n="landing.features.f3Tags.1">cifradas</span></div>
+      </div>
+      <div class="card">
+        <div class="ic-lg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L18.5 9.5a2.1 2.1 0 0 0-3-3L5 17z"/><path d="m13.5 6.5 3 3"/></svg></div>
+        <h3 data-i18n="landing.features.f4Title">Notas, informes y automatización</h3>
+        <p data-i18n="landing.features.f4Text">Escribe notas, genera informes y automatiza tareas repetitivas usando los archivos y llaves de cada espacio.</p>
+        <div class="tags"><span class="tag" data-i18n="landing.features.f4Tags.0">notas</span><span class="tag" data-i18n="landing.features.f4Tags.1">informes</span><span class="tag" data-i18n="landing.features.f4Tags.2">automatización</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== API ===================== -->
+  <section class="wrap" id="api">
+    <div class="api-grid">
+      <div class="api-copy">
+        <span class="eyebrow" data-i18n="landing.api.eyebrow">API</span>
+        <h2 data-i18n="landing.api.title">Conéctate por API en minutos</h2>
+        <p class="lead" data-i18n="landing.api.lead">Automatiza tu flujo con tu propia API key: crea proyectos, sube archivos y consulta tus documentos directamente desde tu código.</p>
+        <ul class="api-list">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> <span data-i18n="landing.api.li1">Autentícate con una API key única por proyecto.</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> <span data-i18n="landing.api.li2">SDK oficial para JavaScript y Python, o peticiones directas con cURL.</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> <span data-i18n="landing.api.li3">Respuestas en JSON con estados claros y predecibles.</span></li>
+        </ul>
+      </div>
+
+      <div class="console">
+        <div class="con-top">
+          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+          <span class="con-title">nubiflygo.api / v1</span>
+          <button class="con-copy" id="conCopy" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg><span id="conCopyLabel" data-i18n="landing.api.copy">Copiar</span></button>
+        </div>
+        <div class="con-tabs" role="tablist">
+          <button type="button" data-lang="curl" class="active">cURL</button>
+          <button type="button" data-lang="js">JavaScript</button>
+          <button type="button" data-lang="py">Python</button>
+        </div>
+        <pre class="con-code" id="conCode"><code><span class="c"># Sube un archivo a un proyecto</span>
+curl https://api.nubiflygo.app/v1/projects/argumind/files \
+  -H <span class="s">"Authorization: Bearer $NUBIFLYGO_API_KEY"</span> \
+  -F <span class="s">"file=@jurisprudencia_2026.pdf"</span></code></pre>
+        <div class="con-resp-label" data-i18n="landing.api.respLabel">Respuesta</div>
+        <pre class="con-resp"><code>{
+  <span class="key">"id"</span>: <span class="s">"file_8f2a"</span>,
+  <span class="key">"project"</span>: <span class="s">"argumind"</span>,
+  <span class="key">"name"</span>: <span class="s">"jurisprudencia_2026.pdf"</span>,
+  <span class="key">"type"</span>: <span class="s">"application/pdf"</span>,
+  <span class="key">"size"</span>: <span class="num">2411008</span>,
+  <span class="key">"status"</span>: <span class="s">"published"</span>
+}</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== POR QUÉ ===================== -->
+  <section class="why">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow" data-i18n="landing.why.eyebrow">Por qué NubiFlyGo</span>
+        <h2 data-i18n="landing.why.title">Pensado para que tú tengas el control</h2>
+      </div>
+      <div class="why-grid">
+        <div class="why-item"><div class="num">01</div><h3 data-i18n="landing.why.i1Title">Un solo lugar</h3><p data-i18n="landing.why.i1Text">Proyectos, documentos y llaves juntos, sin saltar entre herramientas.</p></div>
+        <div class="why-item"><div class="num">02</div><h3 data-i18n="landing.why.i2Title">Tus llaves, tus datos</h3><p data-i18n="landing.why.i2Text">Conectas tus propias API keys; nada sale de tu espacio sin que tú lo decidas.</p></div>
+        <div class="why-item"><div class="num">03</div><h3 data-i18n="landing.why.i3Title">Cualquier archivo</h3><p data-i18n="landing.why.i3Text">Publica documentos de varios tipos dentro de cada proyecto sin límites raros.</p></div>
+        <div class="why-item"><div class="num">04</div><h3 data-i18n="landing.why.i4Title">Ligero y rápido</h3><p data-i18n="landing.why.i4Text">Interfaz limpia en HTML/CSS/JS, sin instalaciones ni procesos pesados.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== OPINIONES ===================== -->
+  <section class="wrap" id="reviews">
+    <div class="sec-head">
+      <span class="eyebrow" data-i18n="landing.reviews.eyebrow">Opiniones</span>
+      <h2 data-i18n="landing.reviews.title">Lo que dicen quienes la usan</h2>
+    </div>
+    <div class="marquee">
+      <div class="m-row left"></div>
+      <div class="m-row right"></div>
+    </div>
+    <p class="lead rev-desc" data-i18n="landing.reviews.desc">Deja que la experiencia real convenza por ti.</p>
+    <p class="placeholder-note" data-i18n="landing.reviews.note">* Opiniones de ejemplo para el boceto — se reemplazarán por reseñas reales.</p>
+  </section>
+
+  <!-- ===================== PRECIOS ===================== -->
+  <section class="wrap" id="pricing">
+    <div class="sec-head">
+      <span class="eyebrow" data-i18n="landing.pricing.eyebrow">Precios</span>
+      <h2 data-i18n="landing.pricing.title">Un plan para cada forma de trabajar</h2>
+      <p class="lead" data-i18n="landing.pricing.lead">Empieza gratis y crece cuando lo necesites. Sin contratos ni sorpresas.</p>
+    </div>
+
+    <div class="cur-wrap">
+      <div class="cur-toggle" role="tablist" aria-label="Moneda">
+        <button type="button" data-cur="mxn" class="active">MXN</button>
+        <button type="button" data-cur="usd">USD</button>
+      </div>
+    </div>
+
+    <div class="price-grid" role="listbox" aria-label="Planes" aria-multiselectable="false">
+      <!-- Gratis -->
+      <div class="plan">
+        <h3 data-i18n="landing.pricing.free.name">Gratis</h3>
+        <p class="plan-desc" data-i18n="landing.pricing.free.desc">Para empezar y probar sin costo.</p>
+        <div class="price"><span class="amount" data-mxn="$0" data-usd="$0">$0</span><span class="price-meta"><span data-i18n="landing.pricing.perMonth">por mes</span><br><span data-i18n="landing.pricing.forever">para siempre</span></span></div>
+        <a class="btn btn-primary" href="/login" data-i18n="landing.pricing.free.cta">Empezar gratis</a>
+        <ul class="plan-feats">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg> <span data-i18n="landing.pricing.free.feats.0">2 GB de almacenamiento</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg> <span data-i18n="landing.pricing.free.feats.1">Hasta 3 proyectos</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg> <span data-i18n="landing.pricing.free.feats.2">Documentos de cualquier tipo</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="15" r="4.5"/><path d="M11.2 11.8 20 3"/><path d="m16.5 6.5 3 3M14 9l2.5 2.5"/></svg> <span data-i18n="landing.pricing.free.feats.3">1 API key</span></li>
+        </ul>
+        <a class="plan-more" href="/login" data-i18n="landing.pricing.free.more">¿Necesitas más espacio?</a>
+      </div>
+
+      <!-- Pro -->
+      <div class="plan popular">
+        <span class="badge-pop" data-i18n="landing.pricing.popular">Más popular</span>
+        <h3 data-i18n="landing.pricing.pro.name">Pro</h3>
+        <p class="plan-desc" data-i18n="landing.pricing.pro.desc">Para uso personal intensivo.</p>
+        <div class="price"><span class="amount" data-mxn="$99" data-usd="$5.99">$99</span><span class="price-meta"><span data-i18n="landing.pricing.perMonth">por mes</span><br><span data-i18n="landing.pricing.billedMonthly">facturación mensual</span></span></div>
+        <a class="btn btn-primary" href="/settings?upgrade=pro" data-i18n="landing.pricing.pro.cta">Elegir Pro</a>
+        <ul class="plan-feats">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg> <span data-i18n="landing.pricing.pro.feats.0">100 GB de almacenamiento</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg> <span data-i18n="landing.pricing.pro.feats.1">Proyectos ilimitados</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="15" r="4.5"/><path d="M11.2 11.8 20 3"/><path d="m16.5 6.5 3 3M14 9l2.5 2.5"/></svg> <span data-i18n="landing.pricing.pro.feats.2">5 API keys</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg> <span data-i18n="landing.pricing.pro.feats.3">Automatizaciones básicas</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg> <span data-i18n="landing.pricing.pro.feats.4">Soporte por correo</span></li>
+        </ul>
+        <a class="plan-more" href="/login" data-i18n="landing.pricing.pro.more">¿Necesitas más límites?</a>
+      </div>
+
+      <!-- Mega -->
+      <div class="plan">
+        <h3 data-i18n="landing.pricing.mega.name">Mega</h3>
+        <p class="plan-desc" data-i18n="landing.pricing.mega.desc">Para quienes manejan mucho archivo.</p>
+        <div class="price"><span class="amount" data-mxn="$199" data-usd="$11.99">$199</span><span class="price-meta"><span data-i18n="landing.pricing.perMonth">por mes</span><br><span data-i18n="landing.pricing.billedMonthly">facturación mensual</span></span></div>
+        <a class="btn btn-primary" href="/settings?upgrade=mega" data-i18n="landing.pricing.mega.cta">Elegir Mega</a>
+        <ul class="plan-feats">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg> <span data-i18n="landing.pricing.mega.feats.0">1 TB de almacenamiento</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg> <span data-i18n="landing.pricing.mega.feats.1">Proyectos ilimitados</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="15" r="4.5"/><path d="M11.2 11.8 20 3"/><path d="m16.5 6.5 3 3M14 9l2.5 2.5"/></svg> <span data-i18n="landing.pricing.mega.feats.2">20 API keys</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg> <span data-i18n="landing.pricing.mega.feats.3">Automatizaciones avanzadas</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.6-6.4"/><path d="M3 4v4h4"/><path d="M12 8v4l3 2"/></svg> <span data-i18n="landing.pricing.mega.feats.4">Historial de versiones</span></li>
+        </ul>
+        <a class="plan-more" href="/login" data-i18n="landing.pricing.mega.more">¿Necesitas más límites?</a>
+      </div>
+
+      <!-- Super -->
+      <div class="plan">
+        <h3 data-i18n="landing.pricing.sup.name">Super</h3>
+        <p class="plan-desc" data-i18n="landing.pricing.sup.desc">Máximo rendimiento y espacio.</p>
+        <div class="price"><span class="amount" data-mxn="$399" data-usd="$23.99">$399</span><span class="price-meta"><span data-i18n="landing.pricing.perMonth">por mes</span><br><span data-i18n="landing.pricing.billedMonthly">facturación mensual</span></span></div>
+        <a class="btn btn-primary" href="/settings?upgrade=super" data-i18n="landing.pricing.sup.cta">Elegir Super</a>
+        <ul class="plan-feats">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg> <span data-i18n="landing.pricing.sup.feats.0">5 TB de almacenamiento</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="15" r="4.5"/><path d="M11.2 11.8 20 3"/><path d="m16.5 6.5 3 3M14 9l2.5 2.5"/></svg> <span data-i18n="landing.pricing.sup.feats.1">API keys ilimitadas</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="m6 11 6-6 6 6"/></svg> <span data-i18n="landing.pricing.sup.feats.2">Prioridad en la API</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.5"/><path d="m5 5 3.6 3.6M15.4 15.4 19 19M19 5l-3.6 3.6M8.6 15.4 5 19"/></svg> <span data-i18n="landing.pricing.sup.feats.3">Soporte prioritario</span></li>
+        </ul>
+        <a class="plan-more" href="/login" data-i18n="landing.pricing.sup.more">¿Necesitas más límites?</a>
+      </div>
+
+      <!-- Empresa -->
+      <div class="plan">
+        <h3 data-i18n="landing.pricing.ent.name">Empresa</h3>
+        <p class="plan-desc" data-i18n="landing.pricing.ent.desc">Para equipos y organizaciones.</p>
+        <div class="price"><span class="amount" data-i18n="landing.pricing.ent.custom">A medida</span><span class="price-meta"><span data-i18n="landing.pricing.according">según</span><br><span data-i18n="landing.pricing.yourUse">tu uso</span></span></div>
+        <a class="btn btn-primary" href="#top" data-i18n="landing.pricing.ent.cta">Contactar</a>
+        <ul class="plan-feats">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg> <span data-i18n="landing.pricing.ent.feats.0">Almacenamiento a medida</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9"/><path d="M16 3.1a4 4 0 0 1 0 7.8"/></svg> <span data-i18n="landing.pricing.ent.feats.1">Usuarios y permisos</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> <span data-i18n="landing.pricing.ent.feats.2">Inicio de sesión SSO</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.5"/><path d="m5 5 3.6 3.6M15.4 15.4 19 19M19 5l-3.6 3.6M8.6 15.4 5 19"/></svg> <span data-i18n="landing.pricing.ent.feats.3">Soporte dedicado</span></li>
+        </ul>
+        <a class="plan-more" href="#top" data-i18n="landing.pricing.ent.more">Habla con ventas</a>
+      </div>
+    </div>
+    <p class="price-note" data-i18n="landing.pricing.note">* Precios de ejemplo. Cambia o cancela cuando quieras.</p>
+  </section>
+
+  <!-- ===================== FAQ ===================== -->
+  <section class="wrap" id="faq">
+    <div class="sec-head">
+      <span class="eyebrow" data-i18n="landing.faq.eyebrow">Preguntas frecuentes</span>
+      <h2 data-i18n="landing.faq.title">Resuelve tus dudas antes de empezar</h2>
+    </div>
+    <div class="faq-wrap">
+      <details>
+        <summary><span data-i18n="landing.faq.q1">¿Qué tipos de archivos puedo subir?</span> <span class="plus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span></summary>
+        <div class="answer" data-i18n="landing.faq.a1">Puedes publicar documentos de varios tipos dentro de cada proyecto: PDF, Word, imágenes, hojas de cálculo y archivos de texto, entre otros.</div>
+      </details>
+      <details>
+        <summary><span data-i18n="landing.faq.q2">¿Dónde se guardan mis API keys?</span> <span class="plus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span></summary>
+        <div class="answer" data-i18n="landing.faq.a2">Tus llaves se guardan por proyecto y se mantienen contigo. Las usas dentro de tu espacio y no se comparten con terceros.</div>
+      </details>
+      <details>
+        <summary><span data-i18n="landing.faq.q3">¿Puedo tener varios proyectos a la vez?</span> <span class="plus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span></summary>
+        <div class="answer" data-i18n="landing.faq.a3">Sí. Cada proyecto es un espacio independiente con sus propios archivos, notas, informes y llaves.</div>
+      </details>
+      <details>
+        <summary><span data-i18n="landing.faq.q4">¿Necesito instalar algo?</span> <span class="plus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span></summary>
+        <div class="answer" data-i18n="landing.faq.a4">No. NubiFlyGo funciona en el navegador. Abres tu espacio y empiezas a trabajar enseguida.</div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ===================== CTA ===================== -->
+  <section class="wrap" id="cta">
+    <div class="cta-band">
+      <h2 data-i18n="landing.cta.title">Crea tu primer espacio hoy</h2>
+      <p data-i18n="landing.cta.text">Reúne proyectos, documentos y llaves en una interfaz que trabaja a tu ritmo.</p>
+      <a class="btn btn-light" href="/login"><span data-i18n="landing.cta.button">Empezar ahora</span>
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>
+      </a>
+    </div>
+  </section>
+</main>
+
+<!-- ===================== FOOTER ===================== -->
+<footer>
+  <div class="wrap foot-grid">
+    <div class="foot-brand">
+      <a class="brand" href="#top"><span class="mark"><svg class="brand-cloud" viewBox="0 0 512 300" width="19" fill="currentColor" aria-hidden="true"><path d="M 505.22 172.06 C 502.62 161.46 496.62 146.51 490.10 137.12 C 483.58 127.74 475.07 121.14 466.12 115.75 C 457.17 110.36 447.52 106.45 436.40 104.80 C 425.28 103.15 408.33 112.53 399.38 105.84 C 390.43 99.15 387.56 74.30 382.70 64.65 C 377.83 55.01 375.83 53.96 370.18 47.97 C 364.53 41.97 358.28 34.85 348.81 28.68 C 339.33 22.51 325.78 14.86 313.35 10.95 C 300.93 7.04 288.59 4.61 274.25 5.21 C 259.91 5.82 242.18 8.69 227.32 14.60 C 212.46 20.51 197.43 29.81 185.09 40.67 C 172.75 51.53 160.93 66.22 153.29 79.77 C 145.64 93.33 140.69 109.40 139.21 122.00 C 137.73 134.60 141.90 147.20 144.42 155.37 C 146.94 163.54 150.25 166.32 154.33 171.01 C 158.41 175.71 160.33 179.27 168.93 183.53 C 177.53 187.79 191.26 194.48 205.95 196.56 C 220.63 198.65 255.30 194.82 257.04 196.04 C 258.78 197.26 228.28 202.38 216.37 203.86 C 204.47 205.34 195.26 205.60 185.61 204.90 C 175.97 204.21 166.84 202.73 158.50 199.69 C 150.16 196.65 141.90 191.78 135.56 186.66 C 129.22 181.53 124.61 176.40 120.44 168.93 C 116.27 161.46 111.75 152.07 110.53 141.82 C 109.32 131.56 110.27 117.40 113.14 107.41 C 116.01 97.41 130.87 86.38 127.74 81.86 C 124.61 77.34 103.67 79.68 94.37 80.29 C 85.07 80.90 80.99 81.51 71.95 85.51 C 62.91 89.50 48.14 98.19 40.15 104.28 C 32.15 110.36 28.33 116.18 23.98 122.00 C 19.64 127.83 16.95 132.52 14.08 139.21 C 11.21 145.90 8.26 154.68 6.78 162.15 C 5.30 169.62 4.26 175.10 5.21 184.05 C 6.17 193.00 8.60 206.21 12.51 215.85 C 16.42 225.50 21.81 234.19 28.68 241.92 C 35.54 249.66 43.27 257.04 53.70 262.26 C 64.13 267.47 78.21 271.82 91.24 273.21 C 104.28 274.60 117.05 273.29 131.91 270.60 C 146.77 267.90 165.28 262.52 180.40 257.04 C 195.52 251.57 204.56 247.48 222.63 237.75 C 240.71 228.02 272.16 207.34 288.85 198.65 C 305.53 189.96 310.40 187.79 322.74 185.61 C 335.08 183.44 353.15 184.40 362.88 185.61 C 372.62 186.83 375.31 189.52 381.13 192.91 C 386.95 196.30 401.55 202.82 397.82 205.95 C 394.08 209.08 376.01 203.51 358.71 211.68 C 341.42 219.85 310.14 244.88 294.06 254.96 C 277.99 265.04 273.90 266.86 262.26 272.16 C 250.61 277.46 235.67 283.29 224.20 286.76 C 212.73 290.24 195.69 291.80 193.43 293.02 C 191.17 294.23 200.47 295.02 210.64 294.06 C 220.81 293.11 241.58 290.85 254.44 287.28 C 267.30 283.72 259.74 275.12 287.80 272.68 C 315.87 270.25 395.12 273.81 422.84 272.68 C 450.56 271.55 445.00 269.38 454.13 265.91 C 463.25 262.43 470.55 258.00 477.59 251.83 C 484.63 245.66 491.67 237.40 496.36 228.89 C 501.05 220.37 504.27 210.21 505.74 200.73 C 507.22 191.26 507.83 182.66 505.22 172.06 Z"/></svg></span> NubiFlyGo</a>
+      <p data-i18n="landing.footer.tagline">Tu espacio para proyectos, documentos y API keys, todo en un mismo lugar.</p>
+      <form class="news" id="newsForm">
+        <input type="email" id="newsEmail" placeholder="tu@correo.com" data-i18n-placeholder="landing.footer.newsPlaceholder" data-i18n-aria="common.emailLabel" aria-label="Correo" required>
+        <button class="btn btn-primary" type="submit" data-i18n="landing.footer.newsBtn">Avísame</button>
+      </form>
+      <p class="msg" id="newsMsg"></p>
+    </div>
+    <div class="foot-col">
+      <h4 data-i18n="landing.footer.colProduct">Producto</h4>
+      <a href="#features" data-i18n="landing.footer.linkFeatures">Funciones</a><a href="#why" data-i18n="landing.footer.linkProjects">Proyectos</a><a href="#reviews" data-i18n="landing.footer.linkReviews">Opiniones</a><a href="#faq" data-i18n="landing.footer.linkFaq">FAQ</a>
+    </div>
+    <div class="foot-col">
+      <h4 data-i18n="landing.footer.colResources">Recursos</h4>
+      <a href="#" data-i18n="landing.footer.linkStart">Guía de inicio</a><a href="#" data-i18n="landing.footer.linkDocs">Documentación</a><a href="#" data-i18n="landing.footer.linkNews">Novedades</a>
+    </div>
+    <div class="foot-col">
+      <h4 data-i18n="landing.footer.colLegal">Legal</h4>
+      <a href="#" data-i18n="landing.footer.linkTerms">Términos</a><a href="#" data-i18n="landing.footer.linkPrivacy">Privacidad</a><a href="#" data-i18n="landing.footer.linkContact">Contacto</a>
+    </div>
+  </div>
+  <div class="wrap foot-bottom">
+    <span id="foot-rights">© 2026 NubiFlyGo. Todos los derechos reservados.</span>
+    <span data-i18n="landing.footer.madeWith">Hecho con HTML · CSS · JS</span>
+  </div>
+</footer>
+
+<!-- Scripts (orden: i18n -> datos -> arranque i18n -> módulos de la vista) -->
+<script src="js/languages.js"></script>
+<script src="js/landing/reviews-data.js"></script>
+<script src="js/landing/i18n-landing.js"></script>
+<script src="js/landing/reviews.js"></script>
+<script src="js/landing/typed.js"></script>
+<script src="js/landing/console.js"></script>
+<script src="js/landing/pricing.js"></script>
+<script src="js/landing/newsletter.js"></script>
+<script src="js/landing/main.js"></script>
+<script src="js/landing/motion.js"></script>
+</body>
+</html>

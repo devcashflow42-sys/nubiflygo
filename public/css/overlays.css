@@ -1,0 +1,217 @@
+/* overlays.css — Capas superpuestas: modal, BottomSheet, control segmentado, toast, scrim. */
+
+  /* ─── Modal ─── */
+  .modal-root {
+    position: fixed; inset: 0; z-index: 100;
+    display: none; align-items: center; justify-content: center;
+    padding: 20px;
+    padding-block: calc(20px + env(safe-area-inset-top, 0px)) calc(20px + env(safe-area-inset-bottom, 0px));
+    background: rgba(0,0,0,.4);
+    animation: fade .15s ease;
+  }
+  .modal-root.show { display: flex; }
+  @keyframes fade { from { opacity: 0 } to { opacity: 1 } }
+  .modal {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 18px; width: 100%; max-width: 440px;
+    max-height: 90vh; overflow: auto;
+    animation: pop .18s cubic-bezier(.2,.9,.3,1.1);
+    box-shadow: 0 20px 60px -20px rgba(0,0,0,.3);
+  }
+  @keyframes pop {
+    from { opacity: 0; transform: translateY(8px) scale(.98); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .modal-head {
+    padding: 20px 22px 10px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .modal-head h3 {
+    margin: 0; font-family: 'Instrument Serif', serif;
+    font-size: 22px; font-weight: 400; letter-spacing: -0.01em;
+  }
+  .modal-body { padding: 10px 22px 22px; }
+  .modal-foot {
+    padding: 0 22px 22px;
+    display: flex; justify-content: flex-end; gap: 8px;
+  }
+  .field { margin-bottom: 14px; }
+  .field label {
+    display: block; font-size: 12px; font-weight: 500;
+    color: var(--fg-muted); margin-bottom: 6px; letter-spacing: 0.01em;
+  }
+  .field input, .field textarea, .field select {
+    width: 100%; min-height: 40px; padding: 10px 12px;
+    background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--fg); font: inherit; font-size: 14px;
+  }
+  .field textarea { min-height: 90px; resize: vertical; line-height: 1.5; }
+  .field input:focus, .field textarea:focus, .field select:focus {
+    outline: none; border-color: var(--fg); background: var(--surface);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--fg) 14%, transparent);
+  }
+  .color-picker {
+    display: flex; gap: 8px; flex-wrap: wrap;
+  }
+  .color-swatch {
+    width: 28px; height: 28px; border-radius: 50%;
+    cursor: pointer; border: 2px solid transparent;
+    transition: transform .1s;
+  }
+  .color-swatch[aria-pressed="true"] {
+    border-color: var(--fg); transform: scale(1.1);
+  }
+
+  /* ─── BottomSheet / action sheet ─── */
+  .sheet-root {
+    position: fixed; inset: 0; z-index: 110;
+    display: none; align-items: flex-end; justify-content: center;
+    background: rgba(0,0,0,.42);
+    padding: 0;
+    animation: fade .15s ease;
+  }
+  .sheet-root.show { display: flex; }
+  .sheet {
+    width: 100%; max-width: 480px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-bottom: 0;
+    border-radius: 22px 22px 0 0;
+    padding: 6px 12px calc(14px + env(safe-area-inset-bottom, 0px));
+    animation: sheetUp .28s cubic-bezier(.2,.9,.3,1);
+    box-shadow: 0 -10px 40px -10px rgba(0,0,0,.3);
+  }
+  .sheet-handle {
+    width: 40px; height: 4px;
+    background: var(--border-strong);
+    border-radius: 999px;
+    margin: 8px auto 10px;
+  }
+  .sheet-title {
+    text-align: center;
+    font-size: 12px; font-weight: 600;
+    color: var(--fg-muted);
+    text-transform: uppercase; letter-spacing: 0.06em;
+    padding: 4px 16px 10px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 6px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .sheet-item {
+    display: flex; align-items: center; gap: 14px;
+    width: 100%; padding: 14px 14px;
+    border: 0; background: transparent; cursor: pointer;
+    border-radius: 10px;
+    font: inherit; font-size: 15px; color: var(--fg);
+    text-align: left; font-weight: 500;
+    transition: background .1s;
+  }
+  .sheet-item:hover { background: var(--surface-sunken); }
+  .sheet-item:active { background: color-mix(in srgb, var(--surface-sunken) 85%, var(--fg)); }
+  .sheet-item.danger { color: var(--danger); }
+  .sheet-item svg { width: 18px; height: 18px; flex-shrink: 0; opacity: 0.85; }
+  .sheet-cancel {
+    margin: 6px 0 0;
+    text-align: center;
+    padding: 14px;
+    border: 0; background: transparent;
+    font: inherit; font-size: 15px; font-weight: 600;
+    color: var(--fg-muted); cursor: pointer;
+    border-radius: 10px; width: 100%;
+    border-top: 1px solid var(--border);
+  }
+  .sheet-cancel:hover { background: var(--surface-sunken); color: var(--fg); }
+
+  @keyframes sheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+  /* On wider screens, center the sheet like a dialog */
+  @media (min-width: 640px) {
+    .sheet-root { align-items: center; padding: 20px; }
+    .sheet {
+      max-width: 380px;
+      border-radius: 18px;
+      border: 1px solid var(--border);
+      padding: 14px;
+      animation: pop .18s cubic-bezier(.2,.9,.3,1.1);
+    }
+    .sheet.sheet--form { max-width: 460px; padding: 0; }
+    .sheet-handle { display: none; }
+  }
+
+  /* ─── Form BottomSheet (crear API key) ─── */
+  .sheet.sheet--form {
+    padding: 0; max-height: 92vh;
+    display: flex; flex-direction: column;
+  }
+  .sheet-form-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px 10px; flex-shrink: 0;
+  }
+  .sheet-form-head h3 {
+    margin: 0; font-family: 'Instrument Serif', serif;
+    font-size: 24px; font-weight: 400; letter-spacing: -0.01em;
+  }
+  .sheet-form-body {
+    padding: 6px 20px 18px; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  }
+  .sheet-form-foot {
+    display: flex; justify-content: flex-end; gap: 8px; flex-shrink: 0;
+    padding: 12px 20px calc(16px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid var(--border);
+  }
+  .sheet-form-body .field label { font-size: 13px; }
+  .field-hint { font-size: 12px; color: var(--fg-muted); margin: 4px 0 0; line-height: 1.45; }
+
+  /* Segmented control (Todo | Restringido, niveles) */
+  .seg {
+    display: inline-flex; width: 100%;
+    background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 3px; gap: 3px;
+  }
+  .seg button {
+    flex: 1; border: 0; background: transparent; cursor: pointer;
+    font: inherit; font-size: 13.5px; font-weight: 500; color: var(--fg-muted);
+    padding: 9px 12px; border-radius: 9px; transition: background .12s, color .12s, box-shadow .12s;
+    white-space: nowrap;
+  }
+  .seg button[aria-pressed="true"] {
+    background: var(--surface); color: var(--fg);
+    box-shadow: 0 1px 3px rgba(0,0,0,.14);
+  }
+  .seg.seg-sm button { font-size: 12.5px; padding: 7px 8px; }
+
+  /* Permisos restringidos: recursos a proteger */
+  .perm-rows { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; animation: fade .16s ease; }
+  .perm-row {
+    padding: 12px 14px; background: var(--surface-2);
+    border: 1px solid var(--border); border-radius: 12px;
+  }
+  .perm-row .pr-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .perm-row .pr-head svg { width: 18px; height: 18px; opacity: .8; flex-shrink: 0; }
+  .perm-row .pr-name { font-size: 14px; font-weight: 500; }
+  .perm-row .pr-sub { font-size: 11.5px; color: var(--fg-muted); margin-top: 1px; }
+
+  /* Toast */
+  .toast-root {
+    position: fixed; bottom: 20px; right: 20px; z-index: 200;
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    display: flex; flex-direction: column; gap: 8px;
+    pointer-events: none;
+  }
+  .toast {
+    background: var(--fg); color: var(--surface);
+    padding: 10px 16px; border-radius: 10px;
+    font-size: 13px; font-weight: 500;
+    box-shadow: 0 10px 30px -10px rgba(0,0,0,.4);
+    animation: toastIn .2s ease;
+    pointer-events: auto;
+  }
+  @keyframes toastIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; } }
+
+  .scrim {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.4); z-index: 49;
+    animation: fade .2s ease;
+  }
+

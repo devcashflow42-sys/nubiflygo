@@ -1,0 +1,37 @@
+/* console.css — Bloque "API": copy + consola de código con pestañas. */
+.api-grid{display:grid;grid-template-columns:.9fr 1.1fr;gap:clamp(28px,5vw,56px);align-items:center;margin-top:24px}
+@media (max-width:820px){.api-grid{grid-template-columns:1fr;margin-top:12px}}
+.api-copy h2{font-size:clamp(26px,4vw,38px)}
+.api-copy .lead{margin-top:16px}
+.api-list{list-style:none;padding:0;margin:24px 0 0;display:flex;flex-direction:column;gap:13px}
+.api-list li{display:flex;gap:10px;align-items:flex-start;font-size:14.5px;color:var(--muted)}
+.api-list svg{width:18px;height:18px;color:var(--fg);flex:none;margin-top:3px}
+.console{min-width:0;border-radius:16px;overflow:hidden;box-shadow:0 22px 54px -26px rgba(0,0,0,.6);
+  --con-bg:#0D1117;--con-head:#161B22;--con-line:#232A33;--con-fg:#E6EDF3;--con-mut:#8B949E;
+  --con-key:#FF7B72;--con-str:#A5D6FF;--con-num:#79C0FF;--con-prop:#79C0FF;
+  background:var(--con-bg);border:1px solid var(--con-line)}
+.con-top{display:flex;align-items:center;gap:7px;padding:13px 15px;border-bottom:1px solid var(--con-line);background:var(--con-head)}
+.con-top .dot{width:11px;height:11px;border-radius:50%;background:#30363D}
+.con-title{margin-left:10px;font-family:var(--f-mono);font-size:11.5px;color:var(--con-mut)}
+.con-tabs{display:flex;gap:2px;padding:0 10px;border-bottom:1px solid var(--con-line);background:var(--con-head);flex-wrap:wrap}
+.con-tabs button{font-family:var(--f-mono);font-size:12.5px;color:var(--con-mut);background:transparent;border:0;
+  padding:11px 14px;cursor:pointer;border-bottom:2px solid transparent;transition:.15s}
+.con-tabs button:hover{color:var(--con-fg)}
+.con-tabs button.active{color:var(--con-fg);border-bottom-color:#58A6FF}
+.con-code,.con-resp{margin:0;padding:18px;font-family:var(--f-mono);font-size:12.5px;line-height:1.7;
+  white-space:pre-wrap;overflow-wrap:break-word;color:var(--con-fg)}
+.con-code{min-height:150px}
+@media (max-width:520px){.con-code,.con-resp{font-size:11.5px;padding:15px}}
+.con-copy{margin-left:auto;display:inline-flex;align-items:center;gap:6px;cursor:pointer;
+  font-family:var(--f-mono);font-size:11px;color:var(--con-mut);background:transparent;
+  border:1px solid var(--con-line);border-radius:7px;padding:5px 10px;transition:.15s}
+.con-copy:hover{color:var(--con-fg);border-color:#3a434d}
+.con-copy svg{width:13px;height:13px}
+.con-code .c{color:var(--con-mut)}
+.con-code .s,.con-resp .s{color:var(--con-str)}
+.con-code .k{color:var(--con-key)}
+.con-resp-label{font-family:var(--f-mono);font-size:11px;text-transform:uppercase;letter-spacing:1px;
+  color:var(--con-mut);padding:10px 18px;border-top:1px solid var(--con-line);background:var(--con-head)}
+.con-resp{background:#0A0D12}
+.con-resp .key{color:var(--con-prop)}
+.con-resp .num{color:var(--con-num)}

@@ -1,0 +1,452 @@
+/* widgets.css — Widgets flotantes estilo Dynamic Island (reproductor de
+   música y temporizador). Cápsulas con sombra suave y efecto vidrio, en tema
+   claro y oscuro. El contenedor (.fw-dock) lo coloca widgets/manager.js:
+   abajo por defecto; se arrastra libremente hacia arriba o hacia abajo
+   (--fw-lift = altura sobre su posición de abajo). */
+
+.fw-dock {
+  --fw-ease: cubic-bezier(.22, .9, .24, 1);
+  --fw-spring: cubic-bezier(.2, .9, .25, 1.12);
+  position: fixed; z-index: 45;            /* debajo del menú móvil (50) y los diálogos (100+) */
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px) + var(--fw-lift, 0px));
+  display: flex; flex-direction: column; gap: 0;   /* una sola cápsula: sin hueco entre filas */
+  pointer-events: none;                    /* fuera de la cápsula se puede tocar la página */
+  /* El contenedor ES la cápsula: un único radio y una única sombra envuelven
+     al reproductor y al temporizador, que por dentro son filas planas. */
+  border-radius: 28px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .12), 0 16px 36px -12px rgba(0, 0, 0, .45);
+}
+/* Marca invisible fija abajo: da al manager el borde inferior útil con la
+   misma referencia que usa el contenedor (no depende del navegador). */
+.fw-probe {
+  position: fixed; left: 0; bottom: 0; width: 0;
+  height: env(safe-area-inset-bottom, 0px);
+  visibility: hidden; pointer-events: none;
+}
+
+/* ─── Cápsula base ───
+   El radio de 32px es una píldora perfecta en la forma compacta (alto ≤ 64px,
+   igual que 9999px) y permite transformarse al expandir sin saltos. */
+.fw {
+  --fw-fg: #fff;
+  --fw-muted: rgba(255, 255, 255, .66);
+  --fw-hover: rgba(255, 255, 255, .13);
+  --fw-line: rgba(255, 255, 255, .18);
+  position: relative;
+  width: 100%; max-width: none;            /* cada fila llena el ancho de la cápsula */
+  border-radius: 0;                        /* el radio lo ponen las esquinas externas (abajo) */
+  color: var(--fw-fg);
+  pointer-events: auto;
+  touch-action: none;                      /* arrastrar no desplaza la página */
+  user-select: none; -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  cursor: grab;
+  box-shadow: none;                        /* la sombra única vive en la cápsula (.fw-dock) */
+  transition: opacity .24s ease, transform .3s var(--fw-spring), background-color .5s ease;
+  outline: none;
+}
+.fw.is-expanded { cursor: default; }
+/* Esquinas: solo la fila de arriba redondea arriba y la de abajo, abajo; una
+   sola fila (reproductor o temporizador solo) redondea las cuatro. Así las dos
+   filas forman una única cápsula sin hueco. */
+.fw-dock > .fw:first-child { border-top-left-radius: 28px; border-top-right-radius: 28px; }
+.fw-dock > .fw:last-child { border-bottom-left-radius: 28px; border-bottom-right-radius: 28px; }
+/* Separador fino entre las dos filas (se ve igual sobre fondo claro u oscuro). */
+.fw-dock > .fw + .fw::after {
+  content: ''; position: absolute; top: 0; left: 14px; right: 14px; height: 1px;
+  background: rgba(150, 150, 160, .3); pointer-events: none; z-index: 3;
+}
+/* El foco global de la app (outline + radio 6px) no aplica: anillo por dentro
+   de la fila para que no lo recorte la cápsula ni pise a la fila vecina. */
+.fw:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; border-radius: inherit; box-shadow: none; }
+.fw.fw-enter, .fw.fw-leave { opacity: 0; transform: scale(.9); }
+.fw.fw-leave { pointer-events: none; }
+.fw.is-dragging {
+  z-index: 2; cursor: grabbing;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .18), 0 26px 50px -14px rgba(0, 0, 0, .6);
+}
+.fw-dock.is-dragging .fw:not(.is-dragging) { opacity: .9; }
+
+.fw-compact { display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 6px 8px 6px 6px; }
+
+/* Parte expandida: el alto crece de 0 al contenido (grid 0fr → 1fr) */
+.fw-more { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .3s var(--fw-ease); }
+.fw.is-expanded .fw-more { grid-template-rows: 1fr; }
+.fw-more-in {
+  min-height: 0; overflow: hidden;
+  display: flex; flex-direction: column;
+  padding-inline: 14px;
+  opacity: 0; transform: translateY(-4px);
+  transition: opacity .18s ease, transform .3s var(--fw-ease);
+}
+.fw.is-expanded .fw-more-in { opacity: 1; transform: none; transition-delay: .06s; }
+.fw-more-in > * { margin-top: 10px; flex-shrink: 0; }
+/* La cápsula compacta hace de primera fila; la primera fila extra (progreso)
+   se separa de ella con un respiro, sin pegarse a los controles de arriba. */
+.fw-more-in > :first-child { margin-top: 6px; }
+.fw-more-in > :last-child { margin-bottom: 12px; }
+
+/* Botones redondos */
+.fw-btn {
+  width: 36px; height: 36px; border-radius: 50%; border: 0; padding: 0; flex-shrink: 0;
+  display: grid; place-items: center; cursor: pointer;
+  background: transparent; color: inherit;
+  transition: background .15s, transform .15s;
+}
+.fw-btn svg { width: 18px; height: 18px; }
+.fw-btn:hover { background: var(--fw-hover); }
+.fw-btn:active { transform: scale(.9); }
+.fw-btn-main { width: 40px; height: 40px; background: var(--fw-hover); }
+.fw-btn-main svg { width: 19px; height: 19px; }
+.fw-btn:focus-visible, .fw-chip:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+.fw-btn:focus-visible { border-radius: 50%; }
+.fw-chip:focus-visible { border-radius: 999px; }
+/* Botón naranja del temporizador: anillo de foco naranja (blanco no se vería en tema claro). */
+.tw-main:focus-visible { outline-color: var(--tw-accent); }
+
+/* Fila de acciones y chips */
+.fw-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.fw-grow { flex: 1; }
+.fw-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 32px; padding: 0 12px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--fw-line); background: transparent; color: inherit;
+  font: inherit; font-size: 12.5px; font-weight: 600; white-space: nowrap;
+  transition: background .15s, transform .15s, opacity .15s;
+}
+.fw-chip svg { width: 15px; height: 15px; }
+.fw-chip:hover:not([disabled]) { background: var(--fw-hover); }
+.fw-chip:active:not([disabled]) { transform: scale(.95); }
+.fw-chip[disabled] { opacity: .35; cursor: default; }
+.fw-chip-icon { width: 32px; padding: 0; justify-content: center; }
+
+/* Texto solo para lectores de pantalla */
+.fw-sr { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ─────────────── Reproductor de música (diseño «Floating Music Player») ───────────────
+   Cápsula malva con dos paneles apilados (música / menú) que se alternan
+   deslizando hacia arriba o abajo; el panel de atrás asoma por arriba. */
+.fw-music {
+  --mw-top: #7b6e76; --mw-mid: #64555f; --mw-bot: #554650;
+  --mw-edge: rgba(182, 167, 175, .4); --mw-hi: rgba(255, 255, 255, .25);
+  --mw-ring: #93848e; --mw-halo: rgba(255, 255, 255, .2);
+  --mw-sub: #e4d6df; --mw-seek: #f0d3e5; --mw-dotc: #f2e4ee;
+  --mw-play: rgba(255, 255, 255, .15); --mw-glow: rgba(0, 0, 0, .38);
+  /* Estos colores los reemplaza el tema dinámico de la portada (music.js). */
+  --fw-hover: rgba(255, 255, 255, .12);
+  background: transparent; border: 0;
+  border-radius: 32px !important;
+}
+/* Con el reproductor, cada widget es su propia cápsula (con su sombra). */
+.fw-dock:has(.fw-music) { box-shadow: none; border-radius: 0; gap: 18px; }
+.fw-dock:has(.fw-music) > .fw-timer { border-radius: 28px; box-shadow: 0 1px 2px rgba(0, 0, 0, .12), 0 16px 36px -12px rgba(0, 0, 0, .45); }
+.fw-dock:has(.fw-music) > .fw + .fw::after { display: none; }
+.fw-music .fw-compact { display: block; padding: 0; min-height: 0; }
+.fw-music:focus-visible { outline-offset: 2px; border-radius: 32px; }
+
+.mw-stack { position: relative; height: 108px; perspective: 900px; filter: drop-shadow(0 16px 26px var(--mw-glow)); touch-action: none; }
+.mw-sheet {
+  position: absolute; inset: 0; border-radius: 32px; overflow: hidden;
+  background: linear-gradient(165deg, var(--mw-top) 0%, var(--mw-mid) 60%, var(--mw-bot) 100%);
+  border: 1px solid var(--mw-edge);
+  box-shadow: inset 0 1px 2px var(--mw-hi), 0 12px 30px rgba(0, 0, 0, .33);
+  display: flex; align-items: center; gap: 12px; padding: 0 14px; color: #fff;
+}
+.mw-sheet::before { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(rgba(255, 255, 255, .055), transparent 58%); }
+/* ─── Dos hojas: canción (1) y paginación (2) ─── */
+.mw-sheet { will-change: transform, opacity, filter; transition: transform .56s cubic-bezier(.2, 1.15, .28, 1), opacity .4s, filter .4s; }
+.mw-sheet.is-front { transform: translate3d(0, 0, 30px) scale(1); opacity: 1; z-index: 3; }
+.mw-sheet.is-back { transform: translate3d(0, -16px, -46px) scale(.94); opacity: .6; filter: brightness(.72); z-index: 2; pointer-events: none; }
+.mw-sheet.is-up { transform: translate3d(0, -150px, 0) rotateX(8deg) scale(.93); opacity: 0; z-index: 4; pointer-events: none; }
+.mw-sheet.is-down { transform: translate3d(0, 150px, 0) rotateX(-8deg) scale(.93); opacity: 0; z-index: 4; pointer-events: none; }
+.mw-sheet.is-drag { transition: none !important; }
+/* Sin páginas: la hoja 2 no existe (una sola cápsula, como siempre). */
+.mw-stack:not(.has-pages) .mw-sheet-pages { display: none; }
+.mw-sheet-pages { justify-content: center; }
+.mw-pages { display: flex; justify-content: center; width: 100%; --pg-accent: var(--mw-seek); --pg-ink: color-mix(in srgb, var(--mw-bot) 85%, #000); }
+.mw-pages .pg-box {
+  opacity: 1; transform: none; width: 100%; justify-content: space-between;
+  background: transparent; border: 0; box-shadow: none; padding: 0 2px;
+}
+.mw-pages .pg-box::before { display: none; }
+.mw-pages .pg-arrow { width: 44px; height: 44px; }
+.mw-pages .pg-nums { flex: 1; justify-content: center; }
+/* Hoja 2 en cristal malva: el mismo diseño que la paginación flotante (.pg-box). */
+.mw-sheet-pages {
+  background: linear-gradient(165deg, rgba(123, 110, 118, .96) 0%, rgba(100, 85, 95, .97) 60%, rgba(85, 70, 80, .98) 100%);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6); backdrop-filter: blur(20px) saturate(1.6);
+  border: 1px solid rgba(182, 167, 175, .4);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, .25), 0 2px 6px rgba(0, 0, 0, .12), 0 16px 30px -10px rgba(40, 20, 35, .55);
+  color: #fff;
+}
+.mw-sheet-pages::before { background: linear-gradient(rgba(255, 255, 255, .07), transparent 60%); }
+.mw-sheet-pages .mw-pages, .mw-sheet-pages .pg-box { --pg-accent: #f0d3e5; --pg-ink: #3a2c36; }
+/* Hoja 2 compacta: una cápsula del tamaño de la paginación flotante, centrada (no ocupa todo el ancho). */
+.mw-sheet.mw-sheet-pages {
+  width: max-content; max-width: calc(100% - 16px); height: 62px;
+  margin: auto; padding: 0 7px; border-radius: 999px;
+}
+.mw-sheet-pages .mw-pages { width: auto; }
+.mw-sheet-pages .mw-pages .pg-box { width: auto; gap: 8px; padding: 0; }
+.mw-sheet-pages .mw-pages .pg-arrow { width: 44px; height: 44px; }
+.mw-sheet-pages .mw-pages .pg-nums { flex: none; }
+/* Con la hoja 2 al frente, la hoja de la música no asoma por los lados de la cápsula. */
+.mw-stack.is-pages .mw-sheet.is-back { opacity: 0; }
+/* La rayita de arrastre baja con la cápsula compacta (queda dentro, no sobre el borde). */
+.mw-grip { transition: top .4s cubic-bezier(.22, 1, .36, 1); }
+.mw-stack.is-pages + .mw-grip { top: 8px; }
+/* El filtro de sombra de la pila impide el desenfoque: se quita con la hoja de cristal al frente. */
+.mw-stack.is-pages { filter: none; }
+/* La barra flotante original queda oculta mientras está dentro del reproductor. */
+.pager.is-adopted { display: none !important; }
+
+/* Rayita superior: también arrastra el contenedor de widgets. */
+.mw-grip {
+  position: absolute; top: 0; left: 50%; transform: translateX(-50%); z-index: 6;
+  width: 72px; height: 16px; cursor: grab;
+}
+.mw-grip::before { content: ''; position: absolute; top: 6px; left: 16px; right: 16px; height: 4px; border-radius: 4px; background: rgba(255, 255, 255, .36); }
+.mw-dot { position: absolute; top: 12px; left: 16px; width: 7px; height: 7px; border-radius: 50%; background: var(--mw-dotc); box-shadow: 0 0 8px var(--mw-dotc); }
+.fw-music:not(.is-playing) .mw-dot { opacity: .45; box-shadow: none; }
+
+.mw-cover {
+  position: relative; flex: 0 0 62px; width: 62px; height: 62px; border-radius: 16px; overflow: hidden;
+  border: 3px solid var(--mw-ring); box-shadow: 0 0 0 2px var(--mw-halo), inset 0 0 10px rgba(0, 0, 0, .4);
+  background: radial-gradient(circle at 33% 27%, #ecd2bc, #b178a0 36%, #51415b 74%);
+  display: grid; place-items: center; font-size: 26px; color: #fff;
+}
+.mw-cover img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
+/* Ecualizador junto al título: se mueve mientras suena. */
+.mw-eq { display: flex; align-items: flex-end; gap: 2px; width: 15px; height: 14px; flex-shrink: 0; }
+.mw-eq i { display: block; width: 2.5px; height: 30%; border-radius: 2px; background: var(--mw-seek); }
+.fw-music.is-playing .mw-eq i { animation: mp-eq 1s ease-in-out infinite; }
+.mw-eq i:nth-child(2) { animation-delay: -.45s !important; }
+.mw-eq i:nth-child(3) { animation-delay: -.2s !important; }
+.mw-eq i:nth-child(4) { animation-delay: -.7s !important; }
+.fw-music:not(.is-playing) .mw-eq { opacity: .45; }
+
+.mw-meta { flex: 1; min-width: 0; }
+.mw-titlerow { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.mw-title { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; font-size: 15px; font-weight: 750; letter-spacing: -.3px; }
+.mw-title-in { display: inline-block; }
+.mw-title:not(.is-marquee) .mw-title-in { max-width: 100%; overflow: hidden; text-overflow: ellipsis; vertical-align: top; }
+.mw-title.is-marquee { -webkit-mask-image: linear-gradient(90deg, #000 86%, transparent); mask-image: linear-gradient(90deg, #000 86%, transparent); }
+.fw-music.is-playing .mw-title.is-marquee .mw-title-in { animation: mw-marquee var(--mq-t, 8s) ease-in-out 1.2s infinite alternate; }
+@keyframes mw-marquee { 0%, 12% { transform: translateX(0); } 88%, 100% { transform: translateX(var(--mq, 0)); } }
+.mw-sub { color: var(--mw-sub); font-size: 11px; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mw-seekrow { display: flex; align-items: center; gap: 7px; margin-top: 6px; }
+.mw-t { font-size: 10px; color: var(--mw-sub); font-variant-numeric: tabular-nums; }
+.mw-bar { flex: 1; min-width: 24px; height: 18px; display: flex; align-items: center; cursor: pointer; touch-action: none; border-radius: 6px; }
+.mw-bar:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.mw-track { position: relative; width: 100%; height: 4px; border-radius: 4px; background: rgba(255, 255, 255, .2); transition: height .15s; }
+.mw-buf { position: absolute; inset: 0 auto 0 0; width: 0; border-radius: 4px; background: rgba(255, 255, 255, .18); }
+.mw-fill { position: absolute; inset: 0 auto 0 0; width: 0; border-radius: 4px; background: var(--mw-seek); }
+.mw-knob {
+  position: absolute; top: 50%; left: 0; width: 12px; height: 12px; border-radius: 50%;
+  background: var(--mw-seek); box-shadow: 0 1px 4px rgba(0, 0, 0, .4);
+  transform: translate(-50%, -50%) scale(.85); transition: transform .15s;
+}
+.mw-bar:hover .mw-knob, .mw-bar.is-seeking .mw-knob, .mw-bar:focus-visible .mw-knob { transform: translate(-50%, -50%) scale(1.15); }
+.mw-bar:hover .mw-track, .mw-bar.is-seeking .mw-track { height: 6px; }
+
+.mw-ctrls { display: flex; align-items: center; gap: 0; flex-shrink: 0; }
+.mw-ib {
+  border: 0; background: transparent; color: #fff; width: 34px; height: 38px; border-radius: 50%;
+  display: grid; place-items: center; padding: 0; cursor: pointer; transition: background .15s, transform .15s;
+}
+.mw-ib:hover { background: var(--fw-hover); }
+.mw-ib:active { transform: scale(.9); }
+.mw-ib svg { width: 21px; height: 21px; }
+.mw-play { width: 48px; height: 48px; background: var(--mw-play); box-shadow: inset 0 0 0 1px var(--mw-edge); }
+.mw-play:hover { background: color-mix(in srgb, var(--mw-seek) 30%, transparent); }
+.mw-play svg { width: 24px; height: 24px; }
+.mw-x { width: 30px; margin-left: 2px; color: rgba(255, 255, 255, .85); }
+.mw-x svg { width: 18px; height: 18px; }
+.mw-ib:focus-visible { outline: 2px solid #e2b9eb; outline-offset: 2px; }
+
+
+@media (min-width: 901px) {
+  .mw-stack { height: 116px; }
+  .mw-cover { flex-basis: 76px; width: 76px; height: 76px; border-width: 4px; border-radius: 20px; }
+  .mw-title { font-size: 17px; }
+  .mw-sub { font-size: 12px; }
+}
+@media (max-width: 420px) {
+  .mw-sheet { gap: 10px; padding: 0 10px 0 12px; }
+  .mw-ib { width: 30px; }
+  .mw-play { width: 44px; height: 44px; }
+  .mw-x { width: 28px; }
+}
+@media (max-width: 360px) {
+  .mw-t { display: none; }
+  .mw-cover { flex-basis: 52px; width: 52px; height: 52px; }
+  .mw-sheet { gap: 9px; padding: 0 10px; }
+}
+
+/* ─────────────── Temporizador (imagen 2) ───────────────
+   Cápsula clara en tema claro y oscura en tema oscuro; acento naranja. */
+.fw-timer {
+  --tw-accent: #e8590c;
+  --fw-fg: var(--fg);
+  --fw-muted: var(--fg-muted);
+  --fw-hover: color-mix(in srgb, var(--fg) 9%, transparent);
+  --fw-line: var(--border-strong, var(--border));
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  border: 0;
+}
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .fw-timer { -webkit-backdrop-filter: saturate(1.6) blur(18px); backdrop-filter: saturate(1.6) blur(18px); }
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .fw-timer { --tw-accent: #ff9f43; } }
+:root[data-theme="dark"] .fw-timer { --tw-accent: #ff9f43; }
+
+.tw-icon { position: relative; width: 44px; height: 44px; flex-shrink: 0; display: grid; place-items: center; color: var(--tw-accent); margin-left: 2px; }
+.tw-icon > svg:not(.tw-ring) { width: 20px; height: 20px; }
+.tw-ring { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+.tw-ring circle { fill: none; stroke-width: 2.6; }
+.tw-ring-bg { stroke: color-mix(in srgb, var(--tw-accent) 18%, transparent); }
+.tw-ring-fg { stroke: var(--tw-accent); stroke-linecap: round; transition: stroke-dashoffset .3s linear; }
+.fw-timer.is-running .tw-icon > svg:not(.tw-ring) { animation: tw-tip 4s var(--fw-ease) infinite; }
+@keyframes tw-tip { 0%, 80% { transform: rotate(0); } 92%, 100% { transform: rotate(180deg); } }
+
+.tw-meta { flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 10px; }
+.tw-time { font-size: 26px; font-weight: 700; letter-spacing: -.01em; font-variant-numeric: tabular-nums; line-height: 1; }
+.tw-label { font-size: 12px; font-weight: 600; color: var(--fw-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fw-timer.is-paused .tw-time { opacity: .55; }
+.fw-timer.is-done .tw-time, .fw-timer.is-done .tw-label { color: var(--tw-accent); }
+.tw-ctrls { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+.tw-main { background: var(--tw-accent); color: #fff; }
+.tw-main:hover { background: color-mix(in srgb, var(--tw-accent) 86%, #000); }
+.fw-timer.is-done { animation: tw-pulse 1.1s ease-in-out 4; }
+@keyframes tw-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--tw-accent) 0%, transparent), 0 14px 34px -12px rgba(0, 0, 0, .3); }
+  50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--tw-accent) 30%, transparent), 0 14px 34px -12px rgba(0, 0, 0, .3); }
+}
+
+.tw-progress { display: flex; flex-direction: column; gap: 6px; }
+.tw-bar { height: 6px; border-radius: 6px; overflow: hidden; background: color-mix(in srgb, var(--tw-accent) 16%, transparent); }
+.tw-fill { height: 100%; width: 0; border-radius: 6px; background: var(--tw-accent); transition: width .3s linear; }
+.tw-ends { font-size: 12px; color: var(--fw-muted); font-variant-numeric: tabular-nums; }
+.tw-presets { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+.tw-preset { justify-content: center; padding: 0 4px; }
+
+/* ─── Teléfonos pequeños ─── */
+@media (max-width: 380px) {
+  .fw-compact { gap: 8px; padding-right: 6px; }
+  .fw-btn { width: 34px; height: 34px; }
+  .fw-btn-main { width: 38px; height: 38px; }
+  .tw-time { font-size: 23px; }
+  .tw-presets { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+/* ─── Movimiento reducido: sin rebotes, giros ni desplazamientos ─── */
+@media (prefers-reduced-motion: reduce) {
+  .fw, .fw-more, .fw-more-in, .mw-sheet { transition-duration: .01ms !important; }
+  .fw-music.is-playing .mw-eq i,
+  .fw-timer.is-running .tw-icon > svg, .fw-timer.is-done { animation: none !important; }
+  .fw-music.is-playing .mw-title.is-marquee .mw-title-in { animation: none; }
+}
+
+/* ─── Los demás flotantes se acomodan a los widgets (nunca se enciman) ───
+   Solo cuando el contenedor está abajo (o casi): body.dock-bottom.
+   --dock-top-gap = distancia del borde inferior de la pantalla al borde
+   superior de los widgets. */
+body { --dock-top-gap: calc(12px + env(safe-area-inset-bottom, 0px) + var(--fw-lift, 0px) + var(--dock-h, 64px)); }
+.pager { transition: bottom .42s var(--fw-ease, ease); }
+/* La paginación acompaña siempre a los widgets: justo encima de ellos, a la
+   altura que el usuario los arrastre (o justo debajo si no cabe arriba). */
+body.has-dock .pager { bottom: calc(var(--dock-h, 64px) + var(--fw-lift, 0px) + 36px + env(safe-area-inset-bottom, 0px)); }
+body.has-dock.dock-high .pager { bottom: calc(12px + env(safe-area-inset-bottom, 0px) + var(--fw-lift, 0px) - 70px); }
+body.dock-bottom .toast-root { bottom: calc(var(--dock-top-gap) + 14px); }
+body.dock-bottom .upanel { bottom: calc(var(--dock-top-gap) + 12px); }
+/* Espacio al final de la lista (abajo) o bajo la barra de la sección (arriba)
+   para que los widgets no tapen la última fila ni el título. */
+body.dock-bottom .board-body { padding-bottom: calc(var(--dock-h, 64px) + var(--fw-lift, 0px) + 28px); }
+body.dock-top #view > .project-toolbar { margin-bottom: calc(var(--dock-h, 64px) + 16px); }
+/* Teléfono/tablet: la barra de páginas usa la MISMA referencia que los
+   widgets (position: fixed). En Android con barra de navegación del sistema,
+   "sticky" y "fixed" no miden igual el borde inferior y la paginación
+   quedaba detrás del reproductor. */
+@media (max-width: 900px) {
+  body.has-dock .pager { position: fixed; left: 0; right: 0; margin: 0; bottom: calc(var(--dock-top-gap) + 24px); }
+  body.has-dock.dock-high .pager { bottom: calc(12px + env(safe-area-inset-bottom, 0px) + var(--fw-lift, 0px) - 70px); }
+  body.dock-bottom .board-body { padding-bottom: calc(var(--dock-h, 64px) + var(--fw-lift, 0px) + 96px); }
+}
+
+/* ─────────────── Ajuste compacto (reproductor + paginación) ───────────────
+   Cápsula más baja y angosta, con aire a los lados: no tapa el contenido.
+   Escala tipográfica y de controles más fina; sombra más sutil. */
+.fw-music, .fw-music:focus-visible { border-radius: 22px !important; }
+.mw-stack, .fw-music .mw-stack { height: 76px; filter: drop-shadow(0 10px 18px var(--mw-glow)); }
+.mw-stack.is-pages { filter: none; }
+.mw-sheet { border-radius: 22px; gap: 10px; padding: 0 8px 0 9px; box-shadow: inset 0 1px 1px var(--mw-hi), 0 8px 20px rgba(0, 0, 0, .22); }
+.mw-sheet.is-back { transform: translate3d(0, -9px, -40px) scale(.95); }
+.mw-grip { width: 56px; height: 12px; }
+.mw-grip::before { top: 4px; left: 16px; right: 16px; height: 3px; background: rgba(255, 255, 255, .3); }
+.mw-dot { top: 8px; left: 11px; width: 5px; height: 5px; box-shadow: 0 0 6px var(--mw-dotc); }
+.mw-cover, .mw-cover[class] { flex: 0 0 58px; width: 58px; height: 58px; border-width: 2px; border-radius: 14px; font-size: 22px; box-shadow: 0 0 0 1px var(--mw-halo), 0 4px 10px rgba(0, 0, 0, .25); }
+.mw-title { font-size: 14px; font-weight: 650; letter-spacing: -.2px; }
+.mw-sub { font-size: 11.5px; margin-top: 1px; opacity: .9; }
+.mw-seekrow { margin-top: 4px; gap: 6px; }
+.mw-t { font-size: 10px; min-width: 0; }
+.mw-bar { height: 14px; }
+.mw-track { height: 3px; }
+.mw-knob { width: 10px; height: 10px; }
+.mw-eq { width: 12px; height: 11px; }
+.mw-ctrls { gap: 0; }
+.mw-ib { width: 30px; height: 34px; }
+.mw-ib svg { width: 18px; height: 18px; }
+.mw-play { width: 40px; height: 40px; margin: 0 2px; }
+.mw-play svg { width: 20px; height: 20px; }
+.mw-x { width: 26px; margin-left: 0; opacity: .8; }
+.mw-x svg { width: 15px; height: 15px; }
+/* Paginación dentro de la cápsula: misma escala fina. */
+.mw-pages .pg-box { padding: 0; gap: 4px; }
+.mw-pages .pg-arrow { width: 36px; height: 36px; }
+.mw-pages .pg-arrow svg { width: 16px; height: 16px; }
+.mw-pages .pg-num, .mw-pages .pg-dots { min-width: 30px; height: 30px; font-size: 13px; padding: 0 4px; }
+.mw-pages .pg-dots { min-width: 16px; }
+.mw-pages .pg-ind { height: 30px; margin-top: -15px; }
+@media (min-width: 901px) {
+  .mw-stack, .fw-music .mw-stack { height: 80px; }
+  .mw-cover, .mw-cover[class] { flex-basis: 60px; width: 60px; height: 60px; border-width: 2px; border-radius: 15px; }
+  .mw-title { font-size: 14.5px; }
+  .mw-sub { font-size: 12px; }
+}
+@media (max-width: 360px) {
+  .mw-cover, .mw-cover[class] { flex-basis: 50px; width: 50px; height: 50px; }
+  .mw-ib { width: 28px; }
+}
+.mw-dot { display: none; }
+.mw-pages .pg-box { width: auto; justify-content: center; gap: 10px; }
+.mw-pages .pg-nums { flex: 0 0 auto; }
+
+/* ─── Reproductor: anillo de progreso en reproducir/pausar y transiciones suaves ─── */
+.mw-playwrap { position: relative; display: grid; place-items: center; width: 48px; height: 48px; margin: 0 3px; flex-shrink: 0; }
+.mw-ring { position: absolute; inset: -4px; width: 56px; height: 56px; transform: rotate(-90deg); pointer-events: none; overflow: visible; }
+.mw-ring circle { fill: none; stroke-width: 2.6; }
+.mw-ring-bg { display: none; }   /* un solo círculo: el del progreso */
+.mw-playwrap .mw-play { box-shadow: none; }   /* sin el borde del botón: solo se ve el anillo */
+.mw-ring-fg {
+  stroke: var(--mw-seek); stroke-linecap: round;
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--mw-seek) 65%, transparent));
+  transition: opacity .35s ease;
+}
+.fw-music:not(.is-playing) .mw-ring-fg { opacity: .55; }
+/* Nueva canción: el anillo regresa a cero deslizándose (no de golpe). */
+.mw-playwrap.is-reset .mw-ring-fg { transition: stroke-dashoffset .55s cubic-bezier(.22, 1, .36, 1), opacity .35s ease; }
+/* Fin de la canción: el mismo anillo se completa con un pulso suave (sin círculos extra). */
+.mw-playwrap.is-done .mw-ring { animation: mw-ring-done .7s cubic-bezier(.22, 1, .36, 1); }
+@keyframes mw-ring-done { 0% { transform: rotate(-90deg) scale(1); } 40% { transform: rotate(-90deg) scale(1.1); } 100% { transform: rotate(-90deg) scale(1); } }
+/* Cambio de canción: la portada y el título entran con un fundido suave. */
+.mw-sheet.is-switching .mw-cover { animation: mw-cover-in .6s cubic-bezier(.22, 1, .36, 1); }
+.mw-sheet.is-switching .mw-meta { animation: mw-meta-in .5s cubic-bezier(.22, 1, .36, 1); }
+@keyframes mw-cover-in { from { opacity: 0; transform: scale(.84) rotate(-5deg); } to { opacity: 1; transform: none; } }
+@keyframes mw-meta-in { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: none; } }
+/* El temporizador usa el mismo brillo en su anillo (los dos flotantes se ven iguales). */
+.tw-ring-fg { filter: drop-shadow(0 0 3px color-mix(in srgb, var(--tw-accent) 55%, transparent)); }
+@media (prefers-reduced-motion: reduce) {
+  .mw-playwrap.is-reset .mw-ring-fg { transition: none; }
+  .mw-playwrap.is-done .mw-ring,
+  .mw-sheet.is-switching .mw-cover, .mw-sheet.is-switching .mw-meta { animation: none; }
+}

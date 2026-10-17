@@ -1,0 +1,36 @@
+/* hero.css — Sección hero (una columna, centrada) + franja de integraciones. */
+.hero{max-width:800px;margin-inline:auto;text-align:center;display:flex;
+  flex-direction:column;align-items:center}
+.badge{display:inline-flex;align-items:center;gap:9px;background:var(--accent-soft);
+  color:var(--accent-ink);border:1px solid var(--line-strong);
+  padding:6px 12px 6px 7px;border-radius:999px;font-size:13px;font-weight:500}
+.badge b{background:var(--accent);color:var(--on-accent);font-family:var(--f-mono);font-size:11px;
+  padding:2px 7px;border-radius:999px;font-weight:500}
+.hero h1{font-size:clamp(30px,5.2vw,50px);margin-top:22px}
+.type-h1{min-height:3.3em;display:flex;align-items:center;justify-content:center}
+@media (min-width:620px){.type-h1{min-height:2.4em}}
+.type-inner{display:inline}
+/* Revelado palabra por palabra: cada palabra pasa de gris claro a sólido. */
+.type-h1 .word{display:inline-block;
+  color:color-mix(in srgb,var(--fg) 20%, transparent);
+  transition:color .55s cubic-bezier(.2,.7,.3,1)}
+.type-h1 .word.lit{color:var(--fg)}
+.caret{display:none}
+@media (prefers-reduced-motion:reduce){.type-h1 .word{transition:none}}
+.hero .lead{margin-top:22px}
+.hero-cta{display:flex;gap:12px;margin-top:32px;flex-wrap:wrap;justify-content:center}
+.hero-note{margin-top:20px;font-size:13px;color:var(--muted);
+  display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center}
+.hero-note svg{width:15px;height:15px;color:var(--fg);flex:none}
+
+/* Franja de integraciones / logos en marquesina */
+.strip{border-block:1px solid var(--line);background:var(--surface-2)}
+.strip .wrap{padding-block:32px 20px;text-align:center}
+.strip p{color:var(--muted);text-transform:uppercase;letter-spacing:1.4px;font-family:var(--f-mono);font-size:12px}
+.logo-marquee{position:relative;overflow:hidden;padding-bottom:34px}
+.logo-marquee::before,.logo-marquee::after{content:"";position:absolute;top:0;bottom:0;width:90px;pointer-events:none;z-index:2}
+.logo-marquee::before{left:0;background:linear-gradient(to right,var(--surface-2) 12%,transparent)}
+.logo-marquee::after{right:0;background:linear-gradient(to left,var(--surface-2) 12%,transparent)}
+.logo-track{display:flex;align-items:center;gap:40px;width:max-content;animation:marq-left 70s linear infinite}
+.logo-track span{font-family:var(--f-display);font-weight:600;font-size:19px;color:var(--muted);opacity:.85;white-space:nowrap}
+@media (prefers-reduced-motion:reduce){.logo-track{animation:none}.logo-marquee{overflow-x:auto;scrollbar-width:none}.logo-marquee::-webkit-scrollbar{display:none}}

@@ -1,0 +1,26 @@
+{
+  "name": "ritmogo-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Servidor de rutas de NubiFlyGo (páginas limpias + API bajo /api/v1)",
+  "type": "module",
+  "main": "server.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "migrate": "node migrate.js"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1151.0",
+    "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^16.6.1",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.4.0",
+    "pg": "^8.23.1"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "ritmogo",
+  "private": true,
+  "description": "NubiFlyGo — web y API en Cloudflare Pages",
+  "dependencies": {
+    "@neondatabase/serverless": "^0.10.4",
+    "aws4fetch": "^1.0.20"
+  }
+}

@@ -1,0 +1,45 @@
+/* nav.css — Barra de navegación superior fija + selector de idioma. */
+header.nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:50;
+  background:color-mix(in srgb,var(--bg) 86%,transparent);
+  backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;
+  gap:18px;padding-block:14px}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--f-display);
+  font-weight:600;font-size:18px;letter-spacing:-.3px}
+.brand .mark{width:28px;height:28px;border-radius:8px;background:var(--accent);
+  display:grid;place-items:center;color:var(--on-accent);font-family:var(--f-mono);font-size:15px;flex:none}
+.nav-links{display:flex;gap:28px;font-size:14.5px;color:var(--muted)}
+.nav-links a:hover{color:var(--fg)}
+.nav-right{display:flex;align-items:center;gap:14px}
+.login-link{font-size:14.5px;color:var(--fg);font-weight:500;white-space:nowrap}
+.login-link:hover{color:var(--muted)}
+
+/* Selector de idioma */
+.lang{position:relative}
+.lang-btn{display:inline-flex;align-items:center;gap:7px;font-family:var(--f-body);
+  font-size:14px;font-weight:500;color:var(--fg);background:transparent;
+  border:1px solid var(--line-strong);border-radius:999px;padding:8px 13px;
+  cursor:pointer;transition:.15s ease;white-space:nowrap}
+.lang-btn:hover{border-color:var(--fg);background:var(--surface)}
+.lang-btn svg{width:15px;height:15px;color:var(--muted);flex:none}
+.lang-btn .chev{transition:transform .2s ease}
+.lang[data-open="true"] .lang-btn .chev{transform:rotate(180deg)}
+.lang-menu{position:absolute;top:calc(100% + 8px);right:0;min-width:188px;z-index:60;
+  background:var(--surface);border:1px solid var(--line-strong);border-radius:12px;
+  box-shadow:var(--shadow);padding:6px;display:none;max-height:min(66vh,420px);overflow:auto}
+.lang[data-open="true"] .lang-menu{display:block}
+.lang-menu button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;
+  font-family:var(--f-body);font-size:14px;color:var(--fg);background:transparent;border:0;
+  border-radius:8px;padding:9px 11px;cursor:pointer;transition:.12s ease}
+.lang-menu button:hover{background:var(--accent-soft)}
+.lang-menu button[aria-selected="true"]{font-weight:600}
+.lang-menu button .flag{font-size:16px;line-height:1;flex:none}
+.lang-menu button .tick{margin-left:auto;color:var(--fg);opacity:0;flex:none}
+.lang-menu button[aria-selected="true"] .tick{opacity:1}
+.lang-menu button .tick svg{width:15px;height:15px}
+
+@media (max-width:860px){ .nav-links{display:none} }
+@media (max-width:460px){ .login-link{display:none} .lang-btn .lang-name{display:none} }
+
+/* NubiFlyGo brand mark */
+.brand .mark .brand-cloud{display:block}

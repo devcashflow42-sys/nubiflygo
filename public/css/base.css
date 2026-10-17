@@ -1,0 +1,18 @@
+/* base.css — Reset base y estilos del <body>. */
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 14px;
+    background: var(--bg);
+    color: var(--fg);
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: 'cv11', 'ss01';
+  }
+
+  /* Diálogo o BottomSheet abierto: el fondo no se desplaza. */
+  html.scroll-lock body { position: fixed; left: 0; right: 0; width: 100%; overflow: hidden; }
+  html.scroll-lock .panel.board, html.scroll-lock .sidebar .nav, html.scroll-lock .info { overflow: hidden !important; }
+  .sheet, .modal-body, .sheet-form-body { overscroll-behavior: contain; }

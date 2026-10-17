@@ -1,0 +1,369 @@
+/* layout.css — App shell (grid), sidebar/drawer, rail colapsado y board. */
+
+  /* ─────────────────────── App shell ─────────────────────── */
+  .app {
+    display: grid;
+    grid-template-columns: var(--drawer-w) minmax(0, 1fr) var(--info-w);
+    gap: 14px;
+    padding: 14px;
+    padding-block: calc(14px + env(safe-area-inset-top, 0px)) calc(14px + env(safe-area-inset-bottom, 0px));
+    min-height: 100%;
+    transition: grid-template-columns .25s ease;
+  }
+  .app[data-drawer="collapsed"] { grid-template-columns: var(--rail-w) minmax(0, 1fr) var(--info-w); }
+  .app[data-info="hidden"] { grid-template-columns: var(--drawer-w) minmax(0, 1fr); }
+  .app[data-drawer="collapsed"][data-info="hidden"] { grid-template-columns: var(--rail-w) minmax(0, 1fr); }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ─── Sidebar ─── */
+  .sidebar { padding: 16px 12px; overflow: hidden; }
+  .sidebar-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 2px 6px 16px; gap: 6px;
+  }
+  .sidebar-brand {
+    display: flex; align-items: center; gap: 9px;
+    font-weight: 600; font-size: 15px; letter-spacing: -0.01em;
+    min-width: 0; overflow: hidden;
+  }
+  .brand-mark {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: var(--fg); display: grid; place-items: center;
+    color: var(--surface); font-weight: 700;
+    font-family: 'Instrument Serif', serif; font-size: 16px; font-style: italic;
+    flex-shrink: 0;
+  }
+  .brand-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .icon-btn {
+    width: 30px; height: 30px; display: grid; place-items: center;
+    border-radius: 7px; background: transparent; border: 0;
+    color: var(--fg-muted); cursor: pointer; flex-shrink: 0;
+    transition: background .12s, color .12s;
+  }
+  .icon-btn:hover { background: var(--surface-sunken); color: var(--fg); }
+
+  .nav { display: flex; flex-direction: column; gap: 2px; }
+  .nav-group-label {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--fg-faint); font-weight: 600;
+    padding: 10px 12px 4px;
+  }
+  .nav a {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px; border-radius: 8px;
+    color: var(--fg-muted); text-decoration: none;
+    font-weight: 500; font-size: 13.5px; cursor: pointer;
+    transition: background .12s, color .12s;
+    white-space: nowrap; overflow: hidden;
+    user-select: none;
+  }
+  .nav a:hover { background: var(--surface-sunken); color: var(--fg); }
+  .nav a.active { background: var(--surface-sunken); color: var(--fg); }
+  .nav a svg { width: 16px; height: 16px; flex-shrink: 0; opacity: 0.75; }
+  .nav .label { overflow: hidden; text-overflow: ellipsis; }
+  .nav .count {
+    margin-left: auto;
+    background: var(--surface-sunken);
+    color: var(--fg-muted);
+    font-size: 11px; font-weight: 600;
+    padding: 1px 7px; border-radius: 999px;
+  }
+  .nav a.active .count { background: var(--surface); }
+  .nav .sub-nav {
+    margin: 2px 0 4px 24px;
+    padding-left: 10px;
+    border-left: 1px solid var(--border);
+    display: flex; flex-direction: column; gap: 1px;
+    overflow: hidden;
+  }
+  .nav .sub-nav a { font-size: 13px; padding: 6px 10px; }
+  .nav .sub-nav a.active { background: var(--accent-soft); color: var(--accent-ink); }
+  .nav .sub-nav .proj-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--c, var(--accent)); flex-shrink: 0;
+  }
+  .nav .sub-add {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 10px; border-radius: 6px;
+    color: var(--fg-faint); font-size: 12.5px;
+    cursor: pointer;
+  }
+  .nav .sub-add:hover { color: var(--accent); background: var(--surface-sunken); }
+  .nav .sub-nav a .label { flex: 1; min-width: 0; }
+  .nav .sub-del {
+    margin-left: auto; flex-shrink: 0;
+    width: 22px; height: 22px; border-radius: 6px;
+    display: grid; place-items: center;
+    background: transparent; border: 0; cursor: pointer;
+    color: var(--fg-faint); opacity: .55;
+    transition: opacity .12s, background .12s, color .12s;
+  }
+  .nav .sub-del svg { width: 13px; height: 13px; }
+  .nav .sub-nav a:hover .sub-del { opacity: 1; }
+  .nav .sub-del:hover { color: var(--danger); background: var(--surface-sunken); }
+
+  .sidebar-foot {
+    margin-top: auto; padding-top: 12px;
+    border-top: 1px solid var(--border);
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .user-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px; border-radius: 10px; margin-top: 8px;
+    overflow: hidden;
+  }
+  .avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, #a8b8ff, #5c7eff);
+    color: white; display: grid; place-items: center;
+    font-weight: 600; font-size: 13px; flex-shrink: 0;
+  }
+  .user-meta { min-width: 0; flex: 1; overflow: hidden; }
+  .user-name { font-size: 13px; font-weight: 600; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .user-mail { font-size: 11.5px; color: var(--fg-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .theme-toggle { flex-shrink: 0; }
+  .theme-icon-moon { display: none; }
+  :root[data-theme="dark"] .theme-icon-sun,
+  :root:not([data-theme="light"]) .theme-icon-sun { display: none; }
+  :root[data-theme="dark"] .theme-icon-moon,
+  :root:not([data-theme="light"]) .theme-icon-moon { display: block; }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) .theme-icon-sun { display: block; }
+    :root:not([data-theme="dark"]) .theme-icon-moon { display: none; }
+  }
+  :root[data-theme="light"] .theme-icon-sun { display: block !important; }
+  :root[data-theme="light"] .theme-icon-moon { display: none !important; }
+
+  /* Collapsed rail */
+  .app[data-drawer="collapsed"] .sidebar-brand .brand-name,
+  .app[data-drawer="collapsed"] .nav a .label,
+  .app[data-drawer="collapsed"] .nav .count,
+  .app[data-drawer="collapsed"] .nav .sub-nav,
+  .app[data-drawer="collapsed"] .nav-group-label,
+  .app[data-drawer="collapsed"] .user-meta {
+    display: none;
+  }
+  .app[data-drawer="collapsed"] .sidebar-head { justify-content: center; }
+  .app[data-drawer="collapsed"] .nav a { justify-content: center; padding: 10px 0; }
+  .app[data-drawer="collapsed"] .user-row { flex-direction: column; gap: 8px; padding: 6px 0; }
+  .app[data-drawer="collapsed"] .sidebar { padding: 16px 8px; }
+  .app[data-drawer="collapsed"] .toggle-collapse { display: none; }
+  .toggle-expand {
+    display: none; width: 100%; justify-content: center;
+    padding: 8px 0; margin-bottom: 8px; border-radius: 7px;
+    background: var(--surface-sunken); border: 0; cursor: pointer;
+    color: var(--fg-muted);
+  }
+  .app[data-drawer="collapsed"] .toggle-expand { display: flex; }
+  .toggle-expand:hover { color: var(--fg); }
+
+  /* ─── Board (main) ─── */
+  .board-top {
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  /* Every view brings its own toolbar — hide the shared one */
+  .board-top { display: none; }
+  .panel.board { overflow: visible; }
+  .project-toolbar {
+    position: sticky; top: 0; z-index: 20;
+    background: var(--surface);
+    border-top-left-radius: 18px; border-top-right-radius: 18px;
+  }
+  /* Efecto vidrio esmerilado: fondo translúcido + desenfoque del contenido que
+     pasa por debajo al hacer scroll. Fallback sólido si el navegador no lo soporta. */
+  @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .project-toolbar {
+      background: color-mix(in srgb, var(--surface) 65%, transparent);
+      -webkit-backdrop-filter: saturate(180%) blur(18px);
+      backdrop-filter: saturate(180%) blur(18px);
+    }
+  }
+  /* Compact title text so actions fit on narrow screens */
+  .project-toolbar .tb-actions {
+    display: flex; align-items: center; gap: 6px;
+    flex-shrink: 0; margin-left: auto;
+  }
+  .crumbs {
+    display: flex; align-items: center; gap: 6px;
+    color: var(--fg-muted); font-size: 13px;
+    min-width: 0; flex: 1;
+  }
+  .crumbs .sep { color: var(--fg-faint); }
+  .crumbs .here { color: var(--fg); font-weight: 500; }
+  .board-top-actions { display: flex; align-items: center; gap: 4px; }
+
+  .board-head {
+    padding: 20px 20px 10px;
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  }
+  .board-head h2 {
+    font-family: 'Instrument Serif', serif;
+    font-weight: 400; font-size: 28px; margin: 0;
+    letter-spacing: -0.015em; flex: 1; min-width: 0;
+  }
+  .board-head .subtitle {
+    width: 100%; margin: -4px 0 0;
+    color: var(--fg-muted); font-size: 13.5px;
+  }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+    height: 36px; padding: 0 14px;
+    border-radius: 10px;
+    font: inherit; font-weight: 500; font-size: 13px;
+    cursor: pointer; border: 1px solid transparent;
+    transition: background .12s, border-color .12s, color .12s, transform .04s;
+    white-space: nowrap;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn-primary {
+    background: var(--fg); color: var(--surface);
+  }
+  .btn-primary:hover { background: color-mix(in srgb, var(--fg) 85%, var(--accent)); }
+  .btn-ghost {
+    background: var(--surface); color: var(--fg);
+    border-color: var(--border-strong);
+  }
+  .btn-ghost:hover { background: var(--surface-sunken); }
+  .btn-danger {
+    background: transparent; color: var(--danger);
+    border-color: color-mix(in srgb, var(--danger) 40%, transparent);
+  }
+  .btn-danger:hover { background: color-mix(in srgb, var(--danger) 8%, transparent); }
+  .btn-sm { height: 30px; padding: 0 10px; font-size: 12.5px; }
+  .btn-lg { height: 42px; padding: 0 18px; font-size: 14px; }
+
+  .board-tools {
+    padding: 0 20px 14px;
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  }
+  .search { flex: 1; min-width: 180px; position: relative; }
+  .search svg {
+    position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+    width: 14px; height: 14px; color: var(--fg-faint);
+  }
+  .search input {
+    width: 100%; height: 36px;
+    padding: 0 14px 0 34px;
+    background: var(--surface-sunken);
+    border: 1px solid transparent;
+    border-radius: 10px;
+    color: var(--fg); font: inherit; font-size: 13px;
+  }
+  .search input:focus {
+    outline: none; border-color: var(--fg); background: var(--surface);
+  }
+  .select {
+    height: 36px; padding: 0 32px 0 12px;
+    border-radius: 10px; border: 1px solid var(--border);
+    background: var(--surface) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b6a63' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>") no-repeat right 12px center;
+    color: var(--fg); font: inherit; font-size: 13px; font-weight: 500;
+    appearance: none; cursor: pointer;
+  }
+
+  .board-body { flex: 1; padding: 10px 20px 20px; overflow: auto; }
+
+/* NubiFlyGo brand mark */
+.brand-mark .brand-cloud{display:block}
+
+  /* ─── Solo se desplaza el panel central ───
+     En pantallas con menú visible (> 900px) la ventana no hace scroll: la app
+     ocupa exactamente la pantalla y el panel central es el único que se
+     desplaza. Así el menú, la Información y el borde redondeado del panel
+     quedan quietos, y la barra superior del proyecto queda dentro del panel. */
+  @media (min-width: 901px) {
+    .app {
+      height: 100vh; height: 100dvh; min-height: 0;
+      grid-template-rows: minmax(0, 1fr);
+      overflow: hidden;
+    }
+    .panel.board {
+      min-height: 0;
+      overflow-x: hidden; overflow-y: auto;
+      overscroll-behavior: contain;
+      scrollbar-width: thin;
+    }
+    .sidebar .nav { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+    .info { min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+  }
+
+  /* ─── Tarjeta «Plan actual» (barra lateral) ─── */
+  .plan-slot:empty { display: none; }
+  .plan-card {
+    margin: 0 0 12px; padding: 14px;
+    border-radius: 14px;
+    border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--border));
+    background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 16%, var(--surface)), color-mix(in srgb, #8b5cf6 9%, var(--surface)));
+  }
+  .plan-head { display: flex; align-items: center; gap: 12px; }
+  .plan-ico, .plan-mini {
+    width: 42px; height: 42px; border-radius: 50%; flex-shrink: 0;
+    display: grid; place-items: center;
+    background: var(--surface); color: var(--accent);
+    border: 1px solid color-mix(in srgb, var(--accent) 25%, var(--border));
+  }
+  .plan-ico svg, .plan-mini svg { width: 20px; height: 20px; }
+  .plan-meta { min-width: 0; }
+  .plan-k { font-size: 12.5px; color: var(--fg-muted); }
+  .plan-v { font-size: 15px; font-weight: 700; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .plan-text { margin: 10px 0 12px; font-size: 12.5px; line-height: 1.45; color: var(--fg-muted); }
+  .plan-btn {
+    width: 100%; height: 38px; border-radius: 10px; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+    background: var(--surface); color: var(--fg);
+    border: 1px solid var(--border-strong);
+    font: inherit; font-size: 13.5px; font-weight: 600;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .05);
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .plan-btn:hover { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .plan-bolt { display: inline-flex; color: var(--accent); }
+  .plan-bolt svg { width: 15px; height: 15px; }
+  .plan-mini { display: none; margin: 0 auto 10px; cursor: pointer; }
+  /* Menú colapsado (solo escritorio): se muestra el icono redondo */
+  @media (min-width: 901px) {
+    .app[data-drawer="collapsed"] .plan-card { display: none; }
+    .app[data-drawer="collapsed"] .plan-mini { display: grid; }
+  }
+  /* Pantallas bajas: la tarjeta se compacta para no tapar el menú */
+  @media (max-height: 640px) and (min-width: 901px) { .plan-text { display: none; } }
+
+  /* ─── Listas plegables del menú (Proyectos, Notas) ───
+     El enlace y su botón ▾ van en un grupo; el botón queda a la derecha de la
+     fila sin estar dentro del enlace (HTML válido y clics independientes). */
+  .nav .nav-group { position: relative; display: block; flex-shrink: 0; }
+  .nav .nav-group > a { padding-right: 40px; }
+  .nav-fold {
+    position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+    width: 26px; height: 26px; border-radius: 7px;
+    display: grid; place-items: center;
+    background: transparent; border: 0; cursor: pointer;
+    color: var(--fg-muted);            /* contraste ≥ 3:1 (WCAG 1.4.11) en claro y oscuro */
+    transition: background .12s, color .12s;
+  }
+  .nav-fold:hover { background: var(--surface-sunken); color: var(--fg); }
+  .nav-fold:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .nav-fold svg { width: 15px; height: 15px; transition: transform .2s ease; transform: rotate(-90deg); }
+  .nav-fold.open svg { transform: rotate(0deg); }
+  /* !important: las reglas del menú colapsado en móvil (responsive.css) vuelven
+     a mostrar las sub-listas y no deben ganarle a la elección del usuario. */
+  #nav .sub-nav.is-folded { display: none !important; }
+  @media (prefers-reduced-motion: reduce) { .nav-fold svg { transition: none; } }
+  /* Menú colapsado en escritorio: no hay sub-listas, no hace falta el botón. */
+  @media (min-width: 901px) {
+    .app[data-drawer="collapsed"] .nav-fold { display: none; }
+    .app[data-drawer="collapsed"] .nav .nav-group > a { padding-right: 0; }
+  }

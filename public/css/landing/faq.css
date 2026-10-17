@@ -1,0 +1,19 @@
+/* faq.css — Preguntas frecuentes (acordeón) + banda CTA final. */
+.faq-wrap{max-width:760px;margin:44px auto 0}
+details{border:1px solid var(--line);border-radius:12px;background:var(--surface);margin-bottom:12px;overflow:hidden}
+details[open]{border-color:var(--line-strong)}
+summary{list-style:none;cursor:pointer;padding:18px 22px;display:flex;align-items:center;
+  justify-content:space-between;gap:16px;font-weight:500;font-size:15.5px}
+summary::-webkit-details-marker{display:none}
+summary .plus{flex:none;transition:.2s;color:var(--fg)}
+summary .plus svg{width:18px;height:18px}
+details[open] summary .plus{transform:rotate(45deg)}
+details .answer{padding:0 22px 20px;color:var(--muted);font-size:14.5px}
+
+/* Banda CTA */
+.cta-band{background:var(--accent);border-radius:22px;padding:clamp(40px,7vw,76px);
+  text-align:center;color:var(--on-accent);max-width:720px;margin-inline:auto}
+.cta-band h2{color:inherit;font-size:clamp(26px,4vw,38px)}
+.cta-band p{margin:14px auto 0;opacity:.88;font-size:16px;max-width:46ch}
+.cta-band .btn-light{background:var(--surface);color:var(--fg);margin-top:26px}
+.cta-band .btn-light:hover{transform:translateY(-1px);filter:brightness(1.03)}

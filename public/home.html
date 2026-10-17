@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <!-- Base de rutas. En el servidor la app vive también en /project/<id>,
+       /settings…, así que la base es la raíz "/" para que css/ y js/ carguen
+       siempre bien. Si el archivo se abre localmente (file://), la base pasa a
+       ser su propia carpeta, de modo que el diseño aparece igual sin servidor. -->
+  <script>
+    (function () {
+      var base = '/';
+      if (location.protocol === 'file:') {
+        base = location.href.replace(/[?#].*$/, '').replace(/[^/]*$/, '');
+      }
+      document.write('<base href="' + base + '">');
+    })();
+  </script>
+  <title>NubiFlyGo</title>
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/assets/favicon.svg">
+  <link rel="mask-icon" href="/assets/favicon.svg" color="#15171A">
+  <!-- Reset mínimo antes de cargar fuentes (evita parpadeo) -->
+  <style>
+    :root { color-scheme: light; box-sizing: border-box; }
+    html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+    body { margin: 0; font: 14px -apple-system, BlinkMacSystemFont, sans-serif; background: #f5f4f0; color: #1a1d23; }
+    img { max-width: 100%; }
+    [hidden]:not([hidden="until-found" i]) { display: none !important; }
+  </style>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap">
+
+  <!-- Hojas de estilo (en orden) -->
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/views.css">
+  <link rel="stylesheet" href="css/widgets.css">
+  <link rel="stylesheet" href="css/settings.css">
+  <link rel="stylesheet" href="css/notifications.css">
+  <link rel="stylesheet" href="css/billing.css">
+  <link rel="stylesheet" href="css/overlays.css">
+  <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+
+<main class="app" id="app" data-drawer="open" data-info="shown">
+  <div class="scrim" onclick="closeMobile()"></div>
+
+  <!-- Sidebar -->
+  <aside class="panel sidebar" id="sidebar">
+    <div class="sidebar-head">
+      <div class="sidebar-brand">
+        <div class="brand-mark"><svg class="brand-cloud" viewBox="0 0 512 300" width="18" fill="currentColor" aria-hidden="true"><path d="M 505.22 172.06 C 502.62 161.46 496.62 146.51 490.10 137.12 C 483.58 127.74 475.07 121.14 466.12 115.75 C 457.17 110.36 447.52 106.45 436.40 104.80 C 425.28 103.15 408.33 112.53 399.38 105.84 C 390.43 99.15 387.56 74.30 382.70 64.65 C 377.83 55.01 375.83 53.96 370.18 47.97 C 364.53 41.97 358.28 34.85 348.81 28.68 C 339.33 22.51 325.78 14.86 313.35 10.95 C 300.93 7.04 288.59 4.61 274.25 5.21 C 259.91 5.82 242.18 8.69 227.32 14.60 C 212.46 20.51 197.43 29.81 185.09 40.67 C 172.75 51.53 160.93 66.22 153.29 79.77 C 145.64 93.33 140.69 109.40 139.21 122.00 C 137.73 134.60 141.90 147.20 144.42 155.37 C 146.94 163.54 150.25 166.32 154.33 171.01 C 158.41 175.71 160.33 179.27 168.93 183.53 C 177.53 187.79 191.26 194.48 205.95 196.56 C 220.63 198.65 255.30 194.82 257.04 196.04 C 258.78 197.26 228.28 202.38 216.37 203.86 C 204.47 205.34 195.26 205.60 185.61 204.90 C 175.97 204.21 166.84 202.73 158.50 199.69 C 150.16 196.65 141.90 191.78 135.56 186.66 C 129.22 181.53 124.61 176.40 120.44 168.93 C 116.27 161.46 111.75 152.07 110.53 141.82 C 109.32 131.56 110.27 117.40 113.14 107.41 C 116.01 97.41 130.87 86.38 127.74 81.86 C 124.61 77.34 103.67 79.68 94.37 80.29 C 85.07 80.90 80.99 81.51 71.95 85.51 C 62.91 89.50 48.14 98.19 40.15 104.28 C 32.15 110.36 28.33 116.18 23.98 122.00 C 19.64 127.83 16.95 132.52 14.08 139.21 C 11.21 145.90 8.26 154.68 6.78 162.15 C 5.30 169.62 4.26 175.10 5.21 184.05 C 6.17 193.00 8.60 206.21 12.51 215.85 C 16.42 225.50 21.81 234.19 28.68 241.92 C 35.54 249.66 43.27 257.04 53.70 262.26 C 64.13 267.47 78.21 271.82 91.24 273.21 C 104.28 274.60 117.05 273.29 131.91 270.60 C 146.77 267.90 165.28 262.52 180.40 257.04 C 195.52 251.57 204.56 247.48 222.63 237.75 C 240.71 228.02 272.16 207.34 288.85 198.65 C 305.53 189.96 310.40 187.79 322.74 185.61 C 335.08 183.44 353.15 184.40 362.88 185.61 C 372.62 186.83 375.31 189.52 381.13 192.91 C 386.95 196.30 401.55 202.82 397.82 205.95 C 394.08 209.08 376.01 203.51 358.71 211.68 C 341.42 219.85 310.14 244.88 294.06 254.96 C 277.99 265.04 273.90 266.86 262.26 272.16 C 250.61 277.46 235.67 283.29 224.20 286.76 C 212.73 290.24 195.69 291.80 193.43 293.02 C 191.17 294.23 200.47 295.02 210.64 294.06 C 220.81 293.11 241.58 290.85 254.44 287.28 C 267.30 283.72 259.74 275.12 287.80 272.68 C 315.87 270.25 395.12 273.81 422.84 272.68 C 450.56 271.55 445.00 269.38 454.13 265.91 C 463.25 262.43 470.55 258.00 477.59 251.83 C 484.63 245.66 491.67 237.40 496.36 228.89 C 501.05 220.37 504.27 210.21 505.74 200.73 C 507.22 191.26 507.83 182.66 505.22 172.06 Z"/></svg></div>
+        <span class="brand-name" data-i18n="app.brand">NubiFlyGo</span>
+      </div>
+      <button class="icon-btn toggle-collapse" title="Colapsar menú" data-i18n-title="common.collapseMenu" onclick="toggleDrawer()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg>
+      </button>
+    </div>
+    <button class="toggle-expand" title="Expandir menú" data-i18n-title="common.expandMenu" onclick="toggleDrawer()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg>
+    </button>
+
+    <nav class="nav" id="nav">
+      <a data-route="dashboard" title="Inicio" data-i18n-title="nav.dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span class="label" data-i18n="nav.dashboard">Inicio</span>
+      </a>
+      <!-- Grupo: enlace + botón para mostrar/ocultar su lista (oculta por defecto) -->
+      <div class="nav-group" data-group="projects">
+        <a data-route="projects" title="Proyectos" data-i18n-title="nav.projects">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/></svg>
+          <span class="label" data-i18n="nav.projects">Proyectos</span>
+          <span class="count" id="count-projects">0</span>
+        </a>
+        <button type="button" class="nav-fold" data-fold="projects" aria-controls="project-sub-nav" aria-expanded="false" title="Mostrar lista de proyectos" aria-label="Mostrar lista de proyectos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button>
+      </div>
+      <div class="sub-nav" id="project-sub-nav"></div>
+      <!-- Grupo: enlace + botón para mostrar/ocultar su lista (oculta por defecto) -->
+      <div class="nav-group" data-group="notes">
+        <a data-route="notes" title="Notas" data-i18n-title="nav.notes">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>
+          <span class="label" data-i18n="nav.notes">Notas</span>
+          <span class="count" id="count-notes">0</span>
+        </a>
+        <button type="button" class="nav-fold" data-fold="notes" aria-controls="note-sub-nav" aria-expanded="false" title="Mostrar lista de notas" aria-label="Mostrar lista de notas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button>
+      </div>
+      <div class="sub-nav" id="note-sub-nav"></div>
+      <a data-route="files" title="Archivos" data-i18n-title="nav.files">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="5" rx="1.5"/><path d="M4 9v9a1.5 1.5 0 0 0 1.5 1.5h13A1.5 1.5 0 0 0 20 18V9"/><line x1="9.5" y1="13" x2="14.5" y2="13"/></svg>
+        <span class="label" data-i18n="nav.files">Archivos</span>
+        <span class="count" id="count-files">0</span>
+      </a>
+      <a data-route="reports" title="Informes" data-i18n-title="nav.reports">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12" y="8" width="3" height="10"/><rect x="17" y="5" width="3" height="13"/></svg>
+        <span class="label" data-i18n="nav.reports">Informes</span>
+      </a>
+      <a data-route="apikeys" title="API keys" data-i18n-title="nav.apiKeys">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+        <span class="label" data-i18n="nav.apiKeys">API keys</span>
+        <span class="count" id="count-keys">0</span>
+      </a>
+      <a data-route="automation" title="Automatización" data-i18n-title="nav.automation">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+        <span class="label" data-i18n="nav.automation">Automatización</span>
+      </a>
+      <a data-route="notifications" title="Notificaciones">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span class="label">Notificaciones</span>
+        <span class="count notif-count" id="count-notifs" hidden>0</span>
+      </a>
+      <a data-route="settings" title="Configuración">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span class="label">Configuración</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-foot">
+      <!-- Plan actual (lo pinta session.js con el plan real de la cuenta) -->
+      <div id="plan-card" class="plan-slot"></div>
+      <div class="user-row is-loading" role="button" tabindex="0" style="cursor:pointer" onclick="openProfileSheet(event)" title="Mi cuenta" aria-label="Mi cuenta">
+        <div class="avatar">S</div>
+        <div class="user-meta">
+          <div class="user-name" data-i18n="app.userName">Sophia Lane</div>
+          <div class="user-mail" data-i18n="app.userEmail">sophia@workspace.app</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Board -->
+  <section class="panel board" id="board">
+    <div class="board-top">
+      <button class="icon-btn toggle-mobile" onclick="openMobile()" aria-label="Abrir menú" data-i18n-aria="common.openMenu">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <div class="crumbs" id="crumbs"></div>
+      <div class="board-top-actions" id="board-top-actions"></div>
+    </div>
+    <div id="view"></div>
+  </section>
+
+  <!-- Info panel -->
+  <aside class="panel info" id="info"></aside>
+</main>
+
+<div class="modal-root" id="modal-root"></div>
+<div class="sheet-root" id="sheet-root"></div>
+<div class="toast-root" id="toast-root"></div>
+
+  <!-- Scripts (orden de dependencias: config -> helpers -> componentes -> vistas -> main) -->
+  <script src="js/languages.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/icons.js"></script>
+  <script src="js/dom.js"></script>
+  <script src="js/skeleton.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/apiclient.js"></script>
+  <script src="js/media.js"></script>
+  <script src="js/sharing.js"></script>
+  <script src="js/widgets/manager.js"></script>
+  <script src="js/widgets/music.js"></script>
+  <script src="js/widgets/timer.js"></script>
+  <script src="js/components/overlays.js"></script>
+  <script src="js/components/toolbar.js"></script>
+  <script src="js/components/nav.js"></script>
+  <script src="js/components/pager.js"></script>
+  <script src="js/views/dashboard.js"></script>
+  <script src="js/views/projects.js"></script>
+  <script src="js/views/notes.js"></script>
+  <script src="js/views/reports.js"></script>
+  <script src="js/views/files.js"></script>
+  <script src="js/views/apikeys.js"></script>
+  <script src="js/views/project-apikeys.js"></script>
+  <script src="js/views/automation.js"></script>
+  <script src="js/views/settings.js"></script>
+  <script src="js/billing.js"></script>
+  <script src="js/views/notifications.js"></script>
+  <script src="js/views/project-form.js"></script>
+  <script src="js/components/menus.js"></script>
+  <script src="js/main.js"></script>
+  <script src="js/session.js"></script>
+  <script src="js/realtime.js"></script>
+</body>
+</html>

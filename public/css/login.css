@@ -1,0 +1,173 @@
+/* login.css — Estilos de la pantalla de acceso (login / registro).
+   Autónomo: define sus propias variables para funcionar también de forma aislada. */
+:root{
+  --accent:#1f2328;          /* Gris oscuro / negro profesional. Cámbialo aquí. */
+  --accent-hover:#363b42;
+  --accent-soft:rgba(31,35,40,.14);
+  --on-accent:#ffffff;
+  --bg:#ffffff;
+  --panel:#f6f7f8;
+  --text:#111418;
+  --muted:#5f6670;
+  --border:#e3e6ea;
+  --input:#ffffff;
+  --shape:#eceef0;
+  --glass:rgba(255,255,255,.7); --glass-strong:rgba(255,255,255,.85);
+  --radius:10px;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --accent:#f4f4f5; --accent-hover:#ffffff; --accent-soft:rgba(244,244,245,.16); --on-accent:#0a0a0b;
+    --bg:#0a0a0b; --panel:#141416; --text:#f4f4f5; --muted:#b4b4bb;
+    --border:#26262a; --input:#0f0f11; --shape:#1b1b1e;
+    --glass:rgba(10,10,11,.6); --glass-strong:rgba(10,10,11,.8);
+  }
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;line-height:1.5}
+a{color:var(--accent);text-decoration:none;font-weight:500}
+a:hover{text-decoration:underline}
+button{font:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+.layout{min-height:100%;display:grid;grid-template-columns:1fr}
+
+/* ---------- Panel lateral (escritorio) ---------- */
+.side{display:none;position:relative;overflow:hidden;background:var(--panel);border-right:1px solid var(--border);padding:32px 48px;flex-direction:column}
+.side-shape{position:absolute;top:34px;left:-70px;width:520px;height:305px;color:var(--shape);pointer-events:none}
+.icon-btn{width:40px;height:40px;border-radius:50%;border:1px solid var(--border);background:var(--bg);color:var(--text);display:inline-flex;align-items:center;justify-content:center;position:relative;z-index:1;transition:background .15s}
+.icon-btn:hover{background:var(--panel)}
+.side-body{max-width:420px;position:relative;flex:1;display:flex;flex-direction:column;justify-content:center}
+.brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:1rem}
+.brand-logo{width:36px;height:36px;border-radius:9px;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.side-title{font-size:1.55rem;font-weight:700;letter-spacing:-.02em;line-height:1.25}
+.side-title .soft{color:var(--muted);font-weight:600}
+.features{list-style:none;margin:30px 0 0;display:flex;flex-direction:column;gap:20px}
+.feature{display:flex;gap:14px;align-items:flex-start}
+.feature-ico{flex:0 0 38px;width:38px;height:38px;border-radius:10px;background:var(--bg);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--accent)}
+.feature-ico svg{width:19px;height:19px}
+.feature strong{display:block;font-size:.95rem;font-weight:600;margin-bottom:3px}
+.feature p{color:var(--muted);font-size:.86rem;line-height:1.45}
+.side-foot{display:flex;gap:28px;margin-top:24px;font-size:.88rem;position:relative}
+.side-foot a{color:var(--muted)}
+
+/* Toolbar translúcida (solo escritorio) */
+.toolbar{display:none;align-items:center;justify-content:flex-start;position:fixed;top:0;left:0;right:0;z-index:50;height:60px;padding:0 clamp(20px,3vw,40px);background:var(--glass);-webkit-backdrop-filter:saturate(180%) blur(12px);backdrop-filter:saturate(180%) blur(12px);border-bottom:1px solid transparent;transition:background .25s,border-color .25s,box-shadow .25s}
+.toolbar.scrolled{background:var(--glass-strong);border-bottom-color:var(--border);box-shadow:0 1px 14px rgba(0,0,0,.05)}
+
+/* ---------- Formulario ---------- */
+.main{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh;padding:20px 20px calc(20px + env(safe-area-inset-bottom))}
+.mobile-top{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;margin:-20px -20px 28px;padding:calc(12px + env(safe-area-inset-top)) 20px 12px;background:var(--bg);transition:box-shadow .2s,border-color .2s;border-bottom:1px solid transparent}
+.mobile-top.scrolled{border-bottom-color:var(--border);box-shadow:0 2px 8px rgba(0,0,0,.05)}
+.wrap{width:100%;max-width:420px;margin:0 auto;flex:1;display:flex;flex-direction:column;justify-content:center}
+h1{font-size:1.75rem;font-weight:700;letter-spacing:-.02em}
+.lead{color:var(--muted);font-size:.93rem;margin-top:8px}
+
+.providers{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:26px}
+.btn{height:48px;width:100%;border-radius:var(--radius);display:flex;align-items:center;justify-content:center;gap:10px;font-weight:500;font-size:.95rem;border:1px solid var(--border);background:var(--input);color:var(--text);transition:background .15s,border-color .15s,transform .1s}
+.btn:active{transform:scale(.99)}
+.btn:hover{background:var(--panel)}
+.btn svg{width:20px;height:20px;flex-shrink:0}
+.btn-dark{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.btn-dark:hover{background:var(--accent-hover);border-color:var(--accent-hover)}
+.btn-guest{border-style:dashed;color:var(--muted)}
+.btn-icon{height:52px}
+.btn-icon svg{width:24px;height:24px}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:600;margin-top:22px}
+.btn-primary:hover{background:var(--accent-hover);border-color:var(--accent-hover)}
+.btn[disabled]{opacity:.6;pointer-events:none}
+
+.divider{display:flex;align-items:center;gap:14px;margin:22px 0;color:var(--muted);font-size:.78rem;letter-spacing:.06em}
+.divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--border)}
+
+.field{margin-bottom:16px}
+.field label{display:block;font-size:.86rem;font-weight:600;margin-bottom:6px}
+.input-wrap{position:relative}
+.field input{width:100%;height:48px;padding:0 14px;border-radius:var(--radius);border:1px solid var(--border);background:var(--input);color:var(--text);font:inherit;font-size:16px;transition:border-color .15s,box-shadow .15s}
+.field input::placeholder{color:var(--muted);opacity:.7}
+.field input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.field input[aria-invalid="true"]{border-color:#d9534f}
+.err{display:none;color:#d9534f;font-size:.8rem;margin-top:6px}
+.field.has-error .err{display:block}
+.toggle-pass{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:36px;height:36px;border:0;background:none;color:var(--muted);display:flex;align-items:center;justify-content:center;border-radius:8px}
+.toggle-pass:hover{color:var(--text)}
+.field.pass input{padding-right:48px}
+.row-end{display:flex;justify-content:flex-end;margin-top:-6px;font-size:.85rem}
+
+.terms{margin-top:22px}
+.terms .check{display:flex;align-items:center;gap:12px;font-size:.92rem;font-weight:400;color:var(--text);cursor:pointer;user-select:none;line-height:1.4;margin-bottom:0}
+.switch{position:relative;width:44px;height:26px;flex:0 0 44px}
+.switch input{position:absolute;inset:0;opacity:0;width:100%;height:100%;margin:0;cursor:pointer;z-index:1}
+.switch i{position:absolute;inset:0;border-radius:999px;background:var(--input);border:2px solid var(--border);transition:background .2s,border-color .2s;pointer-events:none}
+.switch i::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:var(--muted);box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .2s,background .2s}
+.switch input:checked + i{background:var(--accent);border-color:var(--accent)}
+.switch input:checked + i::after{transform:translateX(18px);background:var(--on-accent)}
+.switch input:focus-visible + i{outline:2px solid var(--accent);outline-offset:2px}
+.check a{color:var(--accent);font-weight:500;text-decoration:underline;text-underline-offset:2px}
+.field.terms.has-error .switch i{border-color:#d9534f}
+
+.swap{margin-top:18px;font-size:.9rem;text-align:center;color:var(--text)}
+.swap button{border:0;background:none;color:var(--accent);font-weight:600;padding:0}
+.swap button:hover{text-decoration:underline}
+.only-register{display:none}
+.is-register .only-register{display:block}
+.is-register .only-login{display:none}
+
+.foot{margin-top:28px;text-align:center;font-size:.78rem;color:var(--muted)}
+.mobile-links{display:flex;justify-content:center;gap:22px;margin-top:10px}
+.mobile-links a{color:var(--muted);font-weight:400}
+
+.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);background:var(--text);color:var(--bg);padding:12px 18px;border-radius:10px;font-size:.88rem;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;max-width:calc(100% - 32px)}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.spin{width:18px;height:18px;border:2px solid var(--accent-soft);border-top-color:var(--on-accent);border-radius:50%;animation:r .7s linear infinite}
+@keyframes r{to{transform:rotate(360deg)}}
+
+/* Tablet */
+@media (min-width:600px){
+  .main{padding:32px}
+  .mobile-top{margin:-32px -32px 28px;padding-left:32px;padding-right:32px}
+  h1{font-size:2rem}
+}
+/* Escritorio y "Versión para escritorio" del móvil (~980px) */
+@media (min-width:820px){
+  .layout{grid-template-columns:minmax(300px,.9fr) minmax(430px,1.1fr)}
+  .side{display:flex;position:sticky;top:0;height:100vh;height:100dvh;padding-top:76px}
+  .mobile-top,.mobile-links{display:none}
+  .toolbar{display:flex}
+  .main{padding:76px clamp(24px,4vw,56px) 40px}
+  .foot{text-align:right}
+}
+/* --- Animaciones de entrada y microinteracciones --- */
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes shake{10%,90%{transform:translateX(-1px)}20%,80%{transform:translateX(2px)}30%,50%,70%{transform:translateX(-5px)}40%,60%{transform:translateX(5px)}}
+
+.wrap h1,.wrap .lead,.providers .btn,.divider,.field,.row-end,#submit,.swap{
+  animation:rise .55s cubic-bezier(.22,.61,.36,1) both;
+}
+.wrap .lead{animation-delay:.05s}
+.providers .btn:nth-child(1){animation-delay:.10s}
+.providers .btn:nth-child(2){animation-delay:.16s}
+.providers .btn:nth-child(3){animation-delay:.22s}
+.divider{animation-delay:.28s}
+.field{animation-delay:.32s}
+.row-end{animation-delay:.36s}
+#submit{animation-delay:.40s}
+.swap{animation-delay:.46s}
+.side-shape{animation:fadeIn 1s ease both}
+.side-body{animation:rise .6s cubic-bezier(.22,.61,.36,1) both;animation-delay:.08s}
+
+.providers .btn{transition:background .15s,border-color .15s,transform .12s,box-shadow .15s}
+.providers .btn:hover{box-shadow:0 4px 14px rgba(0,0,0,.07)}
+.btn-primary{transition:background .15s,border-color .15s,transform .12s,box-shadow .18s}
+.btn-primary:hover{box-shadow:0 6px 18px rgba(31,35,40,.22)}
+
+.field.shake input{animation:shake .42s cubic-bezier(.36,.07,.19,.97)}
+
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* NubiFlyGo brand mark */
+.brand-logo .brand-cloud{display:block}

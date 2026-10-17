@@ -1,0 +1,29 @@
+/* sections.css — Encabezado de sección, rejilla de funciones y bloque "por qué". */
+.sec-head{text-align:center;max-width:720px;margin-inline:auto}
+.sec-head h2{font-size:clamp(27px,4vw,40px);margin-top:14px}
+.sec-head .lead{margin:16px auto 0}
+
+/* Funciones */
+.feat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:48px}
+@media (max-width:720px){.feat-grid{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+  padding:26px;transition:.18s ease}
+.card:hover{border-color:var(--line-strong);box-shadow:var(--shadow);transform:translateY(-2px)}
+.card .ic-lg{width:44px;height:44px;border-radius:11px;background:var(--accent-soft);
+  color:var(--fg);display:grid;place-items:center;margin-bottom:16px}
+.card .ic-lg svg{width:22px;height:22px}
+.card h3{font-size:19px}
+.card p{color:var(--muted);font-size:14.5px;margin-top:9px}
+.card .tags{display:flex;flex-wrap:wrap;gap:7px;margin-top:16px}
+.tag{font-family:var(--f-mono);font-size:11px;padding:4px 9px;border:1px solid var(--line);
+  border-radius:999px;color:var(--muted)}
+
+/* Por qué NubiFlyGo */
+.why{background:var(--surface-2);border-block:1px solid var(--line)}
+.why-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:28px;margin-top:48px}
+@media (max-width:860px){.why-grid{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:480px){.why-grid{grid-template-columns:1fr}}
+.why-item{border-top:2px solid var(--accent);padding-top:16px}
+.why-item .num{font-family:var(--f-mono);font-size:13px;color:var(--fg);font-weight:600}
+.why-item h3{font-size:17px;margin-top:10px}
+.why-item p{color:var(--muted);font-size:14px;margin-top:8px}

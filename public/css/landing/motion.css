@@ -1,0 +1,15 @@
+/* Movimiento discreto para la landing. No altera medidas ni contenido. */
+html{scroll-padding-top:calc(84px + env(safe-area-inset-top,0px));scroll-behavior:smooth}
+main [id]{scroll-margin-top:calc(84px + env(safe-area-inset-top,0px))}
+header.nav{transition:box-shadow .24s ease,border-color .24s ease}
+header.nav.is-scrolled{box-shadow:0 8px 25px -22px rgba(18,22,32,.55);border-bottom-color:var(--line-strong)}
+.nav-links a{position:relative;transition:color .2s ease}
+.nav-links a::after{content:"";position:absolute;left:0;right:0;bottom:-5px;height:1.5px;background:currentColor;transform:scaleX(0);transform-origin:left;transition:transform .22s ease}
+.nav-links a[aria-current="location"]{color:var(--fg)}
+.nav-links a[aria-current="location"]::after{transform:scaleX(1)}
+.is-reveal-pending{opacity:0;transform:translate3d(0,16px,0)}
+.is-reveal-pending,.is-reveal-visible{transition:opacity .58s cubic-bezier(.2,.7,.2,1),transform .58s cubic-bezier(.2,.7,.2,1);transition-delay:var(--reveal-delay,0ms)}
+.is-reveal-visible{opacity:1;transform:translate3d(0,0,0)}
+@media (hover:hover){.btn:active{transform:translateY(0) scale(.985)}.card:active{transform:translateY(0) scale(.99)}}
+@media (hover:none){.card:hover{transform:none;box-shadow:none;border-color:var(--line)}.btn:active,.card:active{transform:scale(.985)}}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.is-reveal-pending,.is-reveal-visible{opacity:1;transform:none;transition:none}.nav-links a::after,.btn,.card,header.nav{transition:none}}

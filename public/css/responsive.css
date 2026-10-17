@@ -1,0 +1,123 @@
+/* responsive.css — Media queries (responsive) y focus-visible. */
+
+  /* ─────────────── Responsive ─────────────── */
+  @media (max-width: 1180px) {
+    .app { grid-template-columns: var(--drawer-w) minmax(0, 1fr); }
+    .app[data-drawer="collapsed"] { grid-template-columns: var(--rail-w) minmax(0, 1fr); }
+    .info { display: none; }
+  }
+  @media (max-width: 900px) {
+    .app, .app[data-drawer="collapsed"] {
+      grid-template-columns: 1fr; padding: 10px; gap: 10px;
+    }
+    .sidebar {
+      position: fixed; inset: 0 auto 0 0;
+      width: 280px; z-index: 50;
+      transform: translateX(-110%);
+      transition: transform .25s ease;
+      border-radius: 0 18px 18px 0;
+      padding-block: calc(16px + env(safe-area-inset-top, 0px)) calc(16px + env(safe-area-inset-bottom, 0px));
+    }
+    .app[data-mobile-open="true"] .sidebar { transform: translateX(0); }
+    .app[data-mobile-open="true"] .scrim { display: block; }
+
+    .app[data-drawer="collapsed"] .sidebar-brand .brand-name,
+    .app[data-drawer="collapsed"] .nav a .label,
+    .app[data-drawer="collapsed"] .nav .count,
+    .app[data-drawer="collapsed"] .nav .sub-nav,
+    .app[data-drawer="collapsed"] .nav-group-label,
+    /* Nombre arriba y correo debajo (no en la misma línea) al abrir el menú
+       en móvil cuando estaba colapsado. */
+    .app[data-drawer="collapsed"] .user-meta { display: block; }
+    .app[data-drawer="collapsed"] .sidebar-head { justify-content: space-between; }
+    .app[data-drawer="collapsed"] .nav a { justify-content: flex-start; padding: 8px 10px; }
+    .app[data-drawer="collapsed"] .user-row { flex-direction: row; padding: 8px; }
+    .app[data-drawer="collapsed"] .toggle-expand { display: none; }
+    .app[data-drawer="collapsed"] .nav .nav-group > a { padding-right: 40px; }   /* espacio para el botón ▾ */
+
+    .board-top { padding: 12px 14px; }
+    .board-head { padding: 14px; }
+    .board-head h2 { font-size: 24px; }
+    .board-tools { padding: 0 14px 14px; }
+    .board-body { padding: 6px 14px 18px; }
+
+    .toggle-collapse { display: none; }
+    .toggle-mobile { display: inline-grid !important; }
+  }
+  .toggle-mobile { display: none; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+
+  :focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; border-radius: 6px; }
+
+/* En móvil (teléfonos): tarjetas de resumen en 2 columnas.
+   El escritorio no cambia — sigue con auto-fit. */
+@media (max-width: 640px) {
+  .tiles { grid-template-columns: 1fr 1fr; }
+}
+
+/* Teléfonos pequeños de Android: dar aire para que los textos de API keys
+   no se amontonen. Las tarjetas de resumen pasan a una sola columna y los
+   mini-datos de uso a dos, con tipografía un poco menor. */
+@media (max-width: 430px) {
+  /* Solo las tarjetas de API keys pasan a una columna (tienen etiquetas
+     largas). El Home mantiene sus dos columnas. */
+  /* Resumen en 2×2 (4 tarjetas, sin huecos) y los 3 datos de uso en una fila. */
+  .tiles-keys { grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .tiles-keys .tile-value { font-size: 22px; }
+  .usage-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .usage-stat { padding: 9px 10px; }
+  .usage-stat .lbl { font-size: 9.5px; letter-spacing: .04em; }
+  .usage-stat .val { font-size: 16px; }
+  .usage-stat .sub { font-size: 10.5px; }
+  .chart { padding: 14px 12px 10px; }
+  .chart-plot, .chart-xlabels { margin-left: 30px; }
+  .cgrid-lbl { left: -30px; width: 25px; }
+  .chart-legend { flex-direction: column; gap: 4px; align-items: flex-end; }
+  .key-row { padding: 14px; }
+  .key-value code { font-size: 11px; }
+}
+
+/* ─── Teléfonos: pantalla completa, sin marco redondeado ───
+   En pantallas pequeñas (Android/iPhone) el panel principal ocupa todo el
+   ancho y alto, sin margen, borde ni esquinas. Tablet y escritorio conservan
+   las tarjetas con borde redondeado. */
+@media (max-width: 640px) {
+  .app, .app[data-drawer="collapsed"] {
+    padding: 0;
+    padding-block: env(safe-area-inset-top, 0px) env(safe-area-inset-bottom, 0px);
+    gap: 0;
+    min-height: 100vh; min-height: 100dvh;
+  }
+  .panel.board {
+    border: 0; border-radius: 0;
+    min-height: 100vh; min-height: 100dvh;
+  }
+  .project-toolbar { border-radius: 0; }
+}
+
+/* ─── Cajón del teléfono/tablet: la lista se desplaza por dentro ───
+   El logo queda arriba y el plan + usuario abajo; solo la lista del medio
+   hace scroll (sin mover la página de atrás). */
+@media (max-width: 900px) {
+  .sidebar .nav {
+    flex: 1 1 auto; min-height: 0;
+    overflow-y: auto; overflow-x: hidden;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    margin-right: -6px; padding-right: 6px;   /* espacio para la barra de scroll */
+  }
+  .sidebar-head, .sidebar-foot { flex-shrink: 0; }
+}
+/* Los elementos de la lista conservan su alto (no se aplastan): si no caben,
+   la lista hace scroll. Vale también para el menú de escritorio. */
+.sidebar .nav > *, .sidebar .nav .sub-nav > * { flex-shrink: 0; }
+/* Teléfonos bajos: la tarjeta del plan se compacta para dejar más lista. */
+@media (max-width: 900px) and (max-height: 760px) {
+  .plan-text { display: none; }
+  .plan-card { padding: 10px 12px; }
+  .plan-head { margin-bottom: 8px; }
+}

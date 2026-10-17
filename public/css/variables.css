@@ -1,0 +1,68 @@
+/* variables.css — Design tokens: color palette (light/dark) y variables de tamaño. */
+
+  /* Layout: drawer · board (per-view) · info panel; drawer slides over at phone width. */
+  :root {
+    --bg: #f5f4f0;
+    --surface: #ffffff;
+    --surface-2: #fafaf7;
+    --surface-sunken: #eeece7;
+    --border: #e5e2db;
+    --border-strong: #d4d0c7;
+    --fg: #1a1d23;
+    --fg-muted: #6b6a63;
+    --fg-faint: #9a988f;
+    --accent: #2b5fff;
+    --accent-soft: #e8eeff;
+    --accent-ink: #1842c7;
+    --folder-top: #d9e2ef;
+    --folder-body: #ffffff;
+    --folder-shadow: 0 1px 2px rgba(23,30,56,.04), 0 8px 24px -8px rgba(23,30,56,.08);
+    --danger: #d9484d;
+    --success: #2fa44f;
+    --warn: #c58214;
+    --radius: 14px;
+    --drawer-w: 240px;
+    --rail-w: 64px;
+    --info-w: 300px;
+    color-scheme: light;
+  }
+  /* Modo oscuro: negros y grises neutros (sin tinte azul) y textos con más
+     contraste para que se lean bien también en pantallas de móvil. */
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0a0a0b;
+      --surface: #141416;
+      --surface-2: #1b1b1e;
+      --surface-sunken: #0f0f11;
+      --border: #26262a;
+      --border-strong: #36363b;
+      --fg: #f4f4f5;
+      --fg-muted: #b4b4bb;
+      --fg-faint: #85858d;
+      --accent: #3b82f6;
+      --accent-soft: #172235;
+      --accent-ink: #93b8ff;
+      --folder-top: #2c2c30;
+      --folder-body: #1c1c1f;
+      --folder-shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px -8px rgba(0,0,0,.5);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0a0a0b;
+    --surface: #141416;
+    --surface-2: #1b1b1e;
+    --surface-sunken: #0f0f11;
+    --border: #26262a;
+    --border-strong: #36363b;
+    --fg: #f4f4f5;
+    --fg-muted: #b4b4bb;
+    --fg-faint: #85858d;
+    --accent: #3b82f6;
+    --accent-soft: #172235;
+    --accent-ink: #93b8ff;
+    --folder-top: #2c2c30;
+    --folder-body: #1c1c1f;
+    --folder-shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px -8px rgba(0,0,0,.5);
+    color-scheme: dark;
+  }

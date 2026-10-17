@@ -1,0 +1,166 @@
+/* billing.css — Suscripción (Mercado Pago): corona del suscriptor y Facturación. */
+:root { --gold: #e0a100; --gold-2: #f7c948; --gold-ink: #8a5a00; }
+
+/* ── Corona junto a la foto del usuario (barra lateral) ── */
+.user-row.is-paid { position: relative; }
+.user-row.is-paid .avatar { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--gold-2); }
+.user-row.is-paid::after {
+  content: ''; position: absolute; left: 27px; top: 2px; width: 18px; height: 18px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--gold-2), var(--gold)) center / 100% no-repeat;
+  box-shadow: 0 0 0 2px var(--surface), 0 2px 6px rgba(224, 161, 0, .45);
+  -webkit-mask: none;
+}
+.user-row.is-paid::before {
+  content: ''; position: absolute; left: 30px; top: 5px; width: 12px; height: 12px; z-index: 1;
+  background: #fff;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 18h18l1.2-10.2-5.7 4.1L12 4.5l-4.5 7.4-5.7-4.1L3 18zm0 1.5h18V21H3z'/%3E%3C/svg%3E") center / contain no-repeat;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 18h18l1.2-10.2-5.7 4.1L12 4.5l-4.5 7.4-5.7-4.1L3 18zm0 1.5h18V21H3z'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+@media (min-width: 901px) {
+  .app[data-drawer="collapsed"] .user-row.is-paid::after { left: calc(50% + 4px); top: 0; }
+  .app[data-drawer="collapsed"] .user-row.is-paid::before { left: calc(50% + 7px); top: 3px; }
+}
+
+/* ── Tarjeta «Plan actual» dorada ── */
+.plan-card.is-paid {
+  border-color: color-mix(in srgb, var(--gold) 45%, var(--border));
+  background: linear-gradient(135deg, color-mix(in srgb, var(--gold-2) 22%, var(--surface)), color-mix(in srgb, var(--gold) 8%, var(--surface)));
+}
+.plan-card.is-paid .plan-ico, .plan-mini.is-paid {
+  background: linear-gradient(135deg, var(--gold-2), var(--gold)); color: #fff; border-color: transparent;
+  box-shadow: 0 4px 12px -4px rgba(224, 161, 0, .6);
+}
+.plan-card.is-paid .plan-btn:hover { border-color: var(--gold); box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold-2) 30%, transparent); }
+
+/* ── Facturación: plan actual ── */
+.bill-loading { color: var(--fg-muted); font-size: 13px; padding: 8px 0; }
+.bill-current {
+  display: grid; grid-template-columns: 52px 1fr auto; gap: 16px; align-items: start;
+  padding: 16px; border-radius: var(--radius);
+  border: 1px solid color-mix(in srgb, var(--gold) 40%, var(--border));
+  background: linear-gradient(135deg, color-mix(in srgb, var(--gold-2) 16%, var(--surface)), var(--surface) 70%);
+}
+.bill-crown {
+  width: 52px; height: 52px; border-radius: 16px; display: grid; place-items: center; color: #fff;
+  background: linear-gradient(135deg, var(--gold-2), var(--gold));
+  box-shadow: 0 8px 20px -8px rgba(224, 161, 0, .7);
+}
+.bill-crown svg { width: 26px; height: 26px; }
+.bill-cur-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.bill-cur-top h3 { margin: 0; font-size: 18px; }
+.bill-cur-main p { margin: 6px 0 10px; color: var(--fg-muted); font-size: 13px; line-height: 1.5; }
+.bill-cur-actions { display: flex; flex-direction: column; gap: 8px; }
+.set-badge.warn { color: var(--warn); background: color-mix(in srgb, var(--warn) 12%, transparent); }
+.set-badge.err { color: var(--danger); background: color-mix(in srgb, var(--danger) 12%, transparent); }
+.set-badge.warn .dot { background: var(--warn); } .set-badge.err .dot { background: var(--danger); }
+
+.bill-free h3 { margin: 0 0 4px; font-size: 16px; }
+.bill-free p { margin: 0; color: var(--fg-muted); font-size: 13px; line-height: 1.5; }
+.bill-sub { margin: 20px 0 10px; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--fg-muted); }
+
+/* ── Planes ── */
+.bill-plans { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.bill-plan {
+  position: relative; display: flex; flex-direction: column; gap: 8px;
+  padding: 18px 16px 16px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface);
+}
+.bill-plan.pop { border-color: var(--fg); box-shadow: 0 10px 28px -16px rgba(0, 0, 0, .35); }
+.bill-plan.cur { border-color: var(--gold); }
+.bill-pop {
+  position: absolute; top: -10px; left: 14px; padding: 2px 9px; border-radius: 999px;
+  background: var(--fg); color: var(--surface); font-size: 10.5px; font-weight: 700;
+}
+.bill-pop.cur { left: auto; right: 14px; background: linear-gradient(135deg, var(--gold-2), var(--gold)); color: #fff; }
+.bill-plan h4 { margin: 0; font-size: 15px; }
+.bill-price strong { font-size: 26px; letter-spacing: -.02em; }
+.bill-price span { color: var(--fg-muted); font-size: 12.5px; }
+.bill-plan ul { list-style: none; margin: 4px 0 8px; padding: 0; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+.bill-plan li { display: flex; gap: 7px; align-items: flex-start; font-size: 12.5px; color: var(--fg-muted); }
+.bill-plan li span { color: var(--success); display: inline-flex; margin-top: 1px; }
+.bill-plan li svg { width: 14px; height: 14px; }
+.bill-pay { width: 100%; }
+.bill-pay[disabled] { opacity: .55; cursor: not-allowed; }
+.bill-note { margin: 12px 0 0; font-size: 12px; color: var(--fg-faint); line-height: 1.5; }
+
+/* ── Historial ── */
+.bill-history { display: flex; flex-direction: column; }
+.bill-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.bill-row:last-child { border-bottom: 0; }
+.bill-row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.bill-row-main strong { font-size: 13.5px; }
+.bill-row-main span { font-size: 12px; color: var(--fg-muted); overflow-wrap: anywhere; }
+.bill-amt { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+@media (max-width: 760px) {
+  .bill-plans { grid-template-columns: 1fr; gap: 16px; }
+  .bill-current { grid-template-columns: 44px 1fr; }
+  .bill-crown { width: 44px; height: 44px; border-radius: 13px; }
+  .bill-cur-actions { grid-column: 1 / -1; }
+  .bill-cur-actions .btn { width: 100%; }
+  .bill-row { flex-wrap: wrap; }
+  .bill-row-main { flex-basis: 100%; }
+}
+
+/* ─── Planes: seleccionar / deseleccionar como en la página de Precios ───
+   Tocar una tarjeta la marca (borde morado, brillo animado, se eleva y su botón
+   se pinta); tocarla otra vez o tocar fuera la deja como estaba. */
+.bill-plan {
+  --plan-purple: #6746ef;
+  isolation: isolate; overflow: hidden; cursor: pointer;
+  box-shadow: 0 14px 34px -28px rgba(27, 31, 52, .22), 0 2px 8px rgba(27, 31, 52, .025);
+  transition: border-color .25s, box-shadow .3s, transform .3s;
+}
+.bill-plan > * { position: relative; z-index: 1; }
+.bill-plan::before {
+  content: ''; position: absolute; inset: -10% -12% auto; height: 46%; z-index: 0; pointer-events: none;
+  background: radial-gradient(ellipse at 75% 0%, rgba(111, 85, 240, .25), transparent 52%), radial-gradient(ellipse at 100% 46%, rgba(100, 179, 255, .16), transparent 54%);
+  opacity: 0; transition: opacity .35s;
+}
+.bill-plan:hover { border-color: var(--border-strong); transform: translateY(-3px); box-shadow: 0 18px 38px -26px rgba(27, 31, 52, .22); }
+.bill-plan:focus-visible { outline: 3px solid #795bf4; outline-offset: 3px; }
+.bill-plan.pop { border-color: var(--border); box-shadow: 0 14px 34px -28px rgba(27, 31, 52, .22), 0 2px 8px rgba(27, 31, 52, .025); }
+.bill-plan.selected { border-color: #8f75f5; box-shadow: 0 26px 50px -28px rgba(97, 67, 207, .48), 0 0 0 1px rgba(111, 85, 240, .12); transform: translateY(-5px); }
+.bill-plan.selected::before {
+  opacity: 1;
+  background: radial-gradient(ellipse at 73% -3%, rgba(118, 88, 246, .42), transparent 55%), radial-gradient(ellipse at 98% 34%, rgba(101, 185, 255, .25), transparent 56%);
+  animation: bill-glow 9s ease-in-out infinite alternate;
+}
+@keyframes bill-glow { from { transform: translateX(-3%) scale(1); } to { transform: translateX(3%) scale(1.08); } }
+/* Etiqueta dentro de la tarjeta, arriba a la derecha (como en Precios), sobre el brillo. */
+.bill-plan .bill-pop, .bill-plan .bill-pop.cur {
+  position: absolute; top: 14px; right: 14px; left: auto; z-index: 2;
+  background: #f0edff; color: #593ac7; padding: 4px 10px; font-size: 10.5px;
+}
+.bill-plan .bill-pop.cur { background: linear-gradient(135deg, var(--gold-2), var(--gold)); color: #fff; }
+/* Botón: claro por defecto; morado en la tarjeta elegida. */
+.bill-plan .bill-pay { background: var(--surface-sunken); color: var(--fg); border: 1px solid transparent; font-weight: 650; height: 42px; border-radius: 10px; transition: background .2s, color .2s, box-shadow .2s; }
+.bill-plan .bill-pay:hover:not([disabled]) { background: color-mix(in srgb, var(--plan-purple) 10%, var(--surface-sunken)); }
+.bill-plan.selected .bill-pay { background: var(--plan-purple); color: #fff; box-shadow: 0 6px 15px rgba(103, 70, 239, .22); }
+.bill-plan.selected .bill-pay:hover:not([disabled]) { background: #5938da; }
+.bill-plan .bill-pay.is-busy { background: var(--plan-purple); color: #fff; opacity: .85; }
+.bill-plan .bill-pay[disabled]:not(.is-busy) { opacity: .55; }
+
+/* Celular: los planes en una fila que se desliza de lado (no ocupan toda la pantalla). */
+@media (max-width: 760px) {
+  .bill-plans {
+    grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(232px, 78%);
+    gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding: 0 18px;
+    /* Espacio para que la sombra de la tarjeta elegida no se corte; llega al borde de la tarjeta "Plan actual". */
+    padding: 14px 18px 34px; margin: -6px -18px -20px; scrollbar-width: none; -webkit-overflow-scrolling: touch;
+  }
+  .bill-plans::-webkit-scrollbar { display: none; }
+  .bill-plan { scroll-snap-align: start; padding: 16px 14px 14px; gap: 6px; }
+  .bill-plan.selected { box-shadow: 0 16px 30px -18px rgba(97, 67, 207, .45), 0 0 0 1px rgba(111, 85, 240, .12); }
+  .bill-plan ul { gap: 5px; margin: 2px 0 6px; }
+  .bill-plan li { font-size: 12px; }
+  .bill-price strong { font-size: 23px; }
+}
+@media (prefers-reduced-motion: reduce) { .bill-plan, .bill-plan::before { transition: none; } .bill-plan.selected::before { animation: none; } }
+/* Puntitos del carrusel (solo celular) y tarjeta elegida sin elevarse ahí (quedan alineadas). */
+.bill-dots { display: none; }
+@media (max-width: 760px) {
+  .bill-dots { display: flex; justify-content: center; gap: 7px; margin-top: 2px; }
+  .bill-dot { width: 7px; height: 7px; padding: 0; border: 0; border-radius: 999px; background: var(--border-strong); cursor: pointer; transition: width .25s, background .25s; }
+  .bill-dot.on { width: 20px; background: var(--plan-purple, #6746ef); }
+  .bill-plan:hover, .bill-plan.selected { transform: none; }
+}
