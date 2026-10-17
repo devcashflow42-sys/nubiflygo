@@ -836,12 +836,14 @@
   .upd-root { align-items: flex-end; padding: 0; padding-top: calc(24px + env(safe-area-inset-top, 0px)); }
   .upd {
     max-width: none; max-height: 100%; border-radius: 22px 22px 0 0; border-bottom: 0;
-    padding-bottom: env(safe-area-inset-bottom, 0px);
     animation: upd-up .26s cubic-bezier(.22, 1, .36, 1);
   }
   @keyframes upd-up { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
   .upd-head { padding: 16px 14px 14px 16px; }
-  .upd-body { padding: 16px; }
+  .upd-body { padding: 16px 16px calc(20px + env(safe-area-inset-bottom, 0px)); }
+  .upd-item { column-gap: 12px; padding: 12px 8px 12px 14px; }
+  .upd-meta { flex-wrap: wrap; row-gap: 2px; }       /* «Subiendo…» nunca se corta */
+  .upd-act { width: 40px; height: 40px; }            /* tamaño táctil */
   .upd-zone { padding: 22px 14px 18px; }
 }
 @media (prefers-reduced-motion: reduce) {

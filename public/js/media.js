@@ -475,7 +475,8 @@
   function finishBatch() {
     keepAwake(false);
     const ok = up.done, bad = up.failed, errs = up.errors.slice();
-    if (ok || bad) toast(ok + (ok === 1 ? ' archivo subido' : ' archivos subidos') + (bad ? ' · ' + bad + ' con error' : ''));
+    // Con el diálogo abierto cada tarjeta ya dice «Completado» (el aviso taparía la lista).
+    if ((ok || bad) && !dlg.root) toast(ok + (ok === 1 ? ' archivo subido' : ' archivos subidos') + (bad ? ' · ' + bad + ' con error' : ''));
     if (bad && !dlg.root) paintPanel(true, errs); else setTimeout(() => closePanel(), dlg.root ? 0 : 1800);
     up.total = 0; up.done = 0; up.failed = 0; up.errors = [];
     rerender();
