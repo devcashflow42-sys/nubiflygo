@@ -712,6 +712,144 @@
 .up-sub { font-size: 12px; color: var(--fg-muted); margin-top: 8px; }
 .up-errors { margin: 0; padding-left: 18px; font-size: 12px; color: var(--fg-muted); max-height: 160px; overflow: auto; }
 
+.up-head .up-count { margin-left: auto; }
+.up-open { padding: 2px 10px; }
+
+/* ─── Diálogo «Subir archivos» ───
+   Zona para soltar/elegir y una tarjeta por archivo (icono por tipo, bytes,
+   estado y barra de avance). En teléfono sale como hoja desde abajo. */
+.upd-root {
+  position: fixed; inset: 0; z-index: 95;             /* debajo de los diálogos de confirmación (100) */
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  padding-block: calc(20px + env(safe-area-inset-top, 0px)) calc(20px + env(safe-area-inset-bottom, 0px));
+  background: rgba(0, 0, 0, .4);
+  animation: fade .15s ease;
+}
+.upd-root.is-leaving { opacity: 0; transition: opacity .15s ease; }
+.upd {
+  --upd-k: var(--fg-faint);
+  width: 100%; max-width: 480px; max-height: min(720px, 100%);
+  display: flex; flex-direction: column;
+  background: var(--surface); color: var(--fg);
+  border: 1px solid var(--border); border-radius: 22px;
+  box-shadow: 0 24px 70px -24px rgba(0, 0, 0, .4);
+  animation: pop .2s cubic-bezier(.2, .9, .3, 1.1);
+  overflow: hidden;
+}
+.upd-head {
+  display: flex; align-items: center; gap: 14px;
+  padding: 18px 18px 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.upd-head-ico {
+  width: 44px; height: 44px; flex-shrink: 0; display: grid; place-items: center;
+  border: 1px solid var(--border); border-radius: 50%; color: var(--fg);
+}
+.upd-head-ico svg { width: 22px; height: 22px; }
+.upd-head-txt { flex: 1; min-width: 0; }
+.upd-head-txt h3 { margin: 0; font-size: 16.5px; font-weight: 600; letter-spacing: -.01em; }
+.upd-head-txt p { margin: 3px 0 0; font-size: 13.5px; color: var(--fg-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.upd-close { align-self: flex-start; }
+.upd-close svg { width: 16px; height: 16px; }
+.upd-body { padding: 18px 20px 20px; overflow: auto; display: flex; flex-direction: column; gap: 12px; overscroll-behavior: contain; }
+.upd-input { display: none; }
+
+.upd-zone {
+  display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px;
+  padding: 26px 18px 22px;
+  border: 1.5px dashed var(--border-strong); border-radius: 16px;
+  background: var(--surface-2);
+  cursor: pointer; transition: border-color .15s ease, background-color .15s ease;
+}
+.upd-zone:hover { border-color: var(--fg-faint); }
+.upd-zone:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.upd-zone.is-over { border-color: var(--accent); background: var(--accent-soft); }
+.upd-zone-ico { color: var(--fg-muted); margin-bottom: 4px; }
+.upd-zone-ico svg { width: 26px; height: 26px; }
+.upd-zone.is-over .upd-zone-ico { color: var(--accent); }
+.upd-zone strong { font-size: 14.5px; font-weight: 600; }
+.upd-zone-sub { font-size: 12.5px; color: var(--fg-faint); max-width: 320px; }
+.upd-browse { margin-top: 10px; border: 1px solid var(--border-strong); background: var(--surface); }
+
+.upd-list { display: flex; flex-direction: column; gap: 10px; }
+.upd-list:empty { display: none; }
+.upd-item {
+  display: grid; grid-template-columns: auto 1fr auto; align-items: center; column-gap: 14px;
+  padding: 14px 12px 14px 14px;
+  border: 1px solid var(--border); border-radius: 14px; background: var(--surface);
+  animation: upd-in .25s cubic-bezier(.22, 1, .36, 1);
+}
+@keyframes upd-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+.upd-item.has-bar { row-gap: 12px; }
+.upd-bar { grid-column: 1 / -1; height: 6px; border-radius: 6px; background: var(--surface-sunken); overflow: hidden; display: none; }
+.upd-item.has-bar .upd-bar { display: block; }
+.upd-fill { display: block; height: 100%; width: 0; border-radius: 6px; background: var(--accent); transition: width .25s ease; }
+
+/* Icono de hoja con la extensión, coloreada por tipo de archivo. */
+.upd-k-pdf { --upd-k: #e5484d; }
+.upd-k-image { --upd-k: #2fa44f; }
+.upd-k-video { --upd-k: #8e4ec6; }
+.upd-k-audio { --upd-k: #d6409f; }
+.upd-k-doc { --upd-k: #2b5fff; }
+.upd-k-archive { --upd-k: #c58214; }
+.upd-k-other { --upd-k: #6b6a63; }
+.upd-file {
+  position: relative; width: 40px; height: 48px; flex-shrink: 0;
+  background: var(--surface-2); border: 1.5px solid var(--border-strong);
+  border-radius: 6px 13px 6px 6px;
+}
+.upd-file::before {                                   /* esquina doblada */
+  content: ''; position: absolute; top: -1.5px; right: -1.5px; width: 13px; height: 13px;
+  background: linear-gradient(225deg, var(--surface) 50%, var(--border-strong) 50%);
+  border-radius: 0 0 0 4px;
+}
+.upd-file-ext {
+  position: absolute; left: -7px; bottom: 7px; max-width: 46px;
+  padding: 2px 5px; border-radius: 4px;
+  background: var(--upd-k); color: #fff;
+  font-size: 9.5px; font-weight: 700; letter-spacing: .02em; line-height: 1.25;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.upd-main { min-width: 0; }
+.upd-name { font-size: 14.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.upd-meta { display: flex; align-items: center; gap: 6px; margin-top: 4px; font-size: 12.5px; color: var(--fg-muted); font-variant-numeric: tabular-nums; min-width: 0; }
+.upd-bytes { white-space: nowrap; }
+.upd-dot { color: var(--fg-faint); font-size: 10px; }
+.upd-state { display: inline-flex; align-items: center; gap: 5px; color: var(--fg); min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.upd-state.is-queued { color: var(--fg-muted); }
+.upd-state.is-error { color: var(--danger); }
+.upd-badge { display: inline-flex; flex-shrink: 0; }
+.upd-badge svg { width: 15px; height: 15px; }
+.upd-state.is-done .upd-badge { color: var(--success); }
+.upd-spin {
+  width: 13px; height: 13px; flex-shrink: 0; border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--accent) 25%, transparent); border-top-color: var(--accent);
+  animation: upd-spin .8s linear infinite;
+}
+@keyframes upd-spin { to { transform: rotate(360deg); } }
+.upd-act { color: var(--fg-muted); }
+.upd-act svg { width: 17px; height: 17px; }
+.upd-item.is-done .upd-act:hover { color: var(--danger); }
+
+@media (max-width: 640px) {
+  .upd-root { align-items: flex-end; padding: 0; padding-top: calc(24px + env(safe-area-inset-top, 0px)); }
+  .upd {
+    max-width: none; max-height: 100%; border-radius: 22px 22px 0 0; border-bottom: 0;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    animation: upd-up .26s cubic-bezier(.22, 1, .36, 1);
+  }
+  @keyframes upd-up { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .upd-head { padding: 16px 14px 14px 16px; }
+  .upd-body { padding: 16px; }
+  .upd-zone { padding: 22px 14px 18px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .upd, .upd-item, .upd-root { animation: none; }
+  .upd-spin { animation-duration: 2.4s; }
+  .upd-fill { transition: none; }
+}
+
 /* Reproductor de música: widget flotante en widgets.css.
    Aquí solo queda el ecualizador de la tarjeta que está sonando. */
 .fb-now i { display: block; width: 3px; border-radius: 2px; background: currentColor; height: 30%; }

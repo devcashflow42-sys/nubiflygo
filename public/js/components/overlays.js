@@ -210,7 +210,7 @@
     function anyOverlay() {
       const m = document.getElementById('modal-root'), s = document.getElementById('sheet-root');
       return (m && m.classList.contains('show')) || (s && s.classList.contains('show')) ||
-        !!document.querySelector('.mviewer, .img-viewer');
+        !!document.querySelector('.mviewer, .img-viewer, .upd-root');
     }
     function setLock(on) {
       if (on === locked) return;

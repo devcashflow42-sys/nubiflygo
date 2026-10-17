@@ -324,6 +324,8 @@
   const UPLOAD_CONCURRENCY = 3;
   const UPLOAD_MAX_MB = 100;   // límite por archivo de Cloudflare Pages
   const up = { queue: [], active: 0, total: 0, done: 0, failed: 0, errors: [], panel: null };
+  // Diálogo «Subir archivos» (ver openUploadDialog): tarjetas por archivo.
+  const dlg = { root: null, list: null, rows: new Map(), tasks: [], opts: null };
   let renderTimer = null;
   // Redibuja sin interrumpir si el usuario está escribiendo (ver realtime.js).
   function rerender() { if (typeof window.safeRender === 'function') window.safeRender(); else render(); }
@@ -390,7 +392,9 @@
     files.forEach((file, i) => {
       const t = restored ? restored[i] : { id: Date.now().toString(36) + Math.random().toString(36).slice(2), file, opts, userId: uid, tries: 0 };
       t.tries = t.tries || 0;
+      t.status = 'queued'; t.loaded = 0; t.error = null; t.item = null;
       up.queue.push(t);
+      dlg.tasks.push(t);
       if (!restored) saveTask(t);
     });
     up.total += files.length;
@@ -401,10 +405,11 @@
   function pump() {
     while (up.active < UPLOAD_CONCURRENCY && up.queue.length) {
       const task = up.queue.shift();
+      if (task.status === 'canceled') continue;
       up.active++;
       uploadOne(task).then(() => { up.active--; paintPanel(); pump(); });
     }
-    if (!up.active && !up.queue.length && up.total) finishBatch();
+    if (!up.active && !up.queue.length) { if (up.total) finishBatch(); else keepAwake(false); }
   }
   // Fallos temporales (sin red, servidor ocupado…) se reintentan solos.
   function isTransient(e) { return !e || !e.status || e.status === 408 || e.status === 429 || e.status >= 500; }
@@ -412,33 +417,43 @@
   async function uploadOne(task) {
     const file = task.file;
     try {
-      if (file.size > UPLOAD_MAX_MB * 1024 * 1024) { const er = new Error('supera ' + UPLOAD_MAX_MB + ' MB'); er.status = 413; throw er; }
+      if (file.size > UPLOAD_MAX_MB * 1024 * 1024) { const er = new Error('Supera ' + UPLOAD_MAX_MB + ' MB'); er.status = 413; throw er; }
+      task.status = 'preparing'; paintTask(task);
       const info = task.info || (task.info = await analyzeFile(file));
+      if (task.status === 'canceled') throw canceledError();
       const fd = new FormData();
       fd.append('file', file);
       fd.append('upload_id', task.id);   // el servidor no duplica si la subida se repite
       if (task.opts.projectId) fd.append('project_id', task.opts.projectId);
       if (info.thumb) fd.append('thumb', info.thumb, 'thumb.jpg');
       if (info.media) fd.append('media', JSON.stringify(info.media));
-      const d = await apiUpload('/files/upload', fd);
+      task.status = 'uploading'; task.loaded = 0; paintTask(task);
+      const d = await xhrUpload('/files/upload', fd, task);
       const it = (d && d.data && d.data.item) || (d && d.item);
       dropTask(task.id);
+      task.status = 'done'; task.loaded = file.size; task.item = it || null; paintTask(task);
       if (it) { addUploaded(it, task.opts.projectId); if (task.opts.onItem) task.opts.onItem(it); }
       up.done++;
       scheduleRender();
     } catch (e) {
+      // Cancelada por el usuario: se olvida (no es un error).
+      if (task.status === 'canceled' || (e && e.canceled)) { dropTask(task.id); up.total = Math.max(0, up.total - 1); return; }
       if (isTransient(e) && task.tries < RETRY_WAIT.length) {
         // Espera y vuelve a la cola (no cuenta como error).
         up.retrying = (up.retrying || 0) + 1;
+        task.status = 'retrying'; paintTask(task);
         paintPanel();
         await new Promise(r => setTimeout(r, RETRY_WAIT[task.tries]));
         up.retrying--;
         task.tries++;
+        if (task.status === 'canceled') { dropTask(task.id); up.total = Math.max(0, up.total - 1); return; }
+        task.status = 'queued'; paintTask(task);
         up.queue.push(task);
         return;
       }
-      if (e && e.status === 401) return;   // sin sesión: queda guardado y se reanuda al volver a entrar
+      if (e && e.status === 401) { task.status = 'error'; task.error = 'Inicia sesión para continuar'; paintTask(task); return; }   // queda guardado y se reanuda al volver a entrar
       dropTask(task.id);
+      task.status = 'error'; task.error = (e && e.message) || 'No se pudo subir'; paintTask(task);
       up.failed++;
       if (up.errors.length < 50) up.errors.push(file.name + ': ' + (e.message || 'no se pudo subir'));
     }
@@ -460,13 +475,15 @@
   function finishBatch() {
     keepAwake(false);
     const ok = up.done, bad = up.failed, errs = up.errors.slice();
-    toast(ok + (ok === 1 ? ' archivo subido' : ' archivos subidos') + (bad ? ' · ' + bad + ' con error' : ''));
-    if (bad) paintPanel(true, errs); else setTimeout(() => closePanel(), 1800);
+    if (ok || bad) toast(ok + (ok === 1 ? ' archivo subido' : ' archivos subidos') + (bad ? ' · ' + bad + ' con error' : ''));
+    if (bad && !dlg.root) paintPanel(true, errs); else setTimeout(() => closePanel(), dlg.root ? 0 : 1800);
     up.total = 0; up.done = 0; up.failed = 0; up.errors = [];
     rerender();
   }
   function closePanel() { if (up.panel) { up.panel.remove(); up.panel = null; } }
   function paintPanel(finished, errs) {
+    if (dlg.root) { closePanel(); return; }          // el diálogo ya muestra el avance
+    if (!finished && !up.active && !up.queue.length) return;
     if (!up.panel) { up.panel = el('div', { class: 'upanel', role: 'status', 'aria-live': 'polite' }); document.body.appendChild(up.panel); }
     const p = up.panel;
     p.innerHTML = '';
@@ -479,7 +496,8 @@
     }
     const done = up.done + up.failed, pct = up.total ? Math.round(done / up.total * 100) : 0;
     p.append(
-      el('div', { class: 'up-head' }, [ el('strong', {}, 'Subiendo archivos'), el('span', { class: 'up-count' }, done + ' de ' + up.total) ]),
+      el('div', { class: 'up-head' }, [ el('strong', {}, 'Subiendo archivos'), el('span', { class: 'up-count' }, done + ' de ' + up.total),
+        el('button', { type: 'button', class: 'btn btn-ghost btn-sm up-open', onclick: () => openUploadDialog(dlg.opts || {}) }, 'Ver') ]),
       el('div', { class: 'progress' }, [ el('span', { class: 'ok', style: { width: pct + '%' } }) ]),
       el('div', { class: 'up-sub' }, [
         up.retrying ? 'Conexión inestable: reintentando ' + up.retrying + '… ' : '',
@@ -490,17 +508,205 @@
   }
   window.addEventListener('beforeunload', (e) => { if (up.active || up.queue.length) { e.preventDefault(); e.returnValue = ''; } });
 
-  // Selector de archivos → cola de subida.
-  function pickAndUpload(opts) {
-    const inp = el('input', { type: 'file', multiple: '', style: { display: 'none' } });
+  /* ─── Subida con progreso real (XMLHttpRequest informa los bytes enviados) ─── */
+  function canceledError() { const e = new Error('Cancelada'); e.canceled = true; return e; }
+  function xhrUpload(path, fd, task) {
+    return new Promise((resolve, reject) => {
+      const x = new XMLHttpRequest();
+      task.xhr = x;
+      x.open('POST', '/api/v1' + path);
+      x.withCredentials = true;
+      Object.keys(API_CLIENT_HEADERS).forEach(k => x.setRequestHeader(k, API_CLIENT_HEADERS[k]));
+      x.upload.onprogress = (ev) => {
+        if (!ev.lengthComputable) return;
+        // El formulario lleva algo más que el archivo (miniatura, datos): se ajusta al tamaño real.
+        task.loaded = Math.min(task.file.size, Math.round(ev.loaded / ev.total * task.file.size));
+        paintTask(task);
+      };
+      x.onload = () => {
+        task.xhr = null;
+        let data = null;
+        try { data = JSON.parse(x.responseText); } catch (e) { /* sin JSON */ }
+        if (x.status === 401 && typeof showServerBanner === 'function') showServerBanner('Tu sesión expiró o no has iniciado sesión (error 401).');
+        if (x.status >= 200 && x.status < 300) return resolve(data);
+        const err = new Error((data && data.error) || (x.status === 401 ? 'Sesión caducada.' : 'Error ' + x.status));
+        err.status = x.status;
+        reject(err);
+      };
+      x.onerror = () => { task.xhr = null; reject(new Error('Sin conexión con el servidor.')); };
+      x.onabort = () => { task.xhr = null; reject(canceledError()); };
+      x.send(fd);
+    });
+  }
+
+  /* ─── Diálogo «Subir archivos» ───
+     Zona para soltar o elegir archivos y una tarjeta por archivo con su icono
+     por tipo, bytes enviados, barra de avance y cancelar / reintentar / borrar.
+     Se puede cerrar mientras sube: la subida sigue y queda el panel pequeño. */
+  const ICN_X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+  const ICN_TRASH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>';
+  const ICN_RETRY = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><polyline points="3 3 3 8 8 8"/></svg>';
+  const ICN_CLOUD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 8.5h.5a4 4 0 0 1 .5 7.97"/><polyline points="9 14 12 11 15 14"/><line x1="12" y1="11" x2="12" y2="20"/></svg>';
+  const ICN_OK = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="currentColor"/><polyline points="7.5 12.5 10.5 15.5 16.5 9" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const ICN_ERR = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="currentColor"/><line x1="12" y1="7" x2="12" y2="13" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="16.6" r="1.4" fill="#fff"/></svg>';
+  const fileExt = (name) => { const m = /\.([a-z0-9]{1,5})$/i.exec(name || ''); return m ? m[1].toUpperCase() : ''; };
+
+  function openUploadDialog(opts) {
+    dlg.opts = opts || {};
+    if (dlg.root) { dlg.root.querySelector('.upd-browse').focus(); return; }
+    closePanel();
+    const inp = el('input', { type: 'file', multiple: '', class: 'upd-input', tabindex: '-1', 'aria-hidden': 'true' });
     inp.addEventListener('change', () => {
       const list = Array.from(inp.files || []);
-      if (list.length) queueUploads(list, opts);
-      inp.remove();
+      inp.value = '';
+      if (list.length) queueUploads(list, dlg.opts);
     });
-    document.body.appendChild(inp);
-    inp.click();
+    const browse = el('button', { type: 'button', class: 'btn btn-ghost upd-browse', onclick: (e) => { e.stopPropagation(); inp.click(); } }, 'Buscar archivos');
+    const zone = el('div', { class: 'upd-zone', role: 'button', tabindex: '0', 'aria-label': 'Elegir archivos para subir',
+      onclick: () => inp.click(),
+      onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); inp.click(); } }
+    }, [
+      el('span', { class: 'upd-zone-ico', html: ICN_CLOUD }),
+      el('strong', {}, 'Elige archivos o arrástralos aquí'),
+      el('span', { class: 'upd-zone-sub' }, 'Imágenes, videos, música, PDF y más · hasta ' + UPLOAD_MAX_MB + ' MB'),
+      browse
+    ]);
+    let depth = 0;
+    zone.addEventListener('dragenter', (e) => { e.preventDefault(); depth++; zone.classList.add('is-over'); });
+    zone.addEventListener('dragover', (e) => { e.preventDefault(); if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy'; });
+    zone.addEventListener('dragleave', () => { if (--depth <= 0) { depth = 0; zone.classList.remove('is-over'); } });
+    zone.addEventListener('drop', (e) => {
+      e.preventDefault(); depth = 0; zone.classList.remove('is-over');
+      const list = Array.from((e.dataTransfer && e.dataTransfer.files) || []);
+      if (list.length) queueUploads(list, dlg.opts);
+    });
+
+    const proj = dlg.opts.projectId && (store.projects || []).find(x => x.id === dlg.opts.projectId);
+    dlg.list = el('div', { class: 'upd-list', 'aria-live': 'polite' });
+    const box = el('div', { class: 'upd', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'upd-title' }, [
+      el('div', { class: 'upd-head' }, [
+        el('span', { class: 'upd-head-ico', html: ICN_CLOUD }),
+        el('div', { class: 'upd-head-txt' }, [
+          el('h3', { id: 'upd-title' }, 'Subir archivos'),
+          el('p', {}, proj ? 'Se guardarán en el proyecto «' + proj.name + '»' : 'Elige y sube los archivos que quieras')
+        ]),
+        el('button', { type: 'button', class: 'icon-btn upd-close', 'aria-label': 'Cerrar', html: ICN_X, onclick: closeUploadDialog })
+      ]),
+      el('div', { class: 'upd-body' }, [ zone, dlg.list ]),
+      inp
+    ]);
+    dlg.root = el('div', { class: 'upd-root' }, [ box ]);
+    dlg.root.addEventListener('pointerdown', (e) => { if (e.target === dlg.root) dlg.root._down = true; });
+    dlg.root.addEventListener('click', (e) => { if (e.target === dlg.root && dlg.root._down) closeUploadDialog(); if (dlg.root) dlg.root._down = false; });
+    dlg.root.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !document.querySelector('#modal-root.show')) { e.stopPropagation(); closeUploadDialog(); } });
+    // Soltar archivos en cualquier parte del diálogo, no solo en la zona.
+    box.addEventListener('dragover', (e) => e.preventDefault());
+    box.addEventListener('drop', (e) => { if (e.target.closest('.upd-zone')) return; e.preventDefault(); const l = Array.from((e.dataTransfer && e.dataTransfer.files) || []); if (l.length) queueUploads(l, dlg.opts); });
+    document.body.appendChild(dlg.root);
+    dlg.rows.clear();
+    dlg.tasks.forEach(paintTask);
+    setTimeout(() => browse.focus(), 30);
   }
+  function closeUploadDialog() {
+    if (!dlg.root) return;
+    const r = dlg.root;
+    dlg.root = null; dlg.list = null; dlg.rows.clear();
+    r.classList.add('is-leaving');
+    setTimeout(() => r.remove(), 160);
+    // Lo terminado se olvida; lo que sigue subiendo pasa al panel pequeño.
+    dlg.tasks = dlg.tasks.filter(t => t.status !== 'done' && t.status !== 'canceled' && t.status !== 'error');
+    paintPanel();
+  }
+  function statusText(t) {
+    const size = formatBytes(t.file.size);
+    switch (t.status) {
+      case 'queued': return [size, 'En espera'];
+      case 'preparing': return [size, 'Preparando…'];
+      case 'uploading': return [formatBytes(t.loaded) + ' de ' + size, 'Subiendo…'];
+      case 'retrying': return [formatBytes(t.loaded) + ' de ' + size, 'Reintentando…'];
+      case 'done': return [size, 'Completado'];
+      case 'error': return [size, t.error || 'Error'];
+      default: return [size, ''];
+    }
+  }
+  function paintTask(t) {
+    if (!dlg.list) return;
+    if (t.status === 'canceled') { const r = dlg.rows.get(t.id); if (r) { r.node.remove(); dlg.rows.delete(t.id); } return; }
+    let r = dlg.rows.get(t.id);
+    if (!r) {
+      const kind = mediaKind(t.file.type, t.file.name);
+      r = { node: el('div', { class: 'upd-item upd-k-' + kind }), act: null };
+      r.ico = el('span', { class: 'upd-file', 'aria-hidden': 'true' }, [ el('span', { class: 'upd-file-ext' }, fileExt(t.file.name) || KIND_LABEL[kind]) ]);
+      r.name = el('div', { class: 'upd-name', title: t.file.name }, t.file.name);
+      r.bytes = el('span', { class: 'upd-bytes' });
+      r.state = el('span', { class: 'upd-state' });
+      r.btn = el('button', { type: 'button', class: 'icon-btn upd-act' });
+      r.fill = el('span', { class: 'upd-fill' });
+      r.bar = el('div', { class: 'upd-bar', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-label': 'Avance de ' + t.file.name }, [ r.fill ]);
+      r.node.append(r.ico, el('div', { class: 'upd-main' }, [ r.name, el('div', { class: 'upd-meta' }, [ r.bytes, el('span', { class: 'upd-dot', 'aria-hidden': 'true' }, '•'), r.state ]) ]), r.btn, r.bar);
+      dlg.rows.set(t.id, r);
+      dlg.list.prepend(r.node);
+    }
+    const [bytes, state] = statusText(t);
+    r.bytes.textContent = bytes;
+    const busy = t.status === 'preparing' || t.status === 'uploading' || t.status === 'retrying';
+    r.state.innerHTML = '';
+    r.state.className = 'upd-state is-' + t.status;
+    if (busy) r.state.appendChild(el('span', { class: 'upd-spin', 'aria-hidden': 'true' }));
+    else if (t.status === 'done') r.state.appendChild(el('span', { class: 'upd-badge', html: ICN_OK }));
+    else if (t.status === 'error') r.state.appendChild(el('span', { class: 'upd-badge', html: ICN_ERR }));
+    r.state.appendChild(document.createTextNode(state));
+    const pct = t.status === 'done' ? 100 : t.file.size ? Math.round(t.loaded / t.file.size * 100) : 0;
+    r.fill.style.width = pct + '%';
+    r.bar.setAttribute('aria-valuenow', String(pct));
+    r.node.classList.toggle('has-bar', t.status !== 'done' && t.status !== 'error');
+    r.node.classList.toggle('is-done', t.status === 'done');
+    r.node.classList.toggle('is-error', t.status === 'error');
+    // Botón según el estado: cancelar (subiendo), reintentar (error) o borrar (completado).
+    const act = t.status === 'done' ? 'delete' : t.status === 'error' ? 'retry' : 'cancel';
+    if (r.act !== act) {
+      r.act = act;
+      const conf = { cancel: [ICN_X, 'Cancelar'], retry: [ICN_RETRY, 'Reintentar'], delete: [ICN_TRASH, 'Eliminar archivo'] }[act];
+      r.btn.innerHTML = conf[0];
+      r.btn.setAttribute('aria-label', conf[1] + ' ' + t.file.name);
+      r.btn.title = conf[1];
+      r.btn.onclick = () => (act === 'cancel' ? cancelTask : act === 'retry' ? retryTask : deleteUploaded)(t);
+    }
+  }
+  function cancelTask(t) {
+    const queued = up.queue.indexOf(t);
+    if (queued >= 0) { up.queue.splice(queued, 1); up.total = Math.max(0, up.total - 1); dropTask(t.id); }
+    t.status = 'canceled';
+    if (t.xhr) t.xhr.abort();
+    dlg.tasks = dlg.tasks.filter(x => x !== t);
+    paintTask(t);
+    paintPanel();
+    pump();
+  }
+  function retryTask(t) {
+    dropTask(t.id);
+    up.failed = Math.max(0, up.failed - 1);
+    dlg.tasks = dlg.tasks.filter(x => x !== t);
+    const r = dlg.rows.get(t.id); if (r) { r.node.remove(); dlg.rows.delete(t.id); }
+    queueUploads([t.file], t.opts);
+  }
+  async function deleteUploaded(t) {
+    if (!t.item) return;
+    const ok = await confirmDialog('¿Eliminar archivo?', '"' + t.file.name + '" se eliminará para siempre.', 'Eliminar');
+    if (!ok) return;
+    try { await apiDelete('/files/' + t.item.id); }
+    catch (e) { if (e.status !== 404) { toast(e.message || 'No se pudo eliminar'); return; } }
+    store.files = (store.files || []).filter(x => x.id !== t.item.id);
+    (store.projects || []).forEach(p => { if (p.documents) p.documents = p.documents.filter(x => x.id !== t.item.id); });
+    t.status = 'canceled';
+    dlg.tasks = dlg.tasks.filter(x => x !== t);
+    paintTask(t);
+    toast('Archivo eliminado');
+    rerender();
+  }
+
+  // Botón «Subir» → diálogo de subida (opts: { projectId, onItem }).
+  function pickAndUpload(opts) { openUploadDialog(opts); }
 
   // Miniatura cuadrada para listas (Publicados): portada, la propia imagen o un icono por tipo.
   function fileThumb(f) {
@@ -524,6 +730,7 @@
   window.openMedia = openMedia;
   window.queueUploads = queueUploads;
   window.pickAndUpload = pickAndUpload;
+  window.openUploadDialog = openUploadDialog;
   window.analyzeFile = analyzeFile;
   window.fmtDuration = fmtDuration;
 })();

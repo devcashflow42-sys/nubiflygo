@@ -23,6 +23,20 @@ files.use(requireAuth);
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: config.maxFileBytes } });
 const UUID_RE = /^[0-9a-f-]{36}$/i;
+const THUMB_MAX = 400 * 1024;   // la portada la genera el navegador (≈ 20–60 KB)
+// El navegador manda el archivo y, si la tiene, su portada ("thumb").
+const uploadFields = upload.fields([{ name: 'file', maxCount: 1 }, { name: 'thumb', maxCount: 1 }]);
+
+// Copia de functions/_shared/files-util.js → cleanMedia (misma lógica).
+function cleanMedia(raw) {
+  if (!raw || typeof raw !== 'string' || raw.length > 4000) return null;
+  let o; try { o = JSON.parse(raw); } catch { return null; }
+  if (!o || typeof o !== 'object') return null;
+  const txt = v => (typeof v === 'string' ? v.replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, 200) : '') || null;
+  const num = v => (Number.isFinite(Number(v)) && Number(v) >= 0 ? Math.round(Number(v) * 10) / 10 : null);
+  const m = { title: txt(o.title), artist: txt(o.artist), album: txt(o.album), duration: num(o.duration), width: num(o.width), height: num(o.height) };
+  return Object.values(m).some(v => v != null) ? m : null;
+}
 
 // GET /files — lista completa con todos los datos de cada archivo y totales.
 files.get('/', async (req, res, next) => {
@@ -73,23 +87,42 @@ files.delete('/', bulkDelete);
 files.post('/delete', bulkDelete);
 
 // POST /files/upload — sube un archivo (campo "file", opcional "project_id")
-files.post('/upload', upload.single('file'), async (req, res, next) => {
+files.post('/upload', uploadFields, async (req, res, next) => {
   try {
+    req.file = req.files && req.files.file && req.files.file[0];
+    const thumb = req.files && req.files.thumb && req.files.thumb[0];
     if (!req.file) return res.status(400).json({ error: 'Falta el archivo (campo "file").' });
     const projectId = req.body.project_id && UUID_RE.test(req.body.project_id) ? req.body.project_id : null;
     // El proyecto debe ser tuyo; el nombre del archivo nunca forma rutas.
     if (projectId && !(await ownsProject(req.user.id, projectId))) return res.status(404).json({ error: 'Proyecto no encontrado.' });
     const name = String(req.file.originalname || 'archivo').replace(/[\u0000-\u001f\u007f]/g, '').slice(0, 255) || 'archivo';
+    // Subida idempotente (igual que en functions/): la misma upload_id no se duplica.
+    const uploadId = String(req.body.upload_id || '').slice(0, 64);
+    if (/^[a-z0-9]{8,64}$/i.test(uploadId)) {
+      const { rows: dup } = await query(`SELECT ${FILE_COLS} FROM files WHERE user_id = $1 AND meta->>'upload_id' = $2 LIMIT 1`, [req.user.id, uploadId]);
+      if (dup[0]) return res.status(200).json({ item: fileItem(dup[0]) });
+    }
     const key = `users/${req.user.id}/${crypto.randomUUID()}-${safeKeyName(name)}`;
     await putObject(key, req.file.buffer, req.file.mimetype);
+    const meta = {};
+    // Portada (banner): miniatura de imagen/video o carátula de la canción.
+    if (thumb && /^image\/(jpeg|png|webp)$/.test(thumb.mimetype) && thumb.size > 0 && thumb.size <= THUMB_MAX) {
+      try {
+        await putObject(key + '.thumb', thumb.buffer, thumb.mimetype);
+        meta.thumb_key = key + '.thumb'; meta.thumb_mime = thumb.mimetype;
+      } catch { /* sin portada */ }
+    }
+    if (/^[a-z0-9]{8,64}$/i.test(uploadId)) meta.upload_id = uploadId;
+    const media = cleanMedia(req.body.media);
+    if (media) meta.media = media;
     const { rows } = await query(
-      `INSERT INTO files (user_id, project_id, name, size, mime, storage_key)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING id, name, size, mime, project_id, created_at`,
-      [req.user.id, projectId, name, req.file.size, req.file.mimetype, key]);
+      `INSERT INTO files (user_id, project_id, name, size, mime, storage_key, meta)
+       VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb)
+       RETURNING ${FILE_COLS}`,
+      [req.user.id, projectId, name, req.file.size, req.file.mimetype, key, JSON.stringify(meta)]);
     await query('INSERT INTO activity (user_id, kind, text) VALUES ($1, $2, $3)',
       [req.user.id, 'file', 'Archivo subido: ' + name]);
-    res.status(201).json({ item: rows[0] });
+    res.status(201).json({ item: fileItem(rows[0]) });
   } catch (e) { next(e); }
 });
 
