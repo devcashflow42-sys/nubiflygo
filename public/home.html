@@ -3,6 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <!-- Tema: el que eligió el usuario (Claro/Oscuro) o, si no, el del dispositivo. -->
+  <script>try{var t=(JSON.parse(localStorage.getItem('workspace:prefs')||'{}')||{}).theme;document.documentElement.setAttribute('data-theme',t==='dark'||t==='light'?t:'auto');}catch(e){}</script>
   <!-- Base de rutas. En el servidor la app vive también en /project/<id>,
        /settings…, así que la base es la raíz "/" para que css/ y js/ carguen
        siempre bien. Si el archivo se abre localmente (file://), la base pasa a

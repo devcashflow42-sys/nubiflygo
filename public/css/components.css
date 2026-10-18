@@ -119,8 +119,8 @@
   }
   .project-card:hover .card-menu { opacity: 1; }
   .card-menu:hover { background: rgba(0,0,0,.08); color: var(--fg); }
-  :root[data-theme="dark"] .card-menu:hover,
-  :root:not([data-theme="light"]) .card-menu:hover { background: rgba(255,255,255,.08); }
+  :root[data-theme="dark"] .card-menu:hover { background: rgba(255,255,255,.08); }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .card-menu:hover { background: rgba(255,255,255,.08); } }
 
   /* Direct action icons on project cards — always visible */
   .card-actions {

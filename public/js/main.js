@@ -66,16 +66,19 @@
     document.body.style.overflow = '';
     document.documentElement.style.overflow = '';
   }
+  // Tema: «auto» sigue el modo del dispositivo (claro u oscuro); el usuario
+  // puede fijar Claro u Oscuro. Desde el menú se pasa Automático → Claro →
+  // Oscuro → Automático.
   function toggleTheme() {
-    const root = document.documentElement;
-    const current = root.getAttribute('data-theme');
-    let next;
-    if (current === 'dark') next = 'light';
-    else if (current === 'light') next = 'dark';
-    else next = matchMedia('(prefers-color-scheme: dark)').matches ? 'light' : 'dark';
-    root.setAttribute('data-theme', next);
-    const p = readPrefs(); p.theme = next; writePrefs(p);
+    const cur = document.documentElement.getAttribute('data-theme');
+    setTheme(cur === 'light' ? 'dark' : cur === 'dark' ? 'auto' : 'light');
   }
+  function setTheme(th) {
+    th = th === 'light' || th === 'dark' ? th : 'auto';
+    document.documentElement.setAttribute('data-theme', th);
+    const p = readPrefs(); p.theme = th; writePrefs(p);
+  }
+  window.setTheme = setTheme;
   window.toggleDrawer = toggleDrawer;
   window.openMobile = openMobile;
   window.closeMobile = closeMobile;
@@ -85,9 +88,8 @@
   (function init() {
     const p = readPrefs();
     if (p.drawer === 'collapsed') app.setAttribute('data-drawer', 'collapsed');
-    // Tema fijo (nunca automático): usa el guardado, o Claro por defecto. Así
-    // la app no sigue el modo del sistema por su cuenta.
-    document.documentElement.setAttribute('data-theme', p.theme === 'dark' ? 'dark' : 'light');
+    // Tema: el que eligió el usuario o, si no eligió, el del dispositivo.
+    document.documentElement.setAttribute('data-theme', p.theme === 'dark' || p.theme === 'light' ? p.theme : 'auto');
     applyStaticStrings();
     // Entrada directa / recarga: abre la sección indicada en la URL
     // (/main, /project, /note, /archive, /apikeys).

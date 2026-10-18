@@ -4,9 +4,14 @@
   --border:#e3e6ea; --accent:#1f2328; --accent-hover:#363b42; --on-accent:#fff; --link:#2b5fff; --radius:18px;
 }
 @media (prefers-color-scheme: dark){
-  :root{ --bg:#0a0a0b; --surface:#141416; --surface-2:#1b1b1e; --text:#f4f4f5; --muted:#b4b4bb; --faint:#85858d;
+  :root:not([data-theme="light"]){ --bg:#0a0a0b; --surface:#141416; --surface-2:#1b1b1e; --text:#f4f4f5; --muted:#b4b4bb; --faint:#85858d;
     --border:#26262a; --accent:#f4f4f5; --accent-hover:#fff; --on-accent:#0a0a0b; --link:#7aa2ff; }
 }
+:root[data-theme="dark"]{ --bg:#0a0a0b; --surface:#141416; --surface-2:#1b1b1e; --text:#f4f4f5; --muted:#b4b4bb; --faint:#85858d;
+    --border:#26262a; --accent:#f4f4f5; --accent-hover:#fff; --on-accent:#0a0a0b; --link:#7aa2ff; }
+:root{color-scheme:light}
+:root[data-theme="dark"]{color-scheme:dark}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){color-scheme:dark} }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{min-height:100%}
 body{font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;line-height:1.5;display:flex;flex-direction:column;min-height:100vh;min-height:100dvh}
@@ -38,7 +43,8 @@ a{color:var(--link);text-decoration:none} a:hover{text-decoration:underline}
 .sh-preview video{width:100%;max-height:62vh;display:block;background:#000}
 .sh-preview pre{align-self:stretch;width:100%;margin:0;padding:18px;font:12.5px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap;overflow:auto;max-height:52vh;color:var(--text)}
 .sh-audio{width:100%;padding:28px 22px;display:flex;flex-direction:column;align-items:center;gap:18px;background:linear-gradient(160deg,#d9c8f5,#f3c9dc)}
-@media (prefers-color-scheme: dark){ .sh-audio{background:linear-gradient(160deg,#3a2b5a,#5a2b44)} }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .sh-audio{background:linear-gradient(160deg,#3a2b5a,#5a2b44)} }
+:root[data-theme="dark"] .sh-audio{background:linear-gradient(160deg,#3a2b5a,#5a2b44)}
 .sh-cover{width:168px;height:168px;border-radius:16px;object-fit:cover;box-shadow:0 18px 40px -16px rgba(0,0,0,.45);background:rgba(255,255,255,.45);display:grid;place-items:center;color:#5b4a7a}
 .sh-cover svg{width:64px;height:64px}
 .sh-audio audio{width:100%;max-width:440px}

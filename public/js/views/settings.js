@@ -215,8 +215,7 @@
     opts.forEach(function (o) {
       const b = el('button', { type: 'button', class: (cur === o[0] ? 'on' : ''), html: o[2] + '<span>' + o[1] + '</span>' });
       b.addEventListener('click', function () {
-        document.documentElement.setAttribute('data-theme', o[0]);
-        const p = readPrefs(); p.theme = o[0]; writePrefs(p);
+        setTheme(o[0]);
         wrap.querySelectorAll('button').forEach(function (x) { x.classList.remove('on'); });
         b.classList.add('on');
       });
