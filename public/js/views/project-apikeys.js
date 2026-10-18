@@ -17,7 +17,10 @@
     return arr.map(t => (FILE_TYPES.find(f => f.val === t) || {}).label || t).join(', ');
   }
 
-  /* ─── Pestaña API key del proyecto ─── */
+  /* ─── Pestaña API key del proyecto ───
+     Tarjeta de bienvenida, una tarjeta por clave (estado, clave oculta, permisos,
+     solicitudes del mes con su gráfica de 7 días y botón para borrarla), una
+     para crear otra y un ejemplo de código listo para copiar. */
   function tabApiKey(p, body) {
     // Carga las claves reales del usuario y filtra las de este proyecto.
     if (!apiKeysLoaded) {
@@ -27,61 +30,81 @@
     }
     const keys = store.apiKeys.filter(function (k) { return k.project_id === p.id; });
     keys.forEach(ensureUsage);
+    if (keys.length) startKeysLive();
 
-    body.appendChild(el('p', { style: { color: 'var(--fg-muted)', margin: '0 0 14px', fontSize: '13.5px', lineHeight: '1.5' } },
-      'Claves secretas de este proyecto. Úsalas para publicar archivos y documentos (imágenes, video, audio…) en «Publicados». Trátalas como contraseñas — no las compartas.'));
-
-    body.appendChild(el('div', { style: { margin: '0 0 16px' } }, [
-      el('button', { class: 'btn btn-primary btn-sm', onclick: () => openProjectKeyModal(p), html: ICON_PLUS_SM + '<span style="margin-left:4px">Generar clave secreta</span>' })
+    body.appendChild(el('div', { class: 'ak-intro' }, [
+      el('span', { class: 'ak-intro-ico', html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>' }),
+      el('div', {}, [
+        el('strong', {}, 'Conecta tu sitio o app a «' + p.name + '»'),
+        el('p', {}, 'Con una clave secreta tu página o app puede leer y publicar los archivos de este proyecto. Trátala como una contraseña.')
+      ])
     ]));
 
-    if (keys.length === 0) {
-      body.appendChild(emptyBlock('Aún no hay claves secretas', 'Genera la primera clave secreta de este proyecto para empezar a publicar archivos multimedia y documentos.', 'Generar clave secreta', () => openProjectKeyModal(p)));
-      return;
+    body.appendChild(libSec('Claves secretas'));
+    const grid = el('div', { class: 'ak-keys' });
+    keys.forEach(k => grid.appendChild(projectKeyCard(p, k)));
+    grid.appendChild(el('button', { type: 'button', class: 'ak-new', onclick: () => openProjectKeyModal(p) }, [
+      el('span', { html: LIB_ICN.plus }), 'Crear clave secreta'
+    ]));
+    body.appendChild(grid);
+
+    if (keys.length) {
+      body.appendChild(libSec('Ejemplo rápido'));
+      body.appendChild(codeExample(keys[0]));
     }
-
-    // Análisis de solicitudes (agregado del proyecto)
-    body.appendChild(el('div', { class: 'section-h' }, [ el('h3', {}, 'Análisis de solicitudes'), liveBadge() ]));
-    startKeysLive();
-    body.appendChild(usageTiles(keys));
-
-    body.appendChild(el('div', { class: 'section-h' }, [ el('h3', {}, 'Claves secretas' ) ]));
-    const list = el('div', { class: 'key-list' });
-    keys.forEach(k => list.appendChild(projectKeyRow(p, k)));
-    body.appendChild(list);
   }
 
-  function projectKeyRow(p, k) {
+  function projectKeyCard(p, k) {
     ensureUsage(k);
-    const masked = k.value.slice(0, 7) + '•'.repeat(20) + k.value.slice(-4);
-
-    return el('div', { class: 'key-row' }, [
-      el('div', { class: 'key-head' }, [
-        el('div', { class: 'key-main' }, [
-          el('div', { class: 'key-name' }, [
-            document.createTextNode(k.name + ' '),
-            el('span', { class: 'key-badge' }, PERM_LABEL[k.permission] || 'Todo')
-          ]),
-          el('div', { class: 'key-value' }, [ el('code', {}, k.revealed ? k.value : masked) ]),
-          el('div', { class: 'key-tags' }, [
-            el('span', { class: 'key-tag', html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> ' + fileTypeLabels(k.fileTypes) })
-          ]),
-          el('div', { class: 'key-meta' }, 'Creada ' + formatDate(k.createdAt) + (k.lastUsed ? (' · Último uso ' + timeAgo(k.lastUsed)) : ' · Nunca usada'))
-        ]),
-        el('div', { class: 'key-actions' }, [
-          el('button', { class: 'icon-btn', title: k.revealed ? 'Ocultar' : 'Mostrar', onclick: () => { k.revealed = !k.revealed; writeStore(store); render(); }, html: k.revealed
-            ? '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>'
-            : '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>'
-          }),
-          el('button', { class: 'icon-btn', title: 'Copiar', onclick: () => copyText(k.value), html: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>' }),
-          el('button', { class: 'icon-btn', title: 'Reiniciar uso', onclick: () => resetUsage(k), html: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>' }),
-          el('button', { class: 'icon-btn', title: 'Revocar', onclick: () => projectRevokeKey(p, k), html: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/></svg>' }),
-          // Menú compacto (solo móvil)
-          el('button', { class: 'icon-btn key-more', title: 'Opciones', 'aria-label': 'Opciones', onclick: (e) => popup(e, keyMenuItems(k, () => projectRevokeKey(p, k))), html: KEY_ICON.dots })
-        ])
+    const masked = k.value.slice(0, 7) + '•'.repeat(12) + k.value.slice(-4);
+    const m = k.usage.month, total = m.ok + m.err;
+    const days = k.usage.days.map(d => d.ok + d.err), max = Math.max(1, ...days);
+    const types = (!k.fileTypes || !k.fileTypes.length || k.fileTypes.includes('all')) ? ['Todos los archivos'] : k.fileTypes.map(t => (FILE_TYPES.find(f => f.val === t) || {}).label || t);
+    const eye = k.revealed
+      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>'
+      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+    return el('div', { class: 'ak-key' }, [
+      el('div', { class: 'ak-kh' }, [
+        el('span', { class: 'ak-av', style: { background: libGrad(k.id) }, html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="m10.85 12.15 7.5-7.5 1.65 1.65 1.5-1.5-3.15-3.15-9 9"/></svg>' }),
+        el('div', { class: 'ak-kt' }, [ el('strong', { title: k.name }, k.name), el('span', {}, [ el('span', { class: 'ak-st' }, [ el('i'), 'Activa' ]), ' · Creada ' + formatDate(k.createdAt) ]) ]),
+        el('button', { type: 'button', class: 'icon-btn ak-more', 'aria-label': 'Opciones de ' + k.name, title: 'Opciones', html: LIB_ICN.dots, onclick: (e) => popup(e, keyMenuItems(k, () => projectRevokeKey(p, k))) }),
+        el('button', { type: 'button', class: 'icon-btn ak-del', 'aria-label': 'Borrar la clave ' + k.name, title: 'Borrar clave', html: LIB_ICN.trash, onclick: () => projectRevokeKey(p, k) })
       ]),
-      usageBlock(k)
-    ]);
+      el('div', { class: 'ak-secret' }, [
+        el('code', {}, k.revealed ? k.value : masked),
+        el('button', { type: 'button', class: 'icon-btn', 'aria-label': k.revealed ? 'Ocultar clave' : 'Mostrar clave', title: k.revealed ? 'Ocultar' : 'Mostrar', html: eye, onclick: () => { k.revealed = !k.revealed; writeStore(store); render(); } }),
+        el('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Copiar clave', title: 'Copiar', html: LIB_ICN.copy, onclick: () => copyText(k.value) })
+      ]),
+      el('div', { class: 'ak-chips' }, [ el('span', {}, PERM_LABEL[k.permission] || 'Todo') ].concat(types.map(t => el('span', {}, t)))),
+      el('div', { class: 'ak-use' }, [
+        el('div', {}, [
+          el('strong', {}, total.toLocaleString('es-MX')),
+          el('span', {}, (total === 1 ? 'solicitud este mes' : 'solicitudes este mes') + ' · ' + (k.lastUsed ? 'usada ' + timeAgo(k.lastUsed) : 'nunca usada'))
+        ]),
+        el('div', { class: 'ak-spark', 'aria-hidden': 'true' }, days.map((n, i) => el('i', { class: i === days.length - 1 ? 'last' : '', style: { height: Math.max(8, Math.round(n / max * 100)) + '%' } })))
+      ]),
+      m.err ? el('div', { class: 'ak-err' }, m.err + (m.err === 1 ? ' falla este mes' : ' fallas este mes')) : null
+    ].filter(Boolean));
+  }
+
+  // Ejemplo listo para copiar (JavaScript, cURL o Python) con la clave del proyecto.
+  function codeExample(k) {
+    const base = location.origin + '/api/v1/files?type=audio';
+    const key = k.value.slice(0, 7) + '…' + k.value.slice(-4);
+    const SAMPLES = {
+      js: "// Lista las canciones de este proyecto\nconst res = await fetch('" + base + "', {\n  headers: { Authorization: 'Bearer " + key + "' }\n});\nconst { items } = await res.json();\nitems.forEach(f => console.log(f.media?.title || f.name, f.media?.artist || ''));",
+      curl: "# Lista las canciones de este proyecto\ncurl '" + base + "' \\\n  -H 'Authorization: Bearer " + key + "'",
+      py: "# Lista las canciones de este proyecto\nimport requests\nr = requests.get('" + base + "',\n    headers={'Authorization': 'Bearer " + key + "'})\nfor f in r.json()['items']:\n    print(f.get('media', {}).get('title') or f['name'])"
+    };
+    let lang = 'js';
+    const pre = el('pre', {}, SAMPLES.js);
+    const tabs = [['js', 'JavaScript'], ['curl', 'cURL'], ['py', 'Python']].map(t => el('button', { type: 'button', class: t[0] === lang ? 'on' : '', onclick: () => {
+      lang = t[0]; pre.textContent = SAMPLES[lang];
+      tabs.forEach((b, i) => b.classList.toggle('on', ['js', 'curl', 'py'][i] === lang));
+    } }, t[1]));
+    // Se copia con la clave completa (en pantalla va recortada).
+    const copy = el('button', { type: 'button', class: 'ak-copy', html: LIB_ICN.copy + '<span>Copiar</span>', onclick: () => copyText(SAMPLES[lang].split(key).join(k.value)) });
+    return el('div', { class: 'ak-code' }, [ el('div', { class: 'ak-code-h' }, tabs.concat([copy])), pre ]);
   }
 
   async function projectRevokeKey(p, k) {

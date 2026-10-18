@@ -571,6 +571,8 @@
 
   /* ─── Tarjeta que suena (actualización directa, sin redibujar la vista) ─── */
   function paintNowPlaying() {
+    // Filas de canciones (biblioteca de música): se marca la que suena.
+    document.querySelectorAll('.lib-song[data-fid]').forEach(r => r.classList.toggle('is-playing', window.isNowPlaying ? window.isNowPlaying(r.dataset.fid) : String(window.nowPlayingId) === r.dataset.fid));
     document.querySelectorAll('.fb-art[data-fid]').forEach(art => {
       const on = window.isNowPlaying ? window.isNowPlaying(art.dataset.fid) : (!!window.nowPlayingId && art.dataset.fid === String(window.nowPlayingId));
       if (on === art.classList.contains('is-now-playing')) return;

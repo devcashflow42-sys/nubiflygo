@@ -142,6 +142,21 @@ files.get('/:id/download', async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+// PATCH /files/:id — publicar/despublicar (igual que en functions/)
+files.patch('/:id', async (req, res, next) => {
+  try {
+    if (!UUID_RE.test(req.params.id)) return res.status(400).json({ error: 'Id no válido.' });
+    const b = req.body || {};
+    if (typeof b.published !== 'boolean') return res.status(400).json({ error: 'Nada que actualizar.' });
+    const { rows } = await query(
+      `UPDATE files SET published = $3, published_at = CASE WHEN $3 THEN now() ELSE NULL END, updated_at = now()
+       WHERE id = $1 AND user_id = $2 RETURNING id`,
+      [req.params.id, req.user.id, b.published]);
+    if (!rows[0]) return res.status(404).json({ error: 'Archivo no encontrado.' });
+    res.json({ ok: true, published: b.published });
+  } catch (e) { next(e); }
+});
+
 // GET /files/:id/thumb — portada del archivo (igual que en functions/)
 files.get('/:id/thumb', async (req, res, next) => {
   try {

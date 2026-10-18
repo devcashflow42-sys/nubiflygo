@@ -31,7 +31,6 @@
       notes: viewNotes,
       files: viewFiles,
       apikeys: viewApiKeys,
-      automation: viewAutomation,
       settings: viewSettings,
       notifications: viewNotifications
     };
@@ -91,7 +90,7 @@
     document.documentElement.setAttribute('data-theme', p.theme === 'dark' ? 'dark' : 'light');
     applyStaticStrings();
     // Entrada directa / recarga: abre la sección indicada en la URL
-    // (/main, /project, /note, /archive, /report, /apikeys, /automation).
+    // (/main, /project, /note, /archive, /apikeys).
     try { if (typeof applyUrl === 'function') applyUrl(location.pathname); } catch (e) {}
     try { if (typeof syncUrl === 'function') syncUrl(true); } catch (e) {}
     render();

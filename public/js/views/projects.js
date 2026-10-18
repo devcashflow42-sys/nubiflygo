@@ -118,13 +118,28 @@
     } else if (filtered.length === 0) {
       body.appendChild(emptyBlock('Sin resultados', 'Ningún proyecto coincide con tu búsqueda.', null));
     } else {
-      const grid = el('div', { class: 'project-grid' });
-      filtered.forEach(p => grid.appendChild(projectCard(p)));
-      grid.appendChild(el('button', { class: 'add-project', onclick: () => openProjectModal() }, [
+      // Agrupados por categoría automática (según lo que tiene cada proyecto).
+      if (typeof loadFiles === 'function') loadFiles();
+      const groups = new Map();
+      ['music', 'photos', 'videos', 'docs', 'mixed', null].forEach(c => groups.set(c, []));
+      filtered.forEach(p => groups.get(projectCategory(projectItems(p))).push(p));
+      const add = el('button', { class: 'add-project', onclick: () => openProjectModal() }, [
         el('span', { html: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>' }),
         'Nuevo proyecto'
-      ]));
-      body.appendChild(grid);
+      ]);
+      const shown = [...groups.entries()].filter(([, ps]) => ps.length);
+      shown.forEach(([c, ps], i) => {
+        const meta = c ? CAT[c] : null;
+        body.appendChild(el('div', { class: 'pg-head' }, [
+          el('span', { class: 'pg-ico', style: { background: meta ? meta.color : 'var(--fg-faint)' }, html: meta ? meta.icon : KIND_ICON_LIB('mixed') }),
+          el('strong', {}, meta ? meta.label : 'Sin archivos todavía'),
+          el('span', {}, '· ' + ps.length)
+        ]));
+        const grid = el('div', { class: 'project-grid' });
+        ps.forEach(p => grid.appendChild(projectCard(p)));
+        if (i === shown.length - 1) grid.appendChild(add);
+        body.appendChild(grid);
+      });
     }
     v.appendChild(body);
   }
@@ -231,7 +246,6 @@
     // Las claves reales del proyecto son las de store.apiKeys con este project_id.
     const keyCount = (store.apiKeys || []).filter(k => k.project_id === p.id).length;
 
-    // Custom project toolbar (via shared helper so the back arrow is guaranteed)
     v.appendChild(pageToolbar({
       back: () => go('projects', { projectId: null }),
       dotColor: p.color || PROJECT_COLORS[0],
@@ -239,49 +253,61 @@
         { label: 'Proyectos', onClick: () => go('projects', { projectId: null }) },
         { label: p.name, here: true }
       ],
-      extras: [ visBadge(p.visibility) ],
-      actions: [
-        el('button', {
-          class: 'icon-btn', title: 'Opciones del proyecto', 'aria-label': 'Opciones',
-          onclick: (e) => popup(e, [
-            { label: 'Editar proyecto', icon: ICON_RENAME, onClick: () => openProjectModal(p) },
-            { label: p.visibility === 'public' ? 'Hacer privado' : 'Hacer público', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>', onClick: () => { p.visibility = p.visibility === 'public' ? 'private' : 'public'; p.updatedAt = Date.now(); writeStore(store); toast(p.visibility === 'public' ? 'Ahora es público' : 'Ahora es privado'); render(); } },
-            '-',
-            { label: 'Copiar enlace', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>', onClick: () => copyText('https://nubiflygo.app/p/' + p.id.slice(0,8)) },
-            { label: 'Copiar clave API', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="m10.85 12.15 7.5-7.5 1.65 1.65 1.5-1.5-3.15-3.15-9 9"/></svg>', onClick: () => { const ks = ensureProjectKeys(p); if (ks.length) copyText(ks[0].value); else { state.projectTab = 'apikey'; render(); toast('Crea una clave secreta primero'); } } },
-            { label: 'Copiar ID del proyecto', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>', onClick: () => copyText(p.id) },
-            '-',
-            docCount ? { label: 'Vaciar proyecto', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11l4 4M14 11l-4 4"/></svg>', danger: true, onClick: () => emptyProject(p) } : null,
-            { label: 'Eliminar proyecto', icon: ICON_DELETE, danger: true, onClick: () => confirmDeleteProject(p) }
-          ].filter(Boolean)),
-          html: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>'
-        })
-      ]
+      extras: [ visBadge(p.visibility) ]
     }));
 
-    // Description if any
-    if (p.description) {
-      v.appendChild(el('div', { style: { padding: '14px 20px 0', color: 'var(--fg-muted)', fontSize: '14px', lineHeight: '1.55', maxWidth: '720px' } }, p.description));
-    }
+    // Portada grande: mosaico de portadas, categoría automática y acciones.
+    const items = p.documents || [];
+    const cat = p._loaded ? projectCategory(items) : null;
+    const songs = items.filter(d => d.kind === 'file' && mediaKind(d.mime, d.title) === 'audio');
+    const menuBtn = el('button', { type: 'button', class: 'ph-btn is-icon', 'aria-label': 'Opciones del proyecto', title: 'Opciones del proyecto', html: LIB_ICN.dots,
+      onclick: (e) => popup(e, projectMenuItems(p, docCount)) });
+    const shuffle = () => { const q = songs.slice().sort(() => Math.random() - 0.5); playAudio(q[0], q); };
+    v.appendChild(projectHero(p, p._loaded ? items : [], [
+      songs.length ? heroBtn('Reproducir todo', LIB_ICN.play, () => playAudio(songs[0], songs), 'ph-play') : null,
+      songs.length > 1 ? heroBtn('Aleatorio', LIB_ICN.shuffle, shuffle) : null,
+      heroBtn('Subir', LIB_ICN.upload, () => fileInput(p)),
+      cat !== 'music' && cat !== 'photos' ? heroBtn('Nuevo documento', LIB_ICN.plus, () => openDocModal(p)) : null,
+      heroBtn('Publicar', LIB_ICN.globe, () => { state.projectTab = 'pub'; render(); }),
+      menuBtn
+    ]));
 
     const tab = state.projectTab || 'docs';
-    const tabs = el('div', { class: 'tabs', style: { marginTop: '14px' } }, [
-      tabBtn('docs', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>', 'Documentos', docCount, tab),
-      tabBtn('pub', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>', 'Publicados', pubCount, tab),
+    v.appendChild(el('div', { class: 'lib-tabs ph-tabs', role: 'tablist', 'aria-label': 'Secciones del proyecto' }, [
+      tabBtn('docs', KIND_ICON_LIB('mixed'), 'Contenido', docCount, tab),
+      tabBtn('pub', LIB_ICN.globe, 'Publicados', pubCount, tab),
       tabBtn('apikey', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="m10.85 12.15 7.5-7.5 1.65 1.65 1.5-1.5-3.15-3.15-9 9"/></svg>', 'API key', keyCount, tab),
       tabBtn('settings', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>', 'Ajustes', null, tab)
-    ]);
-    v.appendChild(tabs);
+    ]));
 
     const body = el('div', { class: 'board-body' });
     if (!p._loaded && (tab === 'docs' || tab === 'pub')) {
       body.appendChild(skelGrid(8, { label: 'Cargando el proyecto…' }));
-    } else if (tab === 'docs') tabDocuments(p, body);
+    } else if (tab === 'docs') tabContent(p, body, cat);
     else if (tab === 'pub') tabPublished(p, body);
     else if (tab === 'apikey') tabApiKey(p, body);
     else if (tab === 'settings') tabSettings(p, body);
     else tabDocuments(p, body);
     v.appendChild(body);
+  }
+
+  // Opciones del proyecto (botón ⋯ de la portada).
+  function projectMenuItems(p, docCount) {
+    return [
+      { label: 'Editar proyecto', icon: ICON_RENAME, onClick: () => openProjectModal(p) },
+      { label: 'Copiar ID del proyecto', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>', onClick: () => copyText(p.id) },
+      '-',
+      docCount ? { label: 'Vaciar proyecto', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11l4 4M14 11l-4 4"/></svg>', danger: true, onClick: () => emptyProject(p) } : null,
+      { label: 'Eliminar proyecto', icon: ICON_DELETE, danger: true, onClick: () => confirmDeleteProject(p) }
+    ].filter(Boolean);
+  }
+
+  // Contenido: biblioteca de música, galería de fotos o la cuadrícula de siempre.
+  function tabContent(p, body, cat) {
+    const ctx = { key: 'project:' + p.id, onMenu: (d) => openDocMenu(p, d), grid: () => { const b = el('div'); tabDocuments(p, b); return b; } };
+    if (cat === 'music') body.appendChild(musicLibrary(p.documents || [], ctx));
+    else if (cat === 'photos') body.appendChild(photoLibrary(p.documents || [], ctx));
+    else tabDocuments(p, body);
   }
 
   // Marcador mientras llega la lista de proyectos (entrada directa a un enlace).
@@ -294,13 +320,14 @@
   }
 
   function tabBtn(key, iconHtml, label, count, active) {
+    const on = active === key;
     const b = el('button', {
-      class: 'tab' + (active === key ? ' active' : ''),
+      type: 'button', role: 'tab', class: 'lib-tab' + (on ? ' on' : ''), 'aria-selected': on ? 'true' : 'false',
       onclick: () => { state.projectTab = key; state.search = ''; render(); }
     }, [
-      el('span', { html: iconHtml, style: { display: 'inline-flex' } }),
+      el('span', { class: 'lib-tab-ico', html: iconHtml }),
       label,
-      count != null ? el('span', { class: 'pill' }, String(count)) : null
+      count != null ? el('b', {}, String(count)) : null
     ].filter(Boolean));
     return b;
   }
@@ -345,51 +372,59 @@
     }
   }
 
+  // Publicados: portadas con «Público», ▶ para música y video, y en cada una
+  // compartir, dejar de publicar y eliminar. Abajo, lo que aún no se publica.
   function tabPublished(p, body) {
-    body.appendChild(el('p', { style: { color: 'var(--fg-muted)', margin: '0 0 14px', fontSize: '13.5px' } }, 'Archivos y documentos marcados como públicos. Cualquier persona con el enlace puede verlos.'));
-
-    const pub = (p.documents || []).filter(d => d.published);
-    if (pub.length === 0 && (!p.documents || p.documents.length === 0)) {
-      body.appendChild(emptyBlock('Nada publicado todavía', 'Crea un documento primero y marcas la casilla "Publicar" para que aparezca aquí con un enlace público.', null));
+    const all = p.documents || [];
+    const pub = all.filter(d => d.published);
+    if (!all.length) {
+      body.appendChild(emptyBlock('Nada publicado todavía', 'Sube archivos o crea un documento y publícalo para que aparezca aquí.', 'Subir archivos', () => fileInput(p)));
       return;
     }
-
-    const list = el('div', { class: 'list' });
-    if (pub.length === 0) {
-      list.appendChild(el('div', { style: { padding: '20px', textAlign: 'center', color: 'var(--fg-muted)', background: 'var(--surface-2)', border: '1px dashed var(--border-strong)', borderRadius: '12px' } }, 'Ningún documento publicado todavía. Toca el interruptor junto a un documento abajo para publicarlo.'));
+    body.appendChild(libSec('Publicados'));
+    if (!pub.length) {
+      body.appendChild(el('p', { class: 'lib-empty' }, 'Aún no publicas nada de este proyecto. Activa el interruptor de un archivo abajo para publicarlo.'));
     } else {
-      pub.forEach(d => list.appendChild(pubRow(p, d)));
+      body.appendChild(el('div', { class: 'lib-albums pub-grid' }, pub.map(d => pubCard(p, d, pub))));
     }
-    body.appendChild(list);
-
-    // All documents toggle list
-    if (p.documents && p.documents.length) {
-      body.appendChild(el('div', { class: 'section-h' }, [ el('h3', {}, 'Todos los documentos') ]));
-      const all = el('div', { class: 'list' });
-      p.documents.forEach(d => all.appendChild(pubToggleRow(p, d)));
-      body.appendChild(all);
+    const rest = all.filter(d => !d.published);
+    if (rest.length) {
+      body.appendChild(libSec('Publicar más'));
+      const list = el('div', { class: 'list' });
+      rest.forEach(d => list.appendChild(pubToggleRow(p, d)));
+      body.appendChild(list);
     }
   }
 
-  function pubRow(p, d) {
-    const url = d.publicUrl || ('nubiflygo.app/p/' + p.id.slice(0,6) + '/' + d.id.slice(0,8));
-    return el('div', { class: 'list-row' }, [
-      fileThumb(d),
-      el('div', { class: 'lr-main' }, [
-        el('div', { class: 'lr-title' }, d.title),
-        el('div', { class: 'lr-sub', style: { fontFamily: "'JetBrains Mono', monospace", fontSize: '11.5px' } }, url)
-      ]),
-      el('span', { class: 'vis-badge', html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> Público' }),
-      el('button', { class: 'icon-btn', title: 'Copiar enlace', onclick: () => copyText(url),
-        html: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>' })
-    ]);
+  function pubCard(p, d, list) {
+    const isFile = d.kind === 'file';
+    const k = isFile ? mediaKind(d.mime, d.title) : 'doc';
+    const playable = isFile && /^(audio|video)$/.test(k);
+    const title = isFile ? fileTexts(d).title : d.title;
+    const sub = k === 'audio' ? ((d.media && d.media.artist) || 'Canción') : (isFile ? formatBytes(d.size || 0) : 'Documento') + ' · ' + timeAgo(d.publishedAt || d.updatedAt);
+    const open = () => (playable ? (k === 'audio' ? playAudio(d, list.filter(x => x.kind === 'file' && mediaKind(x.mime, x.title) === 'audio')) : openMedia(d, null, list)) : (isFile && k === 'image' ? openImageViewer(d) : openDocViewer(p, d)));
+    const url = libThumb(d);
+    const cover = el('div', { class: 'lib-cv', style: { background: libGrad(d.id) } }, [ el('span', { class: 'lib-ini pub-ico', html: KIND_ICON_LIB(k === 'audio' ? 'audio' : k === 'video' ? 'video' : k === 'image' ? 'image' : 'doc') }) ]);
+    if (url) { const im = el('img', { src: url, alt: '', loading: 'lazy', decoding: 'async' }); im.addEventListener('error', () => im.remove()); cover.appendChild(im); }
+    return el('div', { class: 'lib-album pub-card' }, [
+      el('button', { type: 'button', class: 'lib-album-open', 'aria-label': 'Abrir ' + title, onclick: open }, [ cover ]),
+      el('span', { class: 'pub-badge', html: LIB_ICN.globe + ' Público' }),
+      playable ? el('button', { type: 'button', class: 'lib-cv-play', 'aria-label': 'Reproducir ' + title, title: 'Reproducir', html: LIB_ICN.play, onclick: open }) : null,
+      el('div', { class: 'pub-acts' }, [
+        isFile ? el('button', { type: 'button', class: 'pub-act', 'aria-label': 'Compartir enlace de ' + title, title: 'Compartir enlace', html: ICON_SHARE, onclick: () => openShareDialog(d) }) : null,
+        el('button', { type: 'button', class: 'pub-act', 'aria-label': 'Dejar de publicar ' + title, title: 'Dejar de publicar', html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.9" y1="4.9" x2="19.1" y2="19.1"/></svg>', onclick: () => togglePublish(p, d) }),
+        el('button', { type: 'button', class: 'pub-act danger', 'aria-label': 'Eliminar ' + title, title: 'Eliminar', html: LIB_ICN.trash, onclick: () => deleteProjectDoc(p, d) })
+      ].filter(Boolean)),
+      el('strong', { title }, title),
+      el('span', {}, sub)
+    ].filter(Boolean));
   }
 
   function pubToggleRow(p, d) {
     return el('div', { class: 'list-row', style: { gridTemplateColumns: 'auto 1fr auto' } }, [
       fileThumb(d),
       el('div', { class: 'lr-main' }, [
-        el('div', { class: 'lr-title', style: { fontSize: '13px' } }, d.title),
+        el('div', { class: 'lr-title', style: { fontSize: '13px' } }, d.kind === 'file' ? fileTexts(d).title : d.title),
         el('div', { class: 'lr-sub' }, d.published ? ('Publicado · ' + timeAgo(d.publishedAt || d.updatedAt)) : 'Privado')
       ]),
       el('button', {

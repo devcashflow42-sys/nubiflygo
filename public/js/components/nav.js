@@ -11,13 +11,12 @@
     notes: '/note',
     files: '/archive',
     apikeys: '/apikeys',
-    automation: '/automation',
     settings: '/settings',
     notifications: '/notifications'
   };
   const PATH_TO_ROUTE = {
     main: 'dashboard', project: 'projects', note: 'notes',
-    archive: 'files', apikeys: 'apikeys', automation: 'automation',
+    archive: 'files', apikeys: 'apikeys',
     settings: 'settings', notifications: 'notifications'
   };
 
@@ -194,7 +193,6 @@
       else parts[parts.length-1].here = true;
     }
     if (state.route === 'apikeys') parts.push({ label: t('nav.apiKeys'), here: true });
-    if (state.route === 'automation') parts.push({ label: t('nav.automation'), here: true });
     if (state.route === 'settings') parts.push({ label: 'Configuración', here: true });
     if (state.route === 'notifications') parts.push({ label: 'Notificaciones', here: true });
 

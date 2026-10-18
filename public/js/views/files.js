@@ -19,6 +19,7 @@
       published: !!f.published,
       thumbUrl: f.thumb_url || (f.thumbnail && f.thumbnail.url) || null,
       media: f.media || null,
+      checksum: (f.metadata && f.metadata.checksum_sha256) || null,
       updatedAt: f.created_at ? Date.parse(f.created_at) : Date.now(),
       downloadUrl: '/api/v1/files/' + f.id + '/download'
     };
@@ -46,7 +47,7 @@
       // Ante un error se marca como cargado para no reintentar en bucle
       // (el tiempo real volverá a cargar cuando haya conexión/sesión).
       .catch(function (e) { filesLoaded = true; if (e.status !== 401) toast(e.message || 'No se pudieron cargar los archivos'); })
-      .then(function () { filesLoading = false; if (state.route === 'files') render(); });
+      .then(function () { filesLoading = false; if (state.route === 'files' || (state.route === 'projects' && !state.projectId)) render(); });
   }
 
   function viewFiles() {
@@ -89,24 +90,38 @@
       return;
     }
 
+    // Colecciones inteligentes: Música, Fotos, Videos, Documentos y Limpieza.
+    const tab = state.filesTab || 'collections';
+    v.insertBefore(filesTabs(store.files, tab), null);
+    const col = FILE_COLS.find(c => c.id === tab);
+    if (tab === 'collections') { body.appendChild(collectionsOverview(store.files)); v.appendChild(body); return; }
+    if (tab === 'cleanup') { body.appendChild(cleanupView(store.files, deleteFilesNow)); v.appendChild(body); return; }
+    if (col && (col.id === 'music' || col.id === 'photos')) {
+      const ctx = { key: 'files:' + col.id, onMenu: (f, e) => popup(e, fileMenuItems(f)) };
+      const fs = filesOfCol(store.files, col);
+      body.appendChild(col.id === 'music' ? musicLibrary(fs, ctx) : photoLibrary(fs, ctx));
+      v.appendChild(body); return;
+    }
+
     body.appendChild(el('div', { class: 'board-tools', style: { paddingTop: '0', paddingBottom: '12px' } }, [
       searchInput('Buscar archivos…')
     ]));
 
     const q = state.search.toLowerCase();
-    const files = store.files.filter(f => !q || [f.title, f.media && f.media.title, f.media && f.media.artist, f.media && f.media.album]
+    const base = col ? filesOfCol(store.files, col) : store.files;
+    const files = base.filter(f => !q || [f.title, f.media && f.media.title, f.media && f.media.artist, f.media && f.media.album]
       .some(t => (t || '').toLowerCase().includes(q)));
     const totalSize = store.files.reduce((n, f) => n + (Number(f.size) || 0), 0);
     body.appendChild(el('div', { class: 'files-meta' }, [
       el('span', {}, store.files.length + (store.files.length === 1 ? ' archivo' : ' archivos') + ' · ' + formatBytes(totalSize)),
-      el('button', { type: 'button', class: 'btn btn-danger btn-sm files-clear', onclick: () => deleteAllFiles(), html: ICON_DELETE + '<span>Borrar todo</span>' })
+      col ? el('span') : el('button', { type: 'button', class: 'btn btn-danger btn-sm files-clear', onclick: () => deleteAllFiles(), html: ICON_DELETE + '<span>Borrar todo</span>' })
     ]));
 
     if (files.length === 0) {
       body.appendChild(emptyBlock('Sin resultados', 'Ningún archivo coincide con tu búsqueda.', null));
     } else {
       // De 24 en 24 con paginación (ver components/pager.js).
-      const pg = paginate(files, 'files');
+      const pg = paginate(files, 'files:' + tab);
       const grid = el('div', { class: 'doc-grid file-grid' });
       pg.items.forEach(f => grid.appendChild(fileCard(f, files)));
       body.appendChild(grid);
@@ -143,6 +158,33 @@
         el('div', { class: 'doc-meta' }, tx.sub)
       ])
     ]);
+  }
+
+  // Opciones de un archivo (lista de canciones de la colección Música).
+  function fileMenuItems(f) {
+    return [
+      { label: 'Abrir', icon: ICON_OPEN, onClick: () => openFile(f) },
+      { label: 'Compartir enlace', icon: ICON_SHARE, onClick: () => openShareDialog(f) },
+      '-',
+      { label: 'Eliminar', icon: ICON_DELETE, danger: true, onClick: () => deleteFile(f) }
+    ];
+  }
+  // Limpieza: borra uno o varios archivos (copias repetidas o grandes) con una confirmación.
+  async function deleteFilesNow(list) {
+    if (!list.length) return;
+    const one = list.length === 1;
+    const size = formatBytes(list.reduce((n, f) => n + (Number(f.size) || 0), 0));
+    const ok = await confirmDialog(one ? '¿Eliminar archivo?' : '¿Eliminar ' + list.length + ' archivos?',
+      (one ? '"' + list[0].title + '"' : 'Las copias') + ' se eliminarán para siempre y liberarás ' + size + '.', 'Eliminar');
+    if (!ok) return;
+    if (window.nowPlayingId && list.some(f => f.id === window.nowPlayingId) && typeof window.closePlayer === 'function') window.closePlayer();
+    const ids = list.map(f => f.id);
+    try { await apiBulk('POST', '/files/delete', { ids }); }
+    catch (e) { toast(e.message || 'No se pudo eliminar'); return; }
+    store.files = (store.files || []).filter(f => !ids.includes(f.id));
+    (store.projects || []).forEach(p => { if (p.documents) p.documents = p.documents.filter(d => !ids.includes(d.id)); });
+    toast(one ? 'Archivo eliminado' : list.length + ' archivos eliminados');
+    render();
   }
 
   // Abre/descarga el archivo desde el servidor (lleva la cookie de sesión).
