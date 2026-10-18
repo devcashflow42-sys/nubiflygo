@@ -17,6 +17,9 @@
     return arr.map(t => (FILE_TYPES.find(f => f.val === t) || {}).label || t).join(', ');
   }
 
+  // Dirección pública de la API de archivos (la que usa el sitio o app del usuario).
+  const API_FILES_URL = 'https://nubiflygo.com/api/v1/files';
+
   /* ─── Pestaña API key del proyecto ───
      Tarjeta de bienvenida, una tarjeta por clave (estado, clave oculta, permisos,
      solicitudes del mes con su gráfica de 7 días y botón para borrarla), y una
@@ -36,7 +39,12 @@
       el('span', { class: 'ak-intro-ico', html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>' }),
       el('div', {}, [
         el('strong', {}, 'Conecta tu sitio o app a «' + p.name + '»'),
-        el('p', {}, 'Con una clave secreta tu página o app puede leer y publicar los archivos de este proyecto. Trátala como una contraseña.')
+        el('p', {}, 'Con una clave secreta tu página o app puede leer y publicar los archivos de este proyecto. Trátala como una contraseña.'),
+        el('div', { class: 'ak-url' }, [
+          el('span', { class: 'ak-url-k' }, 'API'),
+          el('code', {}, API_FILES_URL),
+          el('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Copiar la dirección de la API', title: 'Copiar', html: LIB_ICN.copy, onclick: () => copyText(API_FILES_URL) })
+        ])
       ])
     ]));
 
