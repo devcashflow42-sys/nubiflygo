@@ -117,7 +117,7 @@
     $('#count-projects').textContent = store.projects.length;
     $('#count-notes').textContent = store.notes.length;
     $('#count-keys').textContent = store.apiKeys.length;
-    const cf = $('#count-files'); if (cf) cf.textContent = (store.files || []).length;
+    const cf = $('#count-files'); if (cf) cf.textContent = (store.files || []).filter(f => !f.project_id).length;
 
     const TRASH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>';
     const PLUS = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';

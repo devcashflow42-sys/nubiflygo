@@ -37,7 +37,7 @@
   border-radius: 0;                        /* el radio lo ponen las esquinas externas (abajo) */
   color: var(--fw-fg);
   pointer-events: auto;
-  touch-action: none;                      /* arrastrar no desplaza la página */
+  touch-action: pan-y;                     /* deslizar encima desplaza la página; la rayita lo mueve */
   user-select: none; -webkit-user-select: none;
   -webkit-tap-highlight-color: transparent;
   cursor: grab;
@@ -141,7 +141,9 @@
 .fw-music .fw-compact { display: block; padding: 0; min-height: 0; }
 .fw-music:focus-visible { outline-offset: 2px; border-radius: 32px; }
 
-.mw-stack { position: relative; height: 108px; perspective: 900px; filter: drop-shadow(0 16px 26px var(--mw-glow)); touch-action: none; }
+.mw-stack { position: relative; height: 108px; perspective: 900px; filter: drop-shadow(0 16px 26px var(--mw-glow)); touch-action: pan-y; }
+/* Con paginación, deslizar la cápsula cambia de hoja: ahí el gesto es suyo. */
+.mw-stack.has-pages { touch-action: none; }
 .mw-sheet {
   position: absolute; inset: 0; border-radius: 32px; overflow: hidden;
   background: linear-gradient(165deg, var(--mw-top) 0%, var(--mw-mid) 60%, var(--mw-bot) 100%);
@@ -200,7 +202,7 @@
 /* Rayita superior: también arrastra el contenedor de widgets. */
 .mw-grip {
   position: absolute; top: 0; left: 50%; transform: translateX(-50%); z-index: 6;
-  width: 72px; height: 16px; cursor: grab;
+  width: 72px; height: 16px; cursor: grab; touch-action: none;
 }
 .mw-grip::before { content: ''; position: absolute; top: 6px; left: 16px; right: 16px; height: 4px; border-radius: 4px; background: rgba(255, 255, 255, .36); }
 .mw-dot { position: absolute; top: 12px; left: 16px; width: 7px; height: 7px; border-radius: 50%; background: var(--mw-dotc); box-shadow: 0 0 8px var(--mw-dotc); }

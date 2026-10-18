@@ -411,6 +411,9 @@
     if (!node || e.target.closest(INTERACTIVE)) return;
     D.node = node; D.id = node.dataset.widget; D.pointer = e.pointerId;
     D.downInMore = !!e.target.closest('.fw-more');
+    // Con el dedo, solo la rayita de arriba mueve los widgets: deslizar sobre
+    // el resto de la cápsula desplaza la página (no la bloquea).
+    D.scrollThrough = e.pointerType !== 'mouse' && !e.target.closest('.mw-grip, [data-drag-handle]');
     D.startY = D.lastY = e.clientY; D.lastT = performance.now(); D.vel = 0; D.dragging = false; D.swapped = false;
     // Quita transiciones en línea (de un FLIP o rebote anterior) para seguir al dedo sin retraso.
     node.style.transition = 'none';
@@ -435,6 +438,7 @@
     const dy = e.clientY - D.startY;
     if (!D.dragging) {
       if (Math.abs(dy) < 7) return;            // umbral: evita arrastres accidentales
+      if (D.scrollThrough) { abort(); return; }   // es un desplazamiento de la página
       D.dragging = true;
       try { D.node.setPointerCapture(D.pointer); } catch (er) {}
       D.node.classList.add('is-dragging');

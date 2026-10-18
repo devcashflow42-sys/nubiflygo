@@ -39,6 +39,12 @@
       downloadUrl: '/api/v1/files/' + it.id + '/download'
     };
   }
+  // Archivos muestra solo los suyos (subidos sin proyecto). Los de cada
+  // proyecto viven en su proyecto. store.files guarda todos (almacenamiento,
+  // categorías de los proyectos), por eso se filtra aquí.
+  const ownFiles = () => (Array.isArray(store.files) ? store.files : []).filter(f => !f.project_id);
+  window.ownFiles = ownFiles;
+
   function loadFiles() {
     if (filesLoaded || filesLoading) return;
     filesLoading = true;
@@ -54,6 +60,7 @@
     const v = $('#view');
     v.innerHTML = '';
     if (!Array.isArray(store.files)) store.files = [];
+    const mine = ownFiles();
 
     v.appendChild(pageToolbar({
       back: () => go('dashboard'),
@@ -79,7 +86,7 @@
 
     const body = el('div', { class: 'board-body' });
 
-    if (store.files.length === 0) {
+    if (mine.length === 0) {
       body.appendChild(emptyBlock(
         'Aún no hay archivos',
         'Sube tus archivos y documentos para publicarlos y tenerlos siempre a la mano.',
@@ -92,13 +99,13 @@
 
     // Colecciones inteligentes: Música, Fotos, Videos, Documentos y Limpieza.
     const tab = state.filesTab || 'collections';
-    v.insertBefore(filesTabs(store.files, tab), null);
+    v.insertBefore(filesTabs(mine, tab), null);
     const col = FILE_COLS.find(c => c.id === tab);
-    if (tab === 'collections') { body.appendChild(collectionsOverview(store.files)); v.appendChild(body); return; }
-    if (tab === 'cleanup') { body.appendChild(cleanupView(store.files, deleteFilesNow)); v.appendChild(body); return; }
+    if (tab === 'collections') { body.appendChild(collectionsOverview(mine)); v.appendChild(body); return; }
+    if (tab === 'cleanup') { body.appendChild(cleanupView(mine, deleteFilesNow)); v.appendChild(body); return; }
     if (col && (col.id === 'music' || col.id === 'photos')) {
       const ctx = { key: 'files:' + col.id, onMenu: (f, e) => popup(e, fileMenuItems(f)) };
-      const fs = filesOfCol(store.files, col);
+      const fs = filesOfCol(mine, col);
       body.appendChild(col.id === 'music' ? musicLibrary(fs, ctx) : photoLibrary(fs, ctx));
       v.appendChild(body); return;
     }
@@ -108,12 +115,12 @@
     ]));
 
     const q = state.search.toLowerCase();
-    const base = col ? filesOfCol(store.files, col) : store.files;
+    const base = col ? filesOfCol(mine, col) : mine;
     const files = base.filter(f => !q || [f.title, f.media && f.media.title, f.media && f.media.artist, f.media && f.media.album]
       .some(t => (t || '').toLowerCase().includes(q)));
-    const totalSize = store.files.reduce((n, f) => n + (Number(f.size) || 0), 0);
+    const totalSize = mine.reduce((n, f) => n + (Number(f.size) || 0), 0);
     body.appendChild(el('div', { class: 'files-meta' }, [
-      el('span', {}, store.files.length + (store.files.length === 1 ? ' archivo' : ' archivos') + ' · ' + formatBytes(totalSize)),
+      el('span', {}, mine.length + (mine.length === 1 ? ' archivo' : ' archivos') + ' · ' + formatBytes(totalSize)),
       col ? el('span') : el('button', { type: 'button', class: 'btn btn-danger btn-sm files-clear', onclick: () => deleteAllFiles(), html: ICON_DELETE + '<span>Borrar todo</span>' })
     ]));
 
@@ -204,20 +211,20 @@
     toast('Archivo eliminado'); render();
   }
 
-  // Borra TODOS los archivos del usuario (también los de sus proyectos). El
-  // servidor borra por tandas; apiBulk repite hasta terminar.
+  // Borra todos los archivos de Archivos (los que no están en un proyecto; los
+  // de los proyectos no se tocan). El servidor borra por tandas; apiBulk repite.
   async function deleteAllFiles() {
-    const n = (store.files || []).length;
+    const mine = ownFiles(), n = mine.length;
     if (!n) return;
-    const size = formatBytes(store.files.reduce((s, f) => s + (Number(f.size) || 0), 0));
+    const size = formatBytes(mine.reduce((s, f) => s + (Number(f.size) || 0), 0));
     const ok = await confirmDialog('¿Borrar todos los archivos?',
-      `Se eliminarán para siempre ${n === 1 ? 'el archivo' : 'los ' + n + ' archivos'} (${size}), también los que están dentro de tus proyectos. No se puede deshacer.`, 'Borrar todo');
+      `Se eliminarán para siempre ${n === 1 ? 'el archivo' : 'los ' + n + ' archivos'} (${size}) de Archivos. Los archivos de tus proyectos no se tocan. No se puede deshacer.`, 'Borrar todo');
     if (!ok) return;
-    // Si suena una canción, se cierra el reproductor (su archivo ya no existirá).
-    if (window.nowPlayingId && typeof window.closePlayer === 'function') window.closePlayer();
+    // Si suena una canción de Archivos, se cierra el reproductor (su archivo ya no existirá).
+    if (window.nowPlayingId && mine.some(f => f.id === window.nowPlayingId) && typeof window.closePlayer === 'function') window.closePlayer();
     toast('Borrando ' + n + (n === 1 ? ' archivo…' : ' archivos…'));
     try {
-      const r = await apiBulk('POST', '/files/delete', { all: true });
+      const r = await apiBulk('POST', '/files/delete', { all: true, filters: { project_id: 'none' } });
       toast(r.total === 1 ? 'Se eliminó 1 archivo' : 'Se eliminaron ' + r.total + ' archivos');
     } catch (e) {
       toast(e.message || 'No se pudieron borrar todos los archivos');
