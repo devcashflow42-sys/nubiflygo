@@ -309,10 +309,32 @@
 
   // Contenido: biblioteca de música, galería de fotos o la cuadrícula de siempre.
   function tabContent(p, body, cat) {
+    const items = p.documents || [];
     const ctx = { key: 'project:' + p.id, onMenu: (d) => openDocMenu(p, d), grid: () => { const b = el('div'); tabDocuments(p, b); return b; } };
-    if (cat === 'music') body.appendChild(musicLibrary(p.documents || [], ctx));
-    else if (cat === 'photos') body.appendChild(photoLibrary(p.documents || [], ctx));
-    else tabDocuments(p, body);
+    if (cat === 'music') return body.appendChild(musicLibrary(items, ctx));
+    if (cat === 'photos') return body.appendChild(photoLibrary(items, ctx));
+    // Proyecto con varios tipos: pestañas Todo · Música · Fotos · Videos, cada
+    // una con su diseño (biblioteca de música, galería). Empieza en el tipo
+    // que más tiene; «Todo» es la cuadrícula de siempre.
+    const kindOf = (d) => d.kind === 'file' ? mediaKind(d.mime, d.title) : 'doc';
+    const groups = [
+      ['music', 'Música', items.filter(d => kindOf(d) === 'audio')],
+      ['photos', 'Fotos', items.filter(d => kindOf(d) === 'image')],
+      ['videos', 'Videos', items.filter(d => kindOf(d) === 'video')]
+    ].filter(g => g[2].length);
+    if (!groups.length) return tabDocuments(p, body);
+    state.projectKind = state.projectKind || {};
+    let cur = state.projectKind[p.id];
+    if (!cur || (cur !== 'all' && !groups.some(g => g[0] === cur))) cur = groups.slice().sort((a, b) => b[2].length - a[2].length)[0][0];
+    const pick = (k) => { state.projectKind[p.id] = k; render(); };
+    body.appendChild(el('div', { class: 'lib-tabs pk-tabs', role: 'tablist', 'aria-label': 'Tipo de contenido' },
+      [['all', 'Todo', items.length]].concat(groups.map(g => [g[0], g[1], g[2].length])).map(t => el('button', {
+        type: 'button', role: 'tab', class: 'lib-tab' + (t[0] === cur ? ' on' : ''), 'aria-selected': t[0] === cur ? 'true' : 'false', onclick: () => pick(t[0])
+      }, [ t[1], el('b', {}, String(t[2])) ]))));
+    if (cur === 'all') return tabDocuments(p, body);
+    const g = groups.find(x => x[0] === cur);
+    const sub = Object.assign({}, ctx, { key: ctx.key + ':' + cur, grid: null });
+    body.appendChild(cur === 'music' ? musicLibrary(g[2], sub) : photoLibrary(g[2], sub));
   }
 
   // Marcador mientras llega la lista de proyectos (entrada directa a un enlace).

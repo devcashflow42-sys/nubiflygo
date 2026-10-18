@@ -304,3 +304,6 @@
 @media (prefers-reduced-motion: reduce) {
   .lib-av, .lib-col, .lib-ph img { transition: none; }
 }
+
+/* Pestañas de tipo dentro de un proyecto con contenido mixto */
+.pk-tabs { padding: 2px 0 10px; }
