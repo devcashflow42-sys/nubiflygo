@@ -110,7 +110,7 @@
     spark: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5l1.9 5.6 5.6 1.9-5.6 1.9L12 17.5l-1.9-5.6L4.5 10l5.6-1.9z"/></svg>',
     trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>',
     copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
-    big: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9"/><polyline points="21 3 21 9 15 9"/></svg>'
+    big: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="12" x2="2" y2="12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/><line x1="6" y1="16" x2="6.01" y2="16"/><line x1="10" y1="16" x2="10.01" y2="16"/></svg>'
   };
 
   // Portada: imagen real si hay; si no, degradado con iniciales.
@@ -378,9 +378,11 @@
         if (thumbs[i]) { const im = el('img', { src: thumbs[i], alt: '', loading: 'lazy', decoding: 'async' }); im.addEventListener('error', () => im.remove()); cell.appendChild(im); }
         mosaic.appendChild(cell);
       }
-      mosaic.appendChild(el('span', { class: 'lib-col-badge', style: { background: c.color }, html: c.icon }));
       return el('button', { type: 'button', class: 'lib-col', onclick: () => { state.filesTab = c.id; render(); } }, [
-        mosaic, el('span', { class: 'lib-col-b' }, [ el('strong', {}, c.label), el('span', {}, colSummary(c, fs)) ])
+        mosaic, el('span', { class: 'lib-col-b' }, [
+          el('span', { class: 'lib-col-badge', style: { background: c.color }, html: c.icon }),
+          el('span', { class: 'lib-col-t' }, [ el('strong', {}, c.label), el('span', {}, colSummary(c, fs)) ])
+        ])
       ]);
     })));
     const dups = findDuplicates(files), dupN = dups.reduce((n, g) => n + g.length - 1, 0);
@@ -431,6 +433,18 @@
       el('span', { class: 'lib-row-t' }, [ el('strong', { title: f.title }, libKind(f) === 'audio' ? songTitle(f) : f.title), el('span', {}, sub) ]),
       onDel ? el('button', { type: 'button', class: 'icon-btn lib-row-del', 'aria-label': 'Eliminar ' + f.title, title: 'Eliminar', html: LIB_ICN.trash, onclick: onDel }) : el('span')
     ]);
+  }
+
+  // Miniatura de la tarjeta de proyecto: mosaico de portadas o icono de su categoría.
+  function projectThumb(p) {
+    const items = projectItems(p);
+    const thumbs = items.map(libThumb).filter(Boolean).slice(0, 4);
+    const cat = CAT[projectCategory(items)] || null;
+    const box = el('span', { class: 'pc-thumb' + (thumbs.length >= 4 ? ' is-grid' : ''), 'aria-hidden': 'true', style: { background: thumbs.length ? libGrad(p.id) : (cat ? cat.color : (p.color || 'var(--fg-faint)')) } });
+    if (thumbs.length >= 4) thumbs.forEach(u => { const i = el('img', { src: u, alt: '', loading: 'lazy', decoding: 'async' }); i.addEventListener('error', () => { i.style.visibility = 'hidden'; }); box.appendChild(i); });
+    else if (thumbs.length) { const i = el('img', { src: thumbs[0], alt: '', loading: 'lazy', decoding: 'async' }); i.addEventListener('error', () => i.remove()); box.appendChild(i); }
+    else box.appendChild(el('span', { class: 'pc-thumb-ico', html: cat ? cat.icon : KIND_ICON_LIB('mixed') }));
+    return box;
   }
 
   window.musicLibrary = musicLibrary;
