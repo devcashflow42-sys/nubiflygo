@@ -19,8 +19,8 @@
 
   /* ─── Pestaña API key del proyecto ───
      Tarjeta de bienvenida, una tarjeta por clave (estado, clave oculta, permisos,
-     solicitudes del mes con su gráfica de 7 días y botón para borrarla), una
-     para crear otra y un ejemplo de código listo para copiar. */
+     solicitudes del mes con su gráfica de 7 días y botón para borrarla), y una
+     para crear otra. */
   function tabApiKey(p, body) {
     // Carga las claves reales del usuario y filtra las de este proyecto.
     if (!apiKeysLoaded) {
@@ -48,10 +48,6 @@
     ]));
     body.appendChild(grid);
 
-    if (keys.length) {
-      body.appendChild(libSec('Ejemplo rápido'));
-      body.appendChild(codeExample(keys[0]));
-    }
   }
 
   function projectKeyCard(p, k) {
@@ -85,26 +81,6 @@
       ]),
       m.err ? el('div', { class: 'ak-err' }, m.err + (m.err === 1 ? ' falla este mes' : ' fallas este mes')) : null
     ].filter(Boolean));
-  }
-
-  // Ejemplo listo para copiar (JavaScript, cURL o Python) con la clave del proyecto.
-  function codeExample(k) {
-    const base = location.origin + '/api/v1/files?type=audio';
-    const key = k.value.slice(0, 7) + '…' + k.value.slice(-4);
-    const SAMPLES = {
-      js: "// Lista las canciones de este proyecto\nconst res = await fetch('" + base + "', {\n  headers: { Authorization: 'Bearer " + key + "' }\n});\nconst { items } = await res.json();\nitems.forEach(f => console.log(f.media?.title || f.name, f.media?.artist || ''));",
-      curl: "# Lista las canciones de este proyecto\ncurl '" + base + "' \\\n  -H 'Authorization: Bearer " + key + "'",
-      py: "# Lista las canciones de este proyecto\nimport requests\nr = requests.get('" + base + "',\n    headers={'Authorization': 'Bearer " + key + "'})\nfor f in r.json()['items']:\n    print(f.get('media', {}).get('title') or f['name'])"
-    };
-    let lang = 'js';
-    const pre = el('pre', {}, SAMPLES.js);
-    const tabs = [['js', 'JavaScript'], ['curl', 'cURL'], ['py', 'Python']].map(t => el('button', { type: 'button', class: t[0] === lang ? 'on' : '', onclick: () => {
-      lang = t[0]; pre.textContent = SAMPLES[lang];
-      tabs.forEach((b, i) => b.classList.toggle('on', ['js', 'curl', 'py'][i] === lang));
-    } }, t[1]));
-    // Se copia con la clave completa (en pantalla va recortada).
-    const copy = el('button', { type: 'button', class: 'ak-copy', html: LIB_ICN.copy + '<span>Copiar</span>', onclick: () => copyText(SAMPLES[lang].split(key).join(k.value)) });
-    return el('div', { class: 'ak-code' }, [ el('div', { class: 'ak-code-h' }, tabs.concat([copy])), pre ]);
   }
 
   async function projectRevokeKey(p, k) {
