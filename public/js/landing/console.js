@@ -6,20 +6,46 @@
   var code = document.getElementById('conCode');
   if (!code) return;
 
+  // Ejemplos reales de la API: 1) subir el archivo a un proyecto y 2) publicarlo.
+  var C = function (t) { return '<span class="c">' + t + '</span>'; };
+  var S = function (t) { return '<span class="s">' + t + '</span>'; };
+  var K = function (t) { return '<span class="k">' + t + '</span>'; };
   var snips = {
-    curl: '<span class="c"># Sube un archivo a un proyecto</span>\n' +
-      'curl https://api.nubiflygo.app/v1/projects/argumind/files \\\n' +
-      '  -H <span class="s">"Authorization: Bearer $NUBIFLYGO_API_KEY"</span> \\\n' +
-      '  -F <span class="s">"file=@jurisprudencia_2026.pdf"</span>',
-    js: '<span class="k">import</span> { NubiFlyGo } <span class="k">from</span> <span class="s">"nubiflygo"</span>;\n\n' +
-      '<span class="k">const</span> ws = <span class="k">new</span> NubiFlyGo({ apiKey: process.env.NUBIFLYGO_API_KEY });\n\n' +
-      '<span class="k">await</span> ws.projects(<span class="s">"argumind"</span>).files.upload({\n' +
-      '  file: <span class="s">"jurisprudencia_2026.pdf"</span>,\n});',
-    py: '<span class="k">from</span> nubiflygo <span class="k">import</span> NubiFlyGo\n\n' +
-      'ws = NubiFlyGo(api_key=os.environ[<span class="s">"NUBIFLYGO_API_KEY"</span>])\n\n' +
-      'ws.projects(<span class="s">"argumind"</span>).files.upload(\n' +
-      '    file=<span class="s">"jurisprudencia_2026.pdf"</span>,\n)'
+    curl: C('# 1. Sube el archivo a tu proyecto') + '\n' +
+      'curl -X POST https://nubiflygo.com/api/v1/files/upload \\\n' +
+      '  -H ' + S('"Authorization: Bearer $NUBIFLYGO_API_KEY"') + ' \\\n' +
+      '  -F ' + S('"file=@cancion.mp3"') + ' \\\n' +
+      '  -F ' + S('"project_id=ID_DEL_PROYECTO"') + '\n\n' +
+      C('# 2. Publícalo (usa el "id" de la respuesta)') + '\n' +
+      'curl -X PATCH https://nubiflygo.com/api/v1/files/ID_DEL_ARCHIVO \\\n' +
+      '  -H ' + S('"Authorization: Bearer $NUBIFLYGO_API_KEY"') + ' \\\n' +
+      '  -H ' + S('"Content-Type: application/json"') + ' \\\n' +
+      '  -d ' + S("'{\"published\": true}'"),
+    js: K('const') + ' API = ' + S("'https://nubiflygo.com/api/v1'") + ';\n' +
+      K('const') + ' headers = { Authorization: ' + S('`Bearer ${process.env.NUBIFLYGO_API_KEY}`') + ' };\n\n' +
+      C('// 1. Sube el archivo a tu proyecto') + '\n' +
+      K('const') + ' form = ' + K('new') + ' FormData();\n' +
+      'form.append(' + S("'file'") + ', archivo);' + C(' // tu archivo') + '\n' +
+      'form.append(' + S("'project_id'") + ', ' + S("'ID_DEL_PROYECTO'") + ');\n' +
+      K('const') + ' res = ' + K('await') + ' fetch(' + S('`${API}/files/upload`') + ', { method: ' + S("'POST'") + ', headers, body: form });\n' +
+      K('const') + ' { data } = ' + K('await') + ' res.json();\n\n' +
+      C('// 2. Publícalo') + '\n' +
+      K('await') + ' fetch(' + S('`${API}/files/${data.item.id}`') + ', {\n' +
+      '  method: ' + S("'PATCH'") + ',\n' +
+      '  headers: { ...headers, ' + S("'Content-Type'") + ': ' + S("'application/json'") + ' },\n' +
+      '  body: JSON.stringify({ published: ' + K('true') + ' })\n});',
+    py: K('import') + ' os, requests\n\n' +
+      'API = ' + S('"https://nubiflygo.com/api/v1"') + '\n' +
+      'headers = {' + S('"Authorization"') + ': ' + S('f"Bearer {os.environ[\'NUBIFLYGO_API_KEY\']}"') + '}\n\n' +
+      C('# 1. Sube el archivo a tu proyecto') + '\n' +
+      K('with') + ' open(' + S('"cancion.mp3"') + ', ' + S('"rb"') + ') ' + K('as') + ' f:\n' +
+      '    r = requests.post(' + S('f"{API}/files/upload"') + ', headers=headers,\n' +
+      '                      files={' + S('"file"') + ': f}, data={' + S('"project_id"') + ': ' + S('"ID_DEL_PROYECTO"') + '})\n' +
+      'file_id = r.json()[' + S('"data"') + '][' + S('"item"') + '][' + S('"id"') + ']\n\n' +
+      C('# 2. Publícalo') + '\n' +
+      'requests.patch(' + S('f"{API}/files/{file_id}"') + ', headers=headers, json={' + S('"published"') + ': ' + K('True') + '})'
   };
+  code.innerHTML = snips.curl;
 
   var tabs = document.querySelectorAll('.con-tabs button');
   tabs.forEach(function (b) {

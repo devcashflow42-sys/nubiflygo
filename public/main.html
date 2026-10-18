@@ -128,7 +128,7 @@
         <p class="lead" data-i18n="landing.api.lead">Automatiza tu flujo con tu propia API key: crea proyectos, sube archivos y consulta tus documentos directamente desde tu código.</p>
         <ul class="api-list">
           <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> <span data-i18n="landing.api.li1">Autentícate con una API key única por proyecto.</span></li>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> <span data-i18n="landing.api.li2">SDK oficial para JavaScript y Python, o peticiones directas con cURL.</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> <span data-i18n="landing.api.li2">Sube y publica archivos con cURL, JavaScript o Python: dos peticiones y listo.</span></li>
           <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> <span data-i18n="landing.api.li3">Respuestas en JSON con estados claros y predecibles.</span></li>
         </ul>
       </div>
@@ -144,18 +144,30 @@
           <button type="button" data-lang="js">JavaScript</button>
           <button type="button" data-lang="py">Python</button>
         </div>
-        <pre class="con-code" id="conCode"><code><span class="c"># Sube un archivo a un proyecto</span>
-curl https://api.nubiflygo.app/v1/projects/argumind/files \
+        <pre class="con-code" id="conCode"><code><span class="c"># 1. Sube el archivo a tu proyecto</span>
+curl -X POST https://nubiflygo.com/api/v1/files/upload \
   -H <span class="s">"Authorization: Bearer $NUBIFLYGO_API_KEY"</span> \
-  -F <span class="s">"file=@jurisprudencia_2026.pdf"</span></code></pre>
+  -F <span class="s">"file=@cancion.mp3"</span> \
+  -F <span class="s">"project_id=ID_DEL_PROYECTO"</span>
+
+<span class="c"># 2. Publícalo (usa el "id" de la respuesta)</span>
+curl -X PATCH https://nubiflygo.com/api/v1/files/ID_DEL_ARCHIVO \
+  -H <span class="s">"Authorization: Bearer $NUBIFLYGO_API_KEY"</span> \
+  -H <span class="s">"Content-Type: application/json"</span> \
+  -d <span class="s">'{"published": true}'</span></code></pre>
         <div class="con-resp-label" data-i18n="landing.api.respLabel">Respuesta</div>
         <pre class="con-resp"><code>{
-  <span class="key">"id"</span>: <span class="s">"file_8f2a"</span>,
-  <span class="key">"project"</span>: <span class="s">"argumind"</span>,
-  <span class="key">"name"</span>: <span class="s">"jurisprudencia_2026.pdf"</span>,
-  <span class="key">"type"</span>: <span class="s">"application/pdf"</span>,
-  <span class="key">"size"</span>: <span class="num">2411008</span>,
-  <span class="key">"status"</span>: <span class="s">"published"</span>
+  <span class="key">"success"</span>: <span class="num">true</span>,
+  <span class="key">"status"</span>: <span class="num">201</span>,
+  <span class="key">"message"</span>: <span class="s">"Archivo subido correctamente."</span>,
+  <span class="key">"data"</span>: { <span class="key">"item"</span>: {
+    <span class="key">"id"</span>: <span class="s">"9b1c2f4e-…"</span>,
+    <span class="key">"name"</span>: <span class="s">"cancion.mp3"</span>,
+    <span class="key">"mime_type"</span>: <span class="s">"audio/mpeg"</span>,
+    <span class="key">"size"</span>: { <span class="key">"bytes"</span>: <span class="num">4823120</span>, <span class="key">"formatted"</span>: <span class="s">"4.6 MB"</span> },
+    <span class="key">"project_id"</span>: <span class="s">"ID_DEL_PROYECTO"</span>,
+    <span class="key">"status"</span>: <span class="s">"ready"</span>
+  } }
 }</code></pre>
       </div>
     </div>

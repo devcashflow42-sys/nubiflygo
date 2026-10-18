@@ -210,7 +210,7 @@ const STRINGS = {
         title: 'Conéctate por API en minutos',
         lead: 'Automatiza tu flujo con tu propia API key: crea proyectos, sube archivos y consulta tus documentos directamente desde tu código.',
         li1: 'Autentícate con una API key única por proyecto.',
-        li2: 'SDK oficial para JavaScript y Python, o peticiones directas con cURL.',
+        li2: 'Sube y publica archivos con cURL, JavaScript o Python: dos peticiones y listo.',
         li3: 'Respuestas en JSON con estados claros y predecibles.',
         respLabel: 'Respuesta', copy: 'Copiar', copied: 'Copiado'
       },
@@ -304,7 +304,7 @@ const STRINGS = {
         title: 'Connect via API in minutes',
         lead: 'Automate your workflow with your own API key: create projects, upload files and query your documents straight from your code.',
         li1: 'Authenticate with a unique API key per project.',
-        li2: 'Official SDK for JavaScript and Python, or direct requests with cURL.',
+        li2: 'Upload and publish files with cURL, JavaScript or Python: two requests and you are done.',
         li3: 'JSON responses with clear, predictable statuses.',
         respLabel: 'Response', copy: 'Copy', copied: 'Copied'
       },
@@ -398,7 +398,7 @@ const STRINGS = {
         title: 'Conecte-se por API em minutos',
         lead: 'Automatize o seu fluxo com a sua própria API key: crie projetos, envie arquivos e consulte os seus documentos direto do seu código.',
         li1: 'Autentique-se com uma API key única por projeto.',
-        li2: 'SDK oficial para JavaScript e Python, ou requisições diretas com cURL.',
+        li2: 'Envie e publique arquivos com cURL, JavaScript ou Python: duas requisições e pronto.',
         li3: 'Respostas em JSON com estados claros e previsíveis.',
         respLabel: 'Resposta', copy: 'Copiar', copied: 'Copiado'
       },
@@ -492,7 +492,7 @@ const STRINGS = {
         title: 'Connectez-vous par API en quelques minutes',
         lead: 'Automatisez votre flux avec votre propre clé API : créez des projets, importez des fichiers et interrogez vos documents directement depuis votre code.',
         li1: 'Authentifiez-vous avec une clé API unique par projet.',
-        li2: 'SDK officiel pour JavaScript et Python, ou requêtes directes en cURL.',
+        li2: 'Envoyez et publiez des fichiers avec cURL, JavaScript ou Python : deux requêtes et c’est fait.',
         li3: 'Réponses en JSON avec des états clairs et prévisibles.',
         respLabel: 'Réponse', copy: 'Copier', copied: 'Copié'
       },
@@ -586,7 +586,7 @@ const STRINGS = {
         title: 'In Minuten per API verbinden',
         lead: 'Automatisiere deinen Ablauf mit deinem eigenen API-Key: Projekte erstellen, Dateien hochladen und Dokumente direkt aus deinem Code abfragen.',
         li1: 'Authentifiziere dich mit einem eindeutigen API-Key pro Projekt.',
-        li2: 'Offizielles SDK für JavaScript und Python oder direkte Anfragen mit cURL.',
+        li2: 'Dateien mit cURL, JavaScript oder Python hochladen und veröffentlichen: zwei Anfragen, fertig.',
         li3: 'JSON-Antworten mit klaren, vorhersehbaren Status.',
         respLabel: 'Antwort', copy: 'Kopieren', copied: 'Kopiert'
       },
@@ -680,7 +680,7 @@ const STRINGS = {
         title: 'Collegati via API in pochi minuti',
         lead: 'Automatizza il tuo flusso con la tua chiave API: crea progetti, carica file e interroga i tuoi documenti direttamente dal codice.',
         li1: 'Autenticati con una chiave API unica per progetto.',
-        li2: 'SDK ufficiale per JavaScript e Python, o richieste dirette con cURL.',
+        li2: 'Carica e pubblica file con cURL, JavaScript o Python: due richieste e hai finito.',
         li3: 'Risposte in JSON con stati chiari e prevedibili.',
         respLabel: 'Risposta', copy: 'Copia', copied: 'Copiato'
       },
@@ -774,7 +774,7 @@ const STRINGS = {
         title: '几分钟内通过 API 接入',
         lead: '用你自己的 API 密钥自动化工作流：创建项目、上传文件，并直接在代码中查询文档。',
         li1: '每个项目使用唯一的 API 密钥进行身份验证。',
-        li2: '提供 JavaScript 和 Python 官方 SDK，或用 cURL 直接请求。',
+        li2: '用 cURL、JavaScript 或 Python 上传并发布文件：两个请求即可。',
         li3: 'JSON 响应，状态清晰且可预测。',
         respLabel: '响应', copy: '复制', copied: '已复制'
       },
@@ -868,7 +868,7 @@ const STRINGS = {
         title: '数分で API 連携',
         lead: '自分の API キーでワークフローを自動化：プロジェクトを作成し、ファイルをアップロードし、コードから直接書類を照会します。',
         li1: 'プロジェクトごとに固有の API キーで認証。',
-        li2: 'JavaScript と Python の公式 SDK、または cURL で直接リクエスト。',
+        li2: 'cURL・JavaScript・Python でファイルをアップロードして公開：リクエストは2回だけ。',
         li3: '明確で予測しやすいステータスを持つ JSON レスポンス。',
         respLabel: 'レスポンス', copy: 'コピー', copied: 'コピーしました'
       },
