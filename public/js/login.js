@@ -164,7 +164,7 @@
      ========================================================= */
   // Base de la API. Si el frontend está en el MISMO dominio que el servidor,
   // deja '' (se usa /api/v1). Si la API está en otro dominio, pon aquí su URL,
-  // p. ej. 'https://api.ritmogo.site'.
+  // p. ej. 'https://nubiflygo.com'.
   var API_BASE = '';
 
   // Idioma detectado del navegador (para guardarlo con la cuenta).

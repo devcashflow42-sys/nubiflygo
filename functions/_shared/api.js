@@ -30,7 +30,7 @@ export function rowIsAdmin(row, env) {
 
 /* ---------------- Estado de configuración ---------------- */
 export function storageReady(env) {
-  return !!(env.AWS_ENDPOINT_URL_S3 && env.AWS_ACCESS_KEY_ID && env.AWS_SECRET_ACCESS_KEY) || !!globalThis.__RITMOGO_STORAGE__;
+  return !!(env.AWS_ENDPOINT_URL_S3 && env.AWS_ACCESS_KEY_ID && env.AWS_SECRET_ACCESS_KEY) || !!globalThis.__NUBIFLYGO_STORAGE__;
 }
 export function missingConfig(env) {
   const m = [];

@@ -16,6 +16,7 @@ import { fileURLToPath } from 'node:url';
 import { config, checkConfig } from './config.js';
 import { api } from './routes-api.js';
 import { apiGate, securityHeaders, errorRef } from './security.js';
+import { migrateLegacySession } from './auth.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC = path.join(__dirname, '..', 'public');
@@ -29,6 +30,8 @@ app.use(securityHeaders);
 const jsonSmall = express.json({ limit: '1mb' }), jsonAvatar = express.json({ limit: '3mb' });
 app.use((req, res, next) => (req.path === '/api/v1/account/avatar' ? jsonAvatar : jsonSmall)(req, res, next));
 app.use(cookieParser());
+// Cookie de sesión antigua (ritmogo_session) → nueva (nubiflygo_session), sin cerrar sesión.
+app.use(migrateLegacySession);
 
 // CORS con credenciales: solo los orígenes de ALLOWED_ORIGINS pueden llamar
 // a la API desde otro dominio enviando la cookie de sesión.

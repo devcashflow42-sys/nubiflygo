@@ -27,7 +27,7 @@ export function toTagged(text, params = []) {
 
 export function getDb(env) {
   // Gancho solo para pruebas locales (nunca se define en producción).
-  if (globalThis.__RITMOGO_DB__) return globalThis.__RITMOGO_DB__;
+  if (globalThis.__NUBIFLYGO_DB__) return globalThis.__NUBIFLYGO_DB__;
   const sql = neon(env.DATABASE_URL);
   return {
     async query(text, params = []) {

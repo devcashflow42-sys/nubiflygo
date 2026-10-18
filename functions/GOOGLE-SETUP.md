@@ -2,7 +2,9 @@
 
 Mismo esquema que Syrtra: el servidor **verifica** lo que viene de Google antes
 de dejar la sesión. Hay **dos caminos** y los dos acaban en la misma cookie
-`ritmogo_session` (httpOnly):
+`nubiflygo_session` (httpOnly, `Secure`, `SameSite=Lax`, `Path=/`). La cookie
+anterior `ritmogo_session` solo se acepta durante la transición y se cambia
+sola por la nueva (ver `MIGRACION-NUBIFLYGO.md`):
 
 | Camino | Ruta | Para qué |
 |---|---|---|
@@ -46,17 +48,18 @@ En <https://console.cloud.google.com> → **APIs & Services → Credentials**:
 ### b) Credenciales → OAuth 2.0 Client ID (tipo **Web application**)
 - **Authorized JavaScript origins** (necesario para One Tap / Google Identity):
   ```
-  https://ritmogo.site
-  https://www.ritmogo.site
-  https://TU-PROYECTO.pages.dev
+  https://nubiflygo.com
+  https://www.nubiflygo.com
+  https://nubiflygo.pages.dev
   ```
   (sin barra final; añade cada dominio desde el que se abra el login).
 - **Authorized redirect URIs** (necesario para el flujo de redirección):
   ```
-  https://ritmogo.site/auth/google/callback
-  https://www.ritmogo.site/auth/google/callback
-  https://TU-PROYECTO.pages.dev/auth/google/callback
+  https://nubiflygo.com/auth/google/callback
+  https://www.nubiflygo.com/auth/google/callback
+  https://nubiflygo.pages.dev/auth/google/callback
   ```
+  Si fijas `GOOGLE_REDIRECT_URI`, usa `https://nubiflygo.com/auth/google/callback`.
   Deben coincidir **carácter por carácter** con la que use el servidor. Si ves
   `redirect_uri_mismatch`, es que falta exactamente esta URL aquí.
 
@@ -81,7 +84,7 @@ Neon una vez.
 Que Android siga mandando su idToken de One Tap a `POST /auth/google` con el
 cuerpo `{"credential":"<idToken>"}`. Para que el servidor lo acepte, añade el
 **Client ID de Android** a `GOOGLE_ALLOWED_AUDIENCES`. La respuesta deja la
-cookie `ritmogo_session` y luego `GET /api/v1/account/profile` da los datos,
+cookie `nubiflygo_session` y luego `GET /api/v1/account/profile` da los datos,
 igual que el patrón `POST /auth/google → GET /v1/account` de Syrtra.
 
 ---

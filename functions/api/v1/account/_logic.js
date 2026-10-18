@@ -144,7 +144,7 @@ export const handle = accountRoute(async ({ seg, request, env, method, auth }) =
     const hours = Number(env.GUEST_HOURS) || 24;
     const rnd = (crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString(36) + Math.random().toString(36).slice(2))).replace(/-/g, '');
     const gName = 'Invitado ' + rnd.slice(0, 4).toUpperCase();
-    const gEmail = 'guest_' + rnd.slice(0, 12) + '_' + Date.now().toString(36) + '@guest.ritmogo';
+    const gEmail = 'guest_' + rnd.slice(0, 12) + '_' + Date.now().toString(36) + '@guest.nubiflygo';
     const hash = await hashPassword('guest_' + rnd);
     const expires = new Date(Date.now() + hours * 3600 * 1000).toISOString();
     const gb = await body(request);

@@ -18,6 +18,7 @@ export function storageConfig(env) {
   const isR2 = /\.r2\.cloudflarestorage\.com$/i.test(endpoint.replace(/^https?:\/\//, '').split('/')[0]);
   return {
     endpoint,
+    // Bucket S3 real donde ya están los archivos: el nombre se conserva (no es marca).
     bucket: clean(env.STORAGE_BUCKET) || 'ritmogo',
     accessKeyId: clean(env.AWS_ACCESS_KEY_ID),
     secretAccessKey: clean(env.AWS_SECRET_ACCESS_KEY),
@@ -69,7 +70,7 @@ async function storageError(res, action) {
 }
 
 export async function putObject(env, key, body, contentType) {
-  if (globalThis.__RITMOGO_STORAGE__) return globalThis.__RITMOGO_STORAGE__.put(key, body, contentType);
+  if (globalThis.__NUBIFLYGO_STORAGE__) return globalThis.__NUBIFLYGO_STORAGE__.put(key, body, contentType);
   const res = await client(env).fetch(objectUrl(env, key), {
     method: 'PUT',
     body,
@@ -80,14 +81,14 @@ export async function putObject(env, key, body, contentType) {
 }
 
 export async function getObject(env, key, headers) {
-  if (globalThis.__RITMOGO_STORAGE__) return globalThis.__RITMOGO_STORAGE__.get(key, headers);
+  if (globalThis.__NUBIFLYGO_STORAGE__) return globalThis.__NUBIFLYGO_STORAGE__.get(key, headers);
   const res = await client(env).fetch(objectUrl(env, key), { method: 'GET', headers: headers || {} });
   if (!res.ok) throw await storageError(res, 'leer');
   return res;
 }
 
 export async function deleteObject(env, key, opts) {
-  if (globalThis.__RITMOGO_STORAGE__) return globalThis.__RITMOGO_STORAGE__.del(key);
+  if (globalThis.__NUBIFLYGO_STORAGE__) return globalThis.__NUBIFLYGO_STORAGE__.del(key);
   await client(env, opts).fetch(objectUrl(env, key), { method: 'DELETE' });
 }
 
@@ -140,7 +141,7 @@ export async function deleteObjects(env, keys, opts) {
   keys = (keys || []).filter(Boolean);
   if (!keys.length) return { processed: 0, all: true };
   let budget = Math.max(1, (opts && opts.budget) || 40);
-  const hook = globalThis.__RITMOGO_STORAGE__;
+  const hook = globalThis.__NUBIFLYGO_STORAGE__;
   let done = 0;
   if (hook ? hook.batch !== false : !batchUnsupported) {
     const retry = [];

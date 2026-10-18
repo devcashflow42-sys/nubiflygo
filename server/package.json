@@ -1,5 +1,5 @@
 {
-  "name": "ritmogo-server",
+  "name": "nubiflygo-server",
   "version": "1.0.0",
   "private": true,
   "description": "Servidor de rutas de NubiFlyGo (páginas limpias + API bajo /api/v1)",

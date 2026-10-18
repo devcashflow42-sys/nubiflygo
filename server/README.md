@@ -54,7 +54,9 @@ Copia `.env.example` a `.env` (no se sube al repositorio) y rellena:
 | `STORAGE_PROVIDER` | `s3` (Neon) o `local` (disco, solo pruebas) |
 | `AWS_ENDPOINT_URL_S3`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `STORAGE_BUCKET` | almacenamiento S3 |
 | `MAX_FILE_SIZE_MB` | tamaño máximo por archivo (por defecto 100) |
-| `ALLOWED_ORIGINS` | dominios del frontend permitidos (p. ej. tu `*.pages.dev`) |
+| `ALLOWED_ORIGINS` | dominios del frontend permitidos (p. ej. `https://nubiflygo.com,https://www.nubiflygo.com`) |
+| `APP_URL` | dominio público (`https://nubiflygo.com`): enlaces compartidos y regreso de pagos |
+| `LEGACY_SESSION_COOKIE` | `on` (transición) u `off`: acepta o no la cookie antigua `ritmogo_session` |
 | `SESSION_DAYS`, `PORT`, `NODE_ENV`, `APP_NAME` | opcionales |
 
 **En producción nunca pongas secretos en el frontend ni en el repositorio.**

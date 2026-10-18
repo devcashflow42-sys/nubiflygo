@@ -1,5 +1,5 @@
 {
-  "name": "ritmogo",
+  "name": "nubiflygo",
   "private": true,
   "description": "NubiFlyGo — web y API en Cloudflare Pages",
   "dependencies": {

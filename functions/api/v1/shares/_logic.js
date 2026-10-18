@@ -6,14 +6,14 @@
    La página pública es /s/:token (ver /api/v1/public/shares/:token).
    ========================================================================== */
 import { getDb } from '../../../_shared/db.js';
-import { json } from '../../../_shared/http.js';
+import { json, publicOrigin } from '../../../_shared/http.js';
 import { dataRoute } from '../../../_shared/api.js';
 import { body, UUID_RE } from '../../../_shared/util.js';
 import { createShare, ownShare, deleteShare, ownerView } from '../../../_shared/shares.js';
 
 export const handle = dataRoute(async ({ seg, request, env, method, user }) => {
   const db = getDb(env);
-  const origin = String(env.APP_URL || new URL(request.url).origin);
+  const origin = publicOrigin(env, request);
 
   if (!seg[1] && method === 'POST') {
     const b = await body(request);

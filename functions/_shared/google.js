@@ -150,7 +150,7 @@ export function detectLang(request) {
 // redirect_uri para el flujo de redirección. Si está GOOGLE_REDIRECT_URI, se usa
 // tal cual (debe coincidir EXACTO con el registrado en Google Cloud Console). Si
 // no, se construye con el dominio real desde el que llegó la petición, para que
-// funcione igual en ritmogo.site, en *.pages.dev o en una vista previa.
+// funcione igual en nubiflygo.com, en *.pages.dev o en una vista previa.
 export function resolveRedirectUri(request, env) {
   if (env.GOOGLE_REDIRECT_URI) return env.GOOGLE_REDIRECT_URI;
   const origin = new URL(request.url).origin;

@@ -452,7 +452,6 @@
     } catch (e) { toast(e.message || 'No se pudo cambiar la publicación'); return; }
     d.published = next;
     if (next) {
-      d.publicUrl = 'nubiflygo.app/p/' + p.id.slice(0, 6) + '/' + String(d.id).slice(0, 8);
       d.publishedAt = Date.now();
       logActivity('doc', '"' + d.title + '" publicado');
       toast(d.kind === 'file' ? 'Archivo publicado' : 'Documento publicado');

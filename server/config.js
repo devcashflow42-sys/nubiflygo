@@ -14,6 +14,7 @@ export const config = {
   databaseUrl: process.env.DATABASE_URL || '',
 
   storageProvider: (process.env.STORAGE_PROVIDER || 'local').toLowerCase(),
+  // Bucket S3 real donde ya están los archivos: el nombre se conserva (no es marca).
   storageBucket: process.env.STORAGE_BUCKET || 'ritmogo',
   maxFileBytes: int(process.env.MAX_FILE_SIZE_MB, 100) * 1024 * 1024,
 

@@ -11,6 +11,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { config } from './config.js';
 
+// Carpeta de pruebas locales: se conserva el nombre para no perder lo ya guardado.
 const LOCAL_DIR = path.join(os.tmpdir(), 'ritmogo-files');
 
 // Ruta en disco de una clave: nunca puede salir de LOCAL_DIR ("..", rutas absolutas).

@@ -13,6 +13,7 @@
    ========================================================================== */
 
 import { apiGate, withSecurityHeaders, hasApiKey, fromApp, secLog } from './_shared/security.js';
+import { migrateLegacySession } from './_shared/http.js';
 
 const PAGES = { '/': 'main.html', '/login': 'login.html', '/main': 'home.html' };
 const CLEAN = { '/main.html': '/', '/index.html': '/', '/login.html': '/login', '/home.html': '/main' };
@@ -22,7 +23,12 @@ const CLEAN = { '/main.html': '/', '/index.html': '/', '/login.html': '/login', 
 // según la URL. Admite también el detalle /project/<id> y /note/<id>.
 const APP_SECTIONS = new Set(['main', 'project', 'note', 'archive', 'report', 'apikeys', 'automation', 'settings', 'notifications']);
 
-export async function onRequest({ request, env, next }) {
+// Toda respuesta pasa por la transición de la cookie de sesión (ver http.js).
+export async function onRequest(ctx) {
+  return migrateLegacySession(ctx.request, ctx.env, await route(ctx));
+}
+
+async function route({ request, env, next }) {
   const url = new URL(request.url);
   const path = url.pathname;
 

@@ -155,7 +155,7 @@ Copia `server/.env.example` como `server/.env` (Node) o crea las variables en
 | Variable | Por defecto | Descripción |
 |---|---|---|
 | `STORAGE_PROVIDER` | `local` (Node) · `s3` (Cloudflare) | `s3` para un bucket compatible con S3, o `local` para disco (solo pruebas). |
-| `STORAGE_BUCKET` | `ritmogo` | Nombre del bucket. |
+| `STORAGE_BUCKET` | `ritmogo` | Nombre del bucket S3 donde ya están los archivos. **No lo cambies** al cambiar de marca: es un recurso real con datos. |
 | `MAX_FILE_SIZE_MB` | `100` | Tamaño máximo por archivo. |
 | `AWS_ENDPOINT_URL_S3` | — | URL del servicio S3 (Neon, Cloudflare R2, AWS, MinIO…). |
 | `AWS_ACCESS_KEY_ID` | — | Clave de acceso del bucket. |
@@ -179,7 +179,8 @@ Guía paso a paso: [`functions/GOOGLE-SETUP.md`](functions/GOOGLE-SETUP.md).
 |---|---|
 | `MP_ACCESS_TOKEN` | Access Token de producción de tu aplicación de Mercado Pago (*Secret*). Activa los pagos. |
 | `MP_WEBHOOK_SECRET` | Clave secreta de Webhooks; valida que los avisos vengan de Mercado Pago. |
-| `APP_URL` | Opcional. Dominio público para las URLs de regreso y del webhook. |
+| `APP_URL` | Opcional. Dominio público para las URLs de regreso, del webhook y de los enlaces compartidos. Los enlaces compartidos usan `https://nubiflygo.com` si no se define. |
+| `LEGACY_SESSION_COOKIE` | Opcional. `on` (por defecto) acepta la cookie antigua `ritmogo_session` durante la transición; `off` la deja de aceptar (solo se caduca). |
 
 URL del webhook: `https://TU-DOMINIO/api/v1/billing/webhook`. Guía: [`functions/MERCADOPAGO-SETUP.md`](functions/MERCADOPAGO-SETUP.md).
 
@@ -218,7 +219,7 @@ AWS_SECRET_ACCESS_KEY="TU_SECRET_KEY"
 AWS_REGION="us-east-2"
 
 ADMIN_EMAILS="tu-correo@ejemplo.com"
-ALLOWED_ORIGINS="https://tu-dominio.com"
+ALLOWED_ORIGINS="https://nubiflygo.com,https://www.nubiflygo.com"
 ```
 
 ---

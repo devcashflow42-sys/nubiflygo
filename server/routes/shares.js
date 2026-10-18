@@ -14,7 +14,13 @@ import { createShare, ownShare, deleteShare, ownerView, publicShare, publicView,
 
 const db = { query };
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const originOf = (req) => process.env.APP_URL || ((req.get('x-forwarded-proto') || req.protocol) + '://' + req.get('host'));
+// Enlaces públicos con el dominio oficial (APP_URL lo cambia; en local, el propio servidor).
+// Copia de functions/_shared/http.js → publicOrigin (misma lógica).
+const CANONICAL_ORIGIN = 'https://nubiflygo.com';
+const originOf = (req) => {
+  if (process.env.APP_URL) return process.env.APP_URL.replace(/\/+$/, '');
+  return /^(localhost|127\.0\.0\.1|\[::1\])$/.test(req.hostname) ? (req.get('x-forwarded-proto') || req.protocol) + '://' + req.get('host') : CANONICAL_ORIGIN;
+};
 
 export const shares = Router();
 shares.use(requireAuth);

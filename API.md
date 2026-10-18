@@ -1,6 +1,6 @@
 # API de NubiFlyGo (`/api/v1`)
 
-Base: `https://ritmogo.pages.dev/api/v1`
+Base: `https://nubiflygo.com/api/v1`
 
 ## Autenticación
 
@@ -156,22 +156,22 @@ Borrar el archivo también borra sus enlaces.
 
 ```bash
 # Listar proyectos
-curl https://ritmogo.pages.dev/api/v1/projects \
+curl https://nubiflygo.com/api/v1/projects \
   -H "Authorization: Bearer sk_tu_clave"
 
 # Crear un proyecto
-curl -X POST https://ritmogo.pages.dev/api/v1/projects \
+curl -X POST https://nubiflygo.com/api/v1/projects \
   -H "Authorization: Bearer sk_tu_clave" \
   -H "Content-Type: application/json" \
   -d '{"name":"Mi proyecto","color":"#3b82f6"}'
 
 # Subir (publicar) un archivo
-curl -X POST https://ritmogo.pages.dev/api/v1/files/upload \
+curl -X POST https://nubiflygo.com/api/v1/files/upload \
   -H "Authorization: Bearer sk_tu_clave" \
   -F "file=@cancion.mp3" -F "project_id=UUID_DEL_PROYECTO"
 
 # Ver el perfil del dueño de la clave
-curl https://ritmogo.pages.dev/api/v1/account/profile \
+curl https://nubiflygo.com/api/v1/account/profile \
   -H "Authorization: Bearer sk_tu_clave"
 ```
 
@@ -312,16 +312,16 @@ cada petición borra lo que cabe en el límite de Cloudflare. En ese caso
 
 ```bash
 # Borrar todos los archivos (repite mientras "remaining" > 0)
-curl -X POST https://ritmogo.pages.dev/api/v1/files/delete \
+curl -X POST https://nubiflygo.com/api/v1/files/delete \
   -H "Authorization: Bearer sk_tu_clave" -H "Content-Type: application/json" \
   -d '{"all": true}'
 
 # Vaciar un proyecto
-curl -X POST https://ritmogo.pages.dev/api/v1/projects/UUID/items/delete \
+curl -X POST https://nubiflygo.com/api/v1/projects/UUID/items/delete \
   -H "Authorization: Bearer sk_tu_clave" -H "Content-Type: application/json" \
   -d '{"all": true}'
 
 # Todos los elementos de un proyecto
-curl https://ritmogo.pages.dev/api/v1/projects/UUID/items \
+curl https://nubiflygo.com/api/v1/projects/UUID/items \
   -H "Authorization: Bearer sk_tu_clave"
 ```
