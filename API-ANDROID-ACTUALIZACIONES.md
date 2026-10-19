@@ -268,58 +268,16 @@ Notas:
 - La suspensión bloquea también el inicio de sesión: `/api/v1/account/login` y, en Cloudflare,
   `/auth/*` (Google y GitHub).
 - Si la app recibe uno de estos códigos, debe volver a consultar `/app/status`.
-  `AppStatusClient.blockedAction(code, errorCode)` lo detecta.
 
-## 7. Cliente Android (Java)
+## 7. Qué debe hacer la app Android
 
-Está en `android-client/src/main/java/com/nubiflygo/appstatus/`. Solo depende de `org.json`,
-que viene con Android.
-
-| Clase | Qué hace |
-|---|---|
-| `AppStatusClient` | Hace la consulta HTTPS y entrega el resultado (ver detalles abajo). |
-| `AppStatus` | Modelo inmutable con parseo estricto: si falta un campo o tiene otro tipo, se lanza `InvalidResponseException`. |
-| `AppDecision` | Decide la acción, en este orden: **suspensión → mantenimiento → actualización obligatoria → opcional → OK**. También compara las compilaciones en la app. `safeDownloadUrl()` solo devuelve URLs https. |
-| `StatusCache` | Guarda el último estado válido para usarlo sin conexión. Va asociado a la compilación instalada. |
-
-Cómo funciona `AppStatusClient`:
-- Consulta con `HttpsURLConnection` y no sigue redirecciones.
-- Tiempos límite: 8 s para conectar y 10 s para leer. Respuesta máxima de 64 KB.
-- Hace un reintento si falla la red.
-- Trabaja en segundo plano y entrega el resultado en el hilo principal.
-
-Uso:
-
-```java
-AppStatusClient client = new AppStatusClient(context, BuildConfig.VERSION_CODE, BuildConfig.VERSION_NAME);
-client.check(new AppStatusClient.Callback() {
-    @Override public void onDecision(AppDecision d) {
-        switch (d.action) {
-            case SUSPENDED:        /* mostrar d.status.suspension.message y no continuar */ break;
-            case MAINTENANCE:      /* mostrar d.status.maintenance.message */ break;
-            case UPDATE_REQUIRED:  /* abrir d.safeDownloadUrl(); no continuar */ break;
-            case UPDATE_AVAILABLE: /* sugerir d.safeDownloadUrl(); se puede continuar */ break;
-            case OK:               /* continuar */ break;
-        }
-    }
-    @Override public void onUnavailable(AppStatusClient.Failure f) {
-        // NETWORK, TIMEOUT, RATE_LIMITED, HTTP_ERROR o INVALID_RESPONSE, sin estado guardado.
-        // El servidor bloquea igual (503/426), así que dejar continuar sin red es seguro.
-    }
-});
-```
-
-### Errores de red y respuestas inválidas
-- **Sin red, tiempo agotado o error HTTP**:
-  - Se reintenta una vez.
-  - Si sigue fallando, se usa el último estado válido guardado (`d.fromCache = true`).
-  - Si no hay ninguno, se llama a `onUnavailable`.
-- **Respuesta inválida** (no es JSON, faltan campos o los números no cuadran): no se guarda y
-  se trata igual que un fallo de red.
-- **Mantenimiento leído de la caché**: no bloquea, porque pudo haber terminado. La suspensión y
-  la versión obligatoria sí se respetan.
-- **429**: `RATE_LIMITED`. La app no debe consultar más de una vez por arranque o regreso a
-  primer plano.
+- Consultar `/app/status` al arrancar y al volver a primer plano (no más), solo por HTTPS,
+  enviando su `versionCode` en `build`.
+- Decidir en este orden: **suspensión → mantenimiento → actualización obligatoria → opcional → OK**.
+- Abrir `download_url` solo si empieza con `https://`.
+- Sin red, tiempo agotado o respuesta inválida (no es JSON o faltan campos): usar el último
+  estado válido guardado, o dejar continuar. El servidor bloquea igual con 503/426.
+- Ante 429, esperar lo que indique `Retry-After`.
 
 ## 8. Qué se probó
 - **Servidor Node** (41 comprobaciones):
@@ -334,12 +292,6 @@ client.check(new AppStatusClient.Callback() {
 - **Functions de Cloudflare** (19 comprobaciones, ejecutadas localmente contra PostgreSQL):
   - Lo mismo, y además que una API key de un admin no puede administrar.
   - El bloqueo del middleware, incluido `/auth/*` durante la suspensión.
-- **Cliente Java**:
-  - Compilado y ejecutado contra el servidor por HTTPS.
-  - Decisiones OK, opcional, obligatoria, obligatoria por `force_update`, mantenimiento y
-    suspensión.
-  - Sin red con y sin caché.
-  - Respuesta no JSON y HTTP 404.
 - **No probado**:
   - En un dispositivo Android real.
   - En Cloudflare desplegado (sin credenciales).
