@@ -29,6 +29,10 @@ App Android ──GET /api/v1/app/status?build=N──▶ Functions (Cloudflare)
   de la compilación mínima. Quedan libres `/api/v1/app/status` (la app necesita leerlo) y
   `/api/v1/admin/*` (para poder reactivar).
 - **La web no se ve afectada**: el bloqueo solo aplica a la app Android.
+- **Alcance del bloqueo**: depende de la cabecera `X-NubiFly-Client: android` y de la compilación
+  que declara la app. Sirve para que la app oficial obedezca, pero **no es un control de
+  seguridad**: un APK modificado o un script puede omitir la cabecera. Para cortar el acceso a una
+  cuenta hay que bloquear la cuenta o revocar sus API keys.
 - **Cambios en tiempo real**:
   - `/app/status` siempre lee la configuración vigente.
   - El bloqueo del resto de la API usa una caché en memoria de **15 segundos como máximo**
@@ -217,6 +221,8 @@ Para terminarlo: `{ "active": false }`, que también limpia las fechas.
 Reglas:
 - `reason` admite hasta 200 caracteres y `message` hasta 500.
 - `suspended_at` lo pone el servidor.
+- `reason` y `message` son **públicos**: aparecen en `/app/status` y en el 503. No escribas
+  motivos internos.
 
 Para reactivar: `{ "active": false }`.
 
