@@ -101,7 +101,10 @@
   .notif-filters .chip { flex-shrink: 0; }
   .notif-item { grid-template-columns: 36px 1fr; gap: 12px; padding: 14px; }
   .notif-ico { width: 36px; height: 36px; border-radius: 10px; }
-  .notif-actions { grid-column: 2; justify-self: end; opacity: 1; margin-top: -38px; }
+  .notif-actions { grid-column: 2; justify-self: end; opacity: 1; margin-top: -42px; gap: 6px; }
+  /* Botones más grandes y separados para tocar con el dedo (mín. 40px). */
+  .notif-actions .icon-btn { width: 40px; height: 40px; border-radius: 10px; }
+  .notif-actions .icon-btn svg { width: 18px; height: 18px; }
   .notif-top { flex-wrap: wrap; row-gap: 2px; }
 }
 @media (prefers-reduced-motion: reduce) { .sk-line { animation: none; } }

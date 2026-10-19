@@ -203,6 +203,7 @@ CREATE TABLE IF NOT EXISTS login_devices (
   ip          TEXT,
   first_seen  TIMESTAMPTZ NOT NULL DEFAULT now(),
   last_seen   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  user_agent  TEXT,                                 -- para mostrar el dispositivo y su versión en "Sesiones activas"
   PRIMARY KEY (user_id, device)
 );
 

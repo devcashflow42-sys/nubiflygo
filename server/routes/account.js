@@ -7,7 +7,7 @@ import { Router } from 'express';
 import { query } from '../db.js';
 import { hashPassword, verifyPassword, issueSession, clearSession, requireAuth } from '../auth.js';
 import { rateLimit, rateReset, tooMany, clientIp, secLog, ensureSecurity, isAdminEmail } from '../security.js';
-import { recordLogin, notifySafe, hourKey } from '../notify.js';
+import { recordLogin, notifySafe, hourKey, deviceInfo, deviceLabel, ensureNotifications } from '../notify.js';
 import { ensureBilling, effectivePlan, PLANS } from '../billing.js';
 const db = { query };
 
@@ -124,6 +124,25 @@ account.post('/logout', (_req, res) => {
   clearSession(res);
   res.json({ ok: true });
 });
+
+// GET /sessions — dispositivos donde se ha iniciado sesión (sesiones activas reales)
+account.get('/sessions', requireAuth, async (req, res, next) => {
+  try {
+    await ensureNotifications(db);
+    const here = deviceLabel(req.get('User-Agent'));
+    const { rows } = await query(
+      `SELECT device, ip, user_agent, first_seen, last_seen
+       FROM login_devices WHERE user_id = $1 ORDER BY last_seen DESC LIMIT 50`, [req.user.id]);
+    res.set('Cache-Control', 'no-store').json({ items: rows.map(r => sessionShape(r, here)) });
+  } catch (e) { next(e); }
+});
+
+// Da forma a una fila de login_devices (igual que en functions/).
+function sessionShape(r, hereLabel) {
+  const info = deviceInfo(r.user_agent);
+  const detail = [info.os + (info.osVersion ? ' ' + info.osVersion : ''), info.model || null].filter(Boolean).join(' · ');
+  return { device: info.label, model: info.model || null, detail: detail || info.os, ip: r.ip || null, first_seen: r.first_seen, last_seen: r.last_seen, current: r.device === hereLabel };
+}
 
 // Columnas públicas del perfil (nunca incluye password_hash ni avatar_data).
 const PROFILE_COLS = 'id, name, email, created_at, is_guest, guest_expires_at, language, plan, is_admin, avatar_url, ui_prefs, plan_expires_at, plan_cancel_at_period_end';

@@ -35,6 +35,7 @@ export async function ensureNotifications(db) {
     first_seen  TIMESTAMPTZ NOT NULL DEFAULT now(),
     last_seen   TIMESTAMPTZ NOT NULL DEFAULT now(),
     PRIMARY KEY (user_id, device))`);
+  await db.query('ALTER TABLE login_devices ADD COLUMN IF NOT EXISTS user_agent TEXT');
   await db.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS plan_expires_at TIMESTAMPTZ');
   ready = true;
 }
@@ -64,16 +65,35 @@ export function notifySafe(db, userId, n) {
   return notify(db, userId, n).catch(e => { console.error('[notify]', e && e.message); return null; });
 }
 
-/* -------- Dispositivo a partir del User-Agent: "Chrome en Windows" -------- */
-export function deviceLabel(ua) {
-  const s = String(ua || '');
+/* -------- Dispositivo a partir del User-Agent --------
+   deviceInfo() devuelve { browser, os, osVersion, model, label }.
+   label es "Chrome en Android" (+ el modelo del teléfono si se detecta),
+   y osVersion/model se muestran como detalle en "Sesiones activas". */
+export function deviceInfo(ua) {
+  const s = String(ua || '').slice(0, 300);   // acotar: evita cómputo caro con un UA enorme
   const os = /Android/i.test(s) ? 'Android' : /iPhone|iPad|iPod/i.test(s) ? 'iOS'
     : /Windows/i.test(s) ? 'Windows' : /Mac OS X|Macintosh/i.test(s) ? 'macOS'
     : /CrOS/i.test(s) ? 'ChromeOS' : /Linux/i.test(s) ? 'Linux' : 'otro sistema';
-  const br = /Edg\//i.test(s) ? 'Edge' : /OPR\/|Opera/i.test(s) ? 'Opera' : /SamsungBrowser/i.test(s) ? 'Samsung Internet'
+  const browser = /Edg\//i.test(s) ? 'Edge' : /OPR\/|Opera/i.test(s) ? 'Opera' : /SamsungBrowser/i.test(s) ? 'Samsung Internet'
     : /Firefox\//i.test(s) ? 'Firefox' : /Chrome\//i.test(s) ? 'Chrome' : /Safari\//i.test(s) ? 'Safari'
     : /NubiFlyGo|okhttp|Dalvik/i.test(s) ? 'App' : 'Navegador';
-  return br + ' en ' + os;
+  let osVersion = '', m;
+  if (os === 'Android' && (m = s.match(/Android\s+([\d.]+)/i))) osVersion = m[1];
+  else if (os === 'iOS' && (m = s.match(/OS\s+([\d_]+)/i))) osVersion = m[1].replace(/_/g, '.');
+  else if (os === 'Windows' && (m = s.match(/Windows NT\s+([\d.]+)/i))) osVersion = ({ '10.0': '10/11', '6.3': '8.1', '6.2': '8', '6.1': '7' })[m[1]] || m[1];
+  // Modelo del teléfono (Android): "...; Android 13; SM-G991B) ..." o "; Pixel 7 Build/..."
+  let model = '';
+  if (os === 'Android' && (m = s.match(/Android[^;)]*;\s*([^;)]{1,60})/i))) {   // sin ambigüedad: a prueba de ReDoS
+    model = m[1].replace(/\s+Build\b.*$/i, '').trim().replace(/\s*wv$/i, '');
+    if (!/\d/.test(model) && model.length <= 2) model = '';   // "K" y otros marcadores vacíos
+  }
+  return { browser, os, osVersion, model, label: browser + ' en ' + os };
+}
+
+// Etiqueta corta (clave del dispositivo): incluye el modelo para distinguir teléfonos.
+export function deviceLabel(ua) {
+  const d = deviceInfo(ua);
+  return d.label + (d.model ? ' · ' + d.model : '');
 }
 
 export async function recordLogin(db, user, ua, ip, how) {
@@ -81,9 +101,9 @@ export async function recordLogin(db, user, ua, ip, how) {
     await ensureNotifications(db);
     const device = deviceLabel(ua);
     const ins = await db.query(
-      `INSERT INTO login_devices (user_id, device, ip) VALUES ($1, $2, $3)
-       ON CONFLICT (user_id, device) DO UPDATE SET last_seen = now(), ip = EXCLUDED.ip
-       RETURNING (xmax = 0) AS is_new`, [user.id, device, ip ? String(ip).slice(0, 64) : null]);
+      `INSERT INTO login_devices (user_id, device, ip, user_agent) VALUES ($1, $2, $3, $4)
+       ON CONFLICT (user_id, device) DO UPDATE SET last_seen = now(), ip = EXCLUDED.ip, user_agent = EXCLUDED.user_agent
+       RETURNING (xmax = 0) AS is_new`, [user.id, device, ip ? String(ip).slice(0, 64) : null, ua ? String(ua).slice(0, 400) : null]);
     const isNew = ins.rows[0] && ins.rows[0].is_new;
     const { rows } = await db.query('SELECT count(*)::int AS n FROM login_devices WHERE user_id = $1', [user.id]);
     const total = rows[0] ? rows[0].n : 1;

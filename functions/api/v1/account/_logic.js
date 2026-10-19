@@ -12,7 +12,7 @@ import { hashPassword, verifyPassword } from '../../../_shared/crypto.js';
 import { accountRoute, rowIsAdmin, isAdminEmail } from '../../../_shared/api.js';
 import { EMAIL_RE, normLang, body } from '../../../_shared/util.js';
 import { rateLimit, rateReset, tooMany, clientIp, secLog, ensureSecurityColumns } from '../../../_shared/security.js';
-import { recordLogin, notifySafe, hourKey } from '../../../_shared/notify.js';
+import { recordLogin, notifySafe, hourKey, deviceInfo, deviceLabel, ensureNotifications } from '../../../_shared/notify.js';
 import { ensureBilling, effectivePlan, PLANS } from '../../../_shared/billing.js';
 
 // Límites de intentos (capa 3). Ventanas en segundos.
@@ -25,12 +25,39 @@ const LIMITS = {
   password:  { n: 10, win: 900 }     // 10 cambios de contraseña por cuenta cada 15 min
 };
 
+// Da forma a una fila de login_devices para "Sesiones activas".
+function sessionShape(r, hereLabel) {
+  const info = deviceInfo(r.user_agent);
+  const detail = [info.os + (info.osVersion ? ' ' + info.osVersion : ''), info.model || null]
+    .filter(Boolean).join(' · ');
+  return {
+    device: info.label,
+    model: info.model || null,
+    detail: detail || info.os,
+    ip: r.ip || null,
+    first_seen: r.first_seen,
+    last_seen: r.last_seen,
+    current: r.device === hereLabel
+  };
+}
+
 export const handle = accountRoute(async ({ seg, request, env, method, auth }) => {
   const action = seg[1];
   const db = getDb(env);
 
   if (action === 'logout' && method === 'POST') {
     return json({ ok: true }, 200, { 'Set-Cookie': clearCookie() });
+  }
+
+  // Sesiones activas: los dispositivos donde se ha iniciado sesión (reales).
+  if (action === 'sessions' && method === 'GET') {
+    if (!auth) return json({ error: 'No autenticado.' }, 401);
+    await ensureNotifications(db);
+    const here = deviceLabel(request.headers.get('User-Agent'));
+    const { rows } = await db.query(
+      `SELECT device, ip, user_agent, first_seen, last_seen
+       FROM login_devices WHERE user_id = $1 ORDER BY last_seen DESC LIMIT 50`, [auth.user.id]);
+    return json({ items: rows.map(r => sessionShape(r, here)) }, 200, { 'Cache-Control': 'no-store' });
   }
 
   // Preferencias de interfaz guardadas en la cuenta (no en el navegador).

@@ -237,11 +237,7 @@
         el('div', { class: 'set-row-main' }, [ el('div', { class: 'tt' }, 'Autenticación en dos pasos (2FA)'), el('div', { class: 'ds' }, 'Añade una capa adicional de seguridad.') ]),
         el('div', { class: 'set-row-ctl' }, [ el('span', { class: 'set-badge ' + (twofa ? 'ok' : 'off') }, [ el('span', { class: 'dot' }), twofa ? 'Activado' : 'Desactivado' ]), sToggle('twofa', false, function (on) { toast(on ? 'Autenticación en dos pasos activada' : '2FA desactivado'); setTimeout(function () { render(); }, 150); }) ])
       ]),
-      el('div', { class: 'set-box' }, [
-        el('div', { class: 'set-row-ico', html: SI.monitor }),
-        el('div', { class: 'set-row-main' }, [ el('div', { class: 'tt' }, 'Sesiones activas'), el('div', { class: 'ds' }, 'Gestiona los dispositivos donde has iniciado sesión.') ]),
-        el('div', { class: 'set-row-ctl' }, [ btn('Ver sesiones', 'ghost', function () { openSessionsModal(); }) ])
-      ])
+      sessionsBlock()
     ]);
     return card(SI.shield, 'Seguridad de la cuenta', 'Gestiona la seguridad de tu cuenta y métodos de inicio de sesión.', [body], null, 'pad');
   }
@@ -576,19 +572,64 @@
     });
   }
 
-  /* ───────────── Sesiones activas (demo con sesión actual real) ───────────── */
-  function openSessionsModal() {
-    const ua = navigator.userAgent || '';
-    const browser = /Edg/.test(ua) ? 'Edge' : /Chrome/.test(ua) ? 'Chrome' : /Firefox/.test(ua) ? 'Firefox' : /Safari/.test(ua) ? 'Safari' : 'Navegador';
-    const os = /Windows/.test(ua) ? 'Windows' : /Mac/.test(ua) ? 'macOS' : /Android/.test(ua) ? 'Android' : /iPhone|iPad/.test(ua) ? 'iOS' : /Linux/.test(ua) ? 'Linux' : 'Equipo';
-    const body = el('div', { class: 'set-boxrows' }, [
-      el('div', { class: 'set-box' }, [
+  /* ───────────── Sesiones activas (lista real, desde /account/sessions) ───────────── */
+  // Bloque: cabecera + lista de dispositivos donde el usuario ha iniciado sesión.
+  function sessionsBlock() {
+    const list = el('div', { class: 'set-sessions' });
+    const block = el('div', { class: 'set-sessions-wrap' }, [
+      el('div', { class: 'set-subhead' }, [
         el('div', { class: 'set-row-ico', html: SI.monitor }),
-        el('div', { class: 'set-row-main' }, [ el('div', { class: 'tt' }, browser + ' · ' + os), el('div', { class: 'ds' }, 'Sesión actual · ' + (sGet('timezone', 'UTC-06:00')) ) ]),
-        el('span', { class: 'set-badge ok' }, [ el('span', { class: 'dot' }), 'Activa' ])
-      ])
+        el('div', { class: 'set-row-main' }, [ el('div', { class: 'tt' }, 'Sesiones activas'), el('div', { class: 'ds' }, 'Dispositivos donde has iniciado sesión.') ]),
+        el('button', { type: 'button', class: 'set-link-btn', onclick: function () { loadSessions(list); } }, 'Actualizar')
+      ]),
+      list
     ]);
-    modal({ title: 'Sesiones activas', body: body, actions: [{ label: 'Cerrar', kind: 'ghost' }] });
+    loadSessions(list);
+    return block;
+  }
+
+  function sessionsSkeleton() {
+    return el('div', {}, [0, 1].map(function () {
+      return el('div', { class: 'sess-item sess-skel' }, [
+        el('span', { class: 'sess-ico' }),
+        el('div', { class: 'sess-main' }, [ el('span', { class: 'sk-line w40' }), el('span', { class: 'sk-line w70' }) ])
+      ]);
+    }));
+  }
+
+  function loadSessions(list) {
+    list.textContent = '';
+    list.appendChild(sessionsSkeleton());
+    apiGet('/account/sessions').then(function (d) {
+      list.textContent = '';
+      const items = (d && d.items) || [];
+      if (!items.length) { list.appendChild(el('div', { class: 'sess-empty' }, 'Aún no hay sesiones registradas.')); return; }
+      items.forEach(function (s) { list.appendChild(sessionItem(s)); });
+    }).catch(function (err) {
+      list.textContent = '';
+      list.appendChild(el('div', { class: 'sess-empty' }, (err && err.message) || 'No se pudieron cargar las sesiones.'));
+    });
+  }
+
+  function sessionItem(s) {
+    const isMobile = /Android|iOS/.test(s.detail || '');
+    const when = s.current
+      ? 'Activa ahora'
+      : (s.last_seen ? 'Última vez ' + timeAgo(Date.parse(s.last_seen)) : '');
+    return el('div', { class: 'sess-item' + (s.current ? ' is-current' : '') }, [
+      el('span', { class: 'sess-ico', html: isMobile ? SI.phone : SI.monitor }),
+      el('div', { class: 'sess-main' }, [
+        el('div', { class: 'sess-top' }, [
+          el('span', { class: 'sess-name' }, s.device),
+          s.current ? el('span', { class: 'set-badge ok' }, [ el('span', { class: 'dot' }), 'Este dispositivo' ]) : null
+        ].filter(Boolean)),
+        el('div', { class: 'sess-detail' }, [
+          el('span', {}, s.detail || ''),
+          s.ip ? el('span', { class: 'sess-ip' }, ' · ' + s.ip) : null
+        ].filter(Boolean)),
+        when ? el('div', { class: 'sess-when' }, when) : null
+      ].filter(Boolean))
+    ]);
   }
 
   /* ───────────── Descargar datos ───────────── */

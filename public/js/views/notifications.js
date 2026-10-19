@@ -166,14 +166,13 @@
     const meta = NOTIF_TYPES[n.type] || NOTIF_TYPES.info;
     const unread = !n.read_at;
     const ts = Date.parse(n.created_at) || Date.now();
-    const readBtn = el('button', {
-      class: 'icon-btn', title: unread ? 'Marcar como leída' : 'Marcar como no leída',
-      'aria-label': unread ? 'Marcar como leída' : 'Marcar como no leída',
-      onclick: (e) => { e.stopPropagation(); setNotifRead(n, unread); },
-      html: unread
-        ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.2 8.4c.5.38.8.97.8 1.6v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V10a2 2 0 0 1 .8-1.6l8-6a2 2 0 0 1 2.4 0l8 6Z"/><path d="m22 10-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 10"/></svg>'
-        : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/><circle cx="19" cy="5" r="3" fill="currentColor"/></svg>'
-    });
+    // Solo "marcar como leída" y solo cuando está sin leer (una palomita clara).
+    // Al leerla ya no reaparece el botón, así no se vuelve a marcar sin querer.
+    const readBtn = unread ? el('button', {
+      class: 'icon-btn', title: 'Marcar como leída', 'aria-label': 'Marcar como leída',
+      onclick: (e) => { e.stopPropagation(); setNotifRead(n, true); },
+      html: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
+    }) : null;
     const delBtn = el('button', {
       class: 'icon-btn', title: 'Eliminar', 'aria-label': 'Eliminar notificación',
       onclick: (e) => { e.stopPropagation(); deleteNotif(n); },
@@ -197,7 +196,7 @@
           n.link ? el('span', { class: 'notif-link' }, 'Ver detalles →') : null
         ].filter(Boolean))
       ].filter(Boolean)),
-      el('div', { class: 'notif-actions' }, [ readBtn, delBtn ]),
+      el('div', { class: 'notif-actions' }, [ readBtn, delBtn ].filter(Boolean)),
       unread ? el('span', { class: 'notif-dot', 'aria-label': 'No leída' }) : null
     ].filter(Boolean));
   }
