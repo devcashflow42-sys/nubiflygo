@@ -14,6 +14,18 @@
 
 import { apiGate, withSecurityHeaders, hasApiKey, fromApp, secLog } from './_shared/security.js';
 import { migrateLegacySession } from './_shared/http.js';
+import { getDb } from './_shared/db.js';
+import { appGateFor } from './_shared/appcontrol.js';
+
+// App Android suspendida, en mantenimiento o con una versión menor a la mínima:
+// se bloquea aquí, en el servidor (no solo en la app).
+async function androidGate(request, env, path) {
+  const hit = await appGateFor(getDb(env), path, (k) => request.headers.get(k));
+  if (!hit) return null;
+  const h = { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' };
+  if (hit.status === 503) h['Retry-After'] = '300';
+  return new Response(JSON.stringify(Object.assign({ success: false }, hit.body)), { status: hit.status, headers: h });
+}
 
 const PAGES = { '/': 'main.html', '/login': 'login.html', '/main': 'home.html' };
 const CLEAN = { '/main.html': '/', '/index.html': '/', '/login.html': '/login', '/home.html': '/main' };
@@ -34,7 +46,7 @@ async function route({ request, env, next }) {
 
   // API: capas de seguridad y después su función.
   if (path === '/api' || path.startsWith('/api/')) {
-    const blocked = apiGate(request);
+    const blocked = apiGate(request) || await androidGate(request, env, path);
     if (blocked) return withSecurityHeaders(blocked, 'api');
     return withSecurityHeaders(await next(), 'api', hasApiKey(request));
   }
@@ -44,6 +56,8 @@ async function route({ request, env, next }) {
       secLog('blocked', request, { status: 403, reason: 'cross_site' });
       return withSecurityHeaders(json({ error: 'Solicitud no permitida.' }, 403), 'api');
     }
+    const appBlocked = await androidGate(request, env, path);
+    if (appBlocked) return withSecurityHeaders(appBlocked, 'api');
     return withSecurityHeaders(await next(), 'api');
   }
 

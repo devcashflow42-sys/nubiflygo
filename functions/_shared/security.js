@@ -24,7 +24,7 @@ export const CLIENT_HEADER = 'X-NubiFly-Client';
 const BINARY_RE = /^\/api\/v1\/(?:files\/[0-9a-f-]{36}\/(?:download|thumb)|account\/avatar)\/?$/i;
 // Sin sesión: solo el estado mínimo del servicio.
 const PUBLIC_SHARE_RE = /^\/api\/v1\/public\/shares\/[A-Za-z0-9]{22}(\/(preview|download))?\/?$/;
-const PUBLIC_RE = /^\/api\/v1\/(health|billing\/webhook)\/?$/i;   // el webhook lo llama Mercado Pago
+const PUBLIC_RE = /^\/api\/v1\/(health|billing\/webhook|app\/status)\/?$/i;   // webhook: Mercado Pago · app/status: la app Android
 // Destinos de navegación (la página entera o un marco).
 const NAV_DEST = new Set(['document', 'iframe', 'frame', 'embed', 'object', 'fencedframe']);
 // Cuerpo JSON máximo (la foto de perfil viaja como data URL de hasta 2 MB).

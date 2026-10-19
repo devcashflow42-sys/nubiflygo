@@ -16,6 +16,7 @@ import { projects } from './routes/projects.js';
 import { notifications } from './routes/notifications.js';
 import { billing } from './routes/billing.js';
 import { shares, publicShares } from './routes/shares.js';
+import { appPublic, appAdmin, androidGate } from './routes/app.js';
 
 export const api = Router();
 
@@ -30,6 +31,12 @@ api.get('/health', async (req, res) => {
   if (!admin) return res.status(db ? 200 : 503).json({ status });
   res.status(db ? 200 : 503).json({ service: 'nubiflygo', status, version: 'v1', db, storage: config.storageProvider, missingConfig: checkConfig() });
 });
+
+// App Android: bloqueo en el servidor (suspensión, mantenimiento, versión mínima),
+// estado público y administración.
+api.use(androidGate);
+api.use('/app', appPublic);
+api.use('/admin/app', appAdmin);
 
 // Cuenta
 api.use('/account', account);

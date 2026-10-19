@@ -5,11 +5,16 @@
      GET /admin  |  /admin/stats            → estadísticas globales
      GET /admin/users?page=&limit=&q=        → listado de usuarios
      GET /admin/users/:id                    → detalle de un usuario
+     GET /admin/app                          → configuración de la app Android + historial
+     GET /admin/app/audit?limit=             → historial de cambios
+     PUT /admin/app/update | maintenance | suspension → cambia esa sección
    ========================================================================== */
 import { getDb } from '../../../_shared/db.js';
 import { json } from '../../../_shared/http.js';
 import { dataRoute, rowIsAdmin } from '../../../_shared/api.js';
 import { UUID_RE, pageParams, fmtBytes, toISO } from '../../../_shared/util.js';
+import { rateLimit, tooMany, clientIp, secLog } from '../../../_shared/security.js';
+import { readConfig, adminView, readAudit, saveSection, validateUpdate, validateMaintenance, validateSuspension, resetAppGateCache } from '../../../_shared/appcontrol.js';
 
 export const handle = dataRoute(async ({ seg, request, env, method, user, auth }) => {
   const db = getDb(env);
@@ -89,6 +94,34 @@ export const handle = dataRoute(async ({ seg, request, env, method, user, auth }
        FROM users u WHERE u.id = $1`, [seg[2]]);
     if (!rows[0]) return json({ error: 'Usuario no encontrado.' }, 404);
     return json({ success: true, status: 200, data: { item: adminUserItem(rows[0], env) }, error: null });
+  }
+
+  // ── Control de la app Android ──
+  if (seg[1] === 'app') {
+    const rl = await rateLimit(db, 'admin-app:' + user.id, 60, 60);
+    if (!rl.ok) return tooMany(rl.retryAfter);
+    if (!seg[2] && method === 'GET') {
+      const row = await readConfig(db);
+      return json({ success: true, config: adminView(row), audit: await readAudit(db, 20) });
+    }
+    if (seg[2] === 'audit' && !seg[3] && method === 'GET') {
+      const lim = Number(new URL(request.url).searchParams.get('limit')) || 50;
+      return json({ success: true, items: await readAudit(db, lim) });
+    }
+    const V = { update: validateUpdate, maintenance: validateMaintenance, suspension: validateSuspension };
+    if (V[seg[2]] && !seg[3]) {
+      if (method !== 'PUT') return json({ success: false, error: 'Usa PUT.' }, 405, { Allow: 'PUT' });
+      let src;
+      try { src = await request.json(); } catch { return json({ success: false, error: 'El cuerpo debe ser JSON válido.' }, 400); }
+      const current = await readConfig(db);
+      const v = V[seg[2]](src, current);
+      if (v.error) return json({ success: false, error: v.error }, 400);
+      const row = await saveSection(db, seg[2], v.values, { id: user.id, email: user.email, ip: clientIp(request) });
+      resetAppGateCache();
+      secLog('admin_app_' + seg[2], request, { admin: user.id });
+      return json({ success: true, section: seg[2], config: adminView(row) });
+    }
+    return json({ success: false, error: 'Ruta de administración no encontrada.' }, 404);
   }
 
   return json({ error: 'Ruta de administración no encontrada.' }, 404);

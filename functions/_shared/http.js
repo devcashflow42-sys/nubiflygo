@@ -38,7 +38,7 @@ export function json(body, status = 200, extraHeaders = {}) {
 // es seguro permitir cualquier origen.
 export const CORS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET,POST,PATCH,DELETE,OPTIONS',
+  'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
   'Access-Control-Allow-Headers': 'Authorization, Content-Type, X-API-Key',
   'Access-Control-Max-Age': '86400'
 };

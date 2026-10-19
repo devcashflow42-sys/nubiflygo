@@ -20,7 +20,7 @@ import { config } from './config.js';
 export const CLIENT_HEADER = 'X-NubiFly-Client';
 const BINARY_RE = /^\/api\/v1\/(?:files\/[0-9a-f-]{36}\/(?:download|thumb)|account\/avatar)\/?$/i;
 const PUBLIC_SHARE_RE = /^\/api\/v1\/public\/shares\/[A-Za-z0-9]{22}(\/(preview|download))?\/?$/;
-const PUBLIC_RE = /^\/api\/v1\/(health|billing\/webhook)\/?$/i;   // el webhook lo llama Mercado Pago
+const PUBLIC_RE = /^\/api\/v1\/(health|billing\/webhook|app\/status)\/?$/i;   // webhook: Mercado Pago · app/status: la app Android
 const NAV_DEST = new Set(['document', 'iframe', 'frame', 'embed', 'object', 'fencedframe']);
 
 const hostOf = (v) => { try { return new URL(v).host.toLowerCase(); } catch { return ''; } };
@@ -38,10 +38,11 @@ export function fromApp(req) {
     if (config.allowedOrigins.includes(origin)) return true;          // front en otro dominio (configurado)
     if (!own.includes(hostOf(origin))) return false;                   // otra web: nunca
   }
+  // App Android/iOS: sin Origin y con su cabecera (igual que en functions/).
+  if (!origin && req.get(CLIENT_HEADER)) return true;
   const site = h(req, 'sec-fetch-site');
   if (site) return site === 'same-origin';
   if (origin && origin !== 'null') return true;
-  if (req.get(CLIENT_HEADER)) return true;
   const ref = req.get('referer');
   return !!ref && own.includes(hostOf(ref));
 }

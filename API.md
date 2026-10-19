@@ -103,6 +103,12 @@ la imagen). `GET /files/:id/download` admite `Range` para adelantar audio y vide
 | `POST /notifications/read-all` | Marca todas como leídas | cookie o key |
 | `DELETE /notifications/:id` · `DELETE /notifications?status=read\|all` | Borra una, las leídas o todas | cookie o key |
 | `POST /notifications/send` | `{to: "all" \| correo, type, title, body?, link?}` → envía un aviso (novedades, suscripción…) | solo admin (cookie) |
+| `GET /app/status` | Estado de la app Android: versión, mantenimiento y suspensión (`?build=`) | pública |
+| `GET /admin/app` · `PUT /admin/app/{update\|maintenance\|suspension}` | Configura la app Android (con historial) | solo admin (cookie) |
+
+App Android: ver [API-ANDROID-ACTUALIZACIONES.md](API-ANDROID-ACTUALIZACIONES.md). Sus
+peticiones llevan `X-NubiFly-Client: android` y `X-App-Build`, y pueden recibir 503
+(suspensión o mantenimiento) o 426 (versión no compatible).
 
 Respuestas: `{ item }` o `{ items }` en éxito; `{ error }` con el código HTTP
 correspondiente en error (400 datos inválidos, 401 sin auth, 403 sin permiso,

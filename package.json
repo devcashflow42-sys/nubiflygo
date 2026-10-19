@@ -1,6 +1,7 @@
 {
   "name": "nubiflygo",
   "private": true,
+  "type": "module",
   "description": "NubiFlyGo — web y API en Cloudflare Pages",
   "dependencies": {
     "@neondatabase/serverless": "^0.10.4",

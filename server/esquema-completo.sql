@@ -248,3 +248,42 @@ ORDER BY table_name;
 -- Inicio de sesión con Google: ID fijo de la cuenta de Google (sub), una por usuario.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS google_sub TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_sub ON users(google_sub) WHERE google_sub IS NOT NULL;
+
+-- Control global de la app Android (GET /api/v1/app/status): versión publicada, URL de
+-- descarga, mantenimiento y suspensión. Una fila por plataforma; solo la cambia un admin.
+CREATE TABLE IF NOT EXISTS app_control (
+  platform              TEXT PRIMARY KEY CHECK (platform IN ('android')),
+  environment           TEXT NOT NULL DEFAULT 'production',
+  latest_version        TEXT NOT NULL DEFAULT '1.0.0',
+  latest_build          INTEGER NOT NULL DEFAULT 1 CHECK (latest_build >= 1),
+  release_date          TIMESTAMPTZ,
+  download_url          TEXT,                         -- HTTPS que registra el admin (no se genera)
+  min_supported_version TEXT NOT NULL DEFAULT '1.0.0',
+  min_supported_build   INTEGER NOT NULL DEFAULT 1 CHECK (min_supported_build >= 1),
+  force_update          BOOLEAN NOT NULL DEFAULT false,
+  maintenance_active    BOOLEAN NOT NULL DEFAULT false,
+  maintenance_message   TEXT,
+  maintenance_starts_at TIMESTAMPTZ,
+  maintenance_ends_at   TIMESTAMPTZ,
+  suspension_active     BOOLEAN NOT NULL DEFAULT false,
+  suspension_reason     TEXT,
+  suspension_message    TEXT,
+  suspended_at          TIMESTAMPTZ,
+  updated_at            TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_by            UUID,
+  CHECK (min_supported_build <= latest_build)
+);
+-- Historial de cambios administrativos (quién, cuándo, desde qué IP, antes y después).
+CREATE TABLE IF NOT EXISTS app_control_audit (
+  id          BIGSERIAL PRIMARY KEY,
+  platform    TEXT NOT NULL,
+  section     TEXT NOT NULL CHECK (section IN ('update', 'maintenance', 'suspension')),
+  admin_id    UUID,
+  admin_email TEXT,
+  ip          TEXT,
+  before      JSONB,
+  after       JSONB,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_app_control_audit_time ON app_control_audit(platform, created_at DESC);
+INSERT INTO app_control (platform) VALUES ('android') ON CONFLICT (platform) DO NOTHING;
