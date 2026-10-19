@@ -153,8 +153,14 @@ export async function rateLimit(key, limit, windowSec) {
        RETURNING count, GREATEST(1, ceil(extract(epoch FROM (window_start + make_interval(secs => $2) - now()))))::int AS retry`,
       [String(key).slice(0, 200), windowSec]);
     const r = rows[0] || { count: 0, retry: windowSec };
+    // De vez en cuando se borran contadores viejos (ninguna ventana dura más de un día).
+    if (Math.random() < 0.005) query("DELETE FROM rate_limits WHERE window_start < now() - interval '1 day'").catch(() => {});
     return { ok: r.count <= limit, count: r.count, retryAfter: r.retry };
-  } catch { return { ok: true, count: 0, retryAfter: 0 }; }
+  } catch (e) {
+    // Si la base falla se deja pasar (disponibilidad), pero queda en el registro.
+    console.warn(JSON.stringify({ level: 'security', event: 'rate_limit_unavailable', key: String(key).split(':')[0], error: String(e && e.message || e).slice(0, 200) }));
+    return { ok: true, count: 0, retryAfter: 0 };
+  }
 }
 export async function rateCount(key, windowSec) {
   try {

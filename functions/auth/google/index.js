@@ -99,7 +99,7 @@ export async function onRequestPost({ request, env }) {
         await notify(db, user.id, {
           type: 'security',
           title: 'Google vinculado a tu cuenta',
-          body: 'Ahora puedes entrar con Google. Por seguridad cerramos las demás sesiones. Si no creaste una contraseña en NubiFlyGo, cámbiala en Configuración.',
+          body: 'Ahora entras con Google. Por seguridad cerramos las demás sesiones y desactivamos la contraseña y las API keys anteriores de esta cuenta.',
           link: '/settings'
         });
       } catch {}

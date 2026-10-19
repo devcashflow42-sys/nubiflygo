@@ -64,6 +64,15 @@ account.post('/register', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ¿El dueño de este correo ya inició sesión antes desde esta IP? (igual que en functions/)
+async function knownLoginIp(email, ip) {
+  try {
+    const { rows } = await query(
+      'SELECT 1 FROM login_devices d JOIN users u ON u.id = d.user_id WHERE u.email = $1 AND d.ip = $2 LIMIT 1', [email, ip]);
+    return rows.length > 0;
+  } catch { return false; }
+}
+
 // POST /login
 account.post('/login', async (req, res, next) => {
   try {
@@ -76,8 +85,10 @@ account.post('/login', async (req, res, next) => {
     const pairKey = 'login-fail:' + v.email + '|' + clientIp(req), acctKey = 'login-acct:' + v.email;
     const pair = await rateLimit(pairKey, LIMITS.loginFail.n, LIMITS.loginFail.win);
     const acct = await rateLimit(acctKey, LIMITS.loginAcct.n, LIMITS.loginAcct.win);
-    if (!pair.ok || !acct.ok) {
-      const wait = Math.max(pair.ok ? 0 : pair.retryAfter, acct.ok ? 0 : acct.retryAfter);
+    // El tope por cuenta no bloquea al dueño desde una conexión donde ya entró antes.
+    const acctBlocked = !acct.ok && !(await knownLoginIp(v.email, clientIp(req)));
+    if (!pair.ok || acctBlocked) {
+      const wait = Math.max(pair.ok ? 0 : pair.retryAfter, acctBlocked ? acct.retryAfter : 0);
       secLog('login_locked', req, { email: v.email });
       // Aviso al dueño de la cuenta (si existe), como mucho uno por hora.
       try {

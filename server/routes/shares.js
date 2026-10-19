@@ -9,7 +9,7 @@ import { Router } from 'express';
 import { query } from '../db.js';
 import { requireAuth } from '../auth.js';
 import { getObject } from '../storage.js';
-import { fileHeaders } from '../security.js';
+import { fileHeaders, rateLimit, clientIp } from '../security.js';
 import { createShare, ownShare, deleteShare, ownerView, publicShare, publicView, previewKind } from '../shares.js';
 
 const db = { query };
@@ -53,11 +53,14 @@ shares.delete('/:token', async (req, res, next) => {
 /* ─── Público (sin sesión) ─── */
 export const publicShares = Router();
 const NOT_FOUND = { error: 'Este enlace no existe o ya no está disponible.' };
+// Cada visitante cuenta una vez por hora y enlace (solo enlaces que existen):
+// las cifras no se pueden inflar.
+const once = (req, what) => async () => (await rateLimit('share-' + what + ':' + req.params.token + ':' + clientIp(req), 1, 3600)).ok;
 publicShares.use((req, res, next) => { res.set({ 'Cache-Control': 'private, no-store', 'X-Robots-Tag': 'noindex, nofollow', 'Referrer-Policy': 'no-referrer' }); next(); });
 
 publicShares.get('/shares/:token', async (req, res, next) => {
   try {
-    const r = await publicShare(db, req.params.token, 'views');
+    const r = await publicShare(db, req.params.token, 'views', once(req, 'views'));
     r ? res.json(publicView(r)) : res.status(404).json(NOT_FOUND);
   } catch (e) { next(e); }
 });
@@ -65,7 +68,7 @@ publicShares.get('/shares/:token', async (req, res, next) => {
 for (const sub of ['preview', 'download']) {
   publicShares.get('/shares/:token/' + sub, async (req, res, next) => {
     try {
-      const r = await publicShare(db, req.params.token, sub === 'download' ? 'downloads' : null);
+      const r = await publicShare(db, req.params.token, sub === 'download' ? 'downloads' : null, once(req, 'downloads'));
       if (!r) return res.status(404).json(NOT_FOUND);
       if (sub === 'preview' && req.query.cover === '1') {
         const meta = r.meta || {};

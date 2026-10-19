@@ -71,7 +71,7 @@ export function isNavigation(request) {
 
 /* Capa 1 + límite de cuerpo. Devuelve una Response si hay que rechazar la
    petición, o null si puede seguir (la autenticación la hacen los servicios). */
-export function apiGate(request) {
+export function apiGate(request, env) {
   if (request.method === 'OPTIONS') return null;
   const url = new URL(request.url);
   const path = url.pathname;
@@ -81,6 +81,12 @@ export function apiGate(request) {
   const isJson = lower(request, 'content-type').includes('application/json');
   if (isJson && len > (/^\/api\/v1\/account\/avatar\/?$/i.test(path) ? JSON_MAX_AVATAR : JSON_MAX)) {
     return deny(request, 413, 'El cuerpo de la petición es demasiado grande.', 'body_too_large');
+  }
+  // Subidas: el tamaño declarado se revisa antes de leer el archivo en memoria
+  // (máximo por archivo + 2 MB para la portada y los demás campos).
+  if (lower(request, 'content-type').includes('multipart/form-data') &&
+      len > ((Number(env && env.MAX_FILE_SIZE_MB) || 100) + 2) * 1024 * 1024) {
+    return deny(request, 413, 'El archivo supera el tamaño máximo.', 'body_too_large');
   }
 
   // Enlaces compartidos: públicos y de solo lectura (la página /s/<token> y su
@@ -236,8 +242,14 @@ export async function rateLimit(db, key, limit, windowSec) {
        RETURNING count, GREATEST(1, ceil(extract(epoch FROM (window_start + make_interval(secs => $2) - now()))))::int AS retry`,
       [String(key).slice(0, 200), windowSec]);
     const r = rows[0] || { count: 0, retry: windowSec };
+    // De vez en cuando se borran contadores viejos (ninguna ventana dura más de un día).
+    if (Math.random() < 0.005) db.query("DELETE FROM rate_limits WHERE window_start < now() - interval '1 day'").catch(() => {});
     return { ok: r.count <= limit, count: r.count, retryAfter: r.retry };
-  } catch { return { ok: true, count: 0, retryAfter: 0 }; }
+  } catch (e) {
+    // Si la base falla se deja pasar (disponibilidad), pero queda en el registro.
+    console.warn(JSON.stringify({ level: 'security', event: 'rate_limit_unavailable', key: String(key).split(':')[0], error: String(e && e.message || e).slice(0, 200) }));
+    return { ok: true, count: 0, retryAfter: 0 };
+  }
 }
 // Lee el contador sin sumar (p. ej. fallos de inicio de sesión de un correo).
 export async function rateCount(db, key, windowSec) {

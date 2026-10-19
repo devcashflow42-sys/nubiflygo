@@ -46,7 +46,7 @@ async function route({ request, env, next }) {
 
   // API: capas de seguridad y después su función.
   if (path === '/api' || path.startsWith('/api/')) {
-    const blocked = apiGate(request) || await androidGate(request, env, path);
+    const blocked = apiGate(request, env) || await androidGate(request, env, path);
     if (blocked) return withSecurityHeaders(blocked, 'api');
     return withSecurityHeaders(await next(), 'api', hasApiKey(request));
   }

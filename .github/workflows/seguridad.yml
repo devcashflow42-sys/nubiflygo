@@ -1,0 +1,21 @@
+# Chequeo de seguridad en cada envío: si encuentra un problema, el commit
+# queda en rojo y no se debe publicar (ver SEGURIDAD.md).
+name: Seguridad
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  seguridad:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Chequeo de seguridad
+        run: node scripts/seguridad.mjs

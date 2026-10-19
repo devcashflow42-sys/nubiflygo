@@ -18,7 +18,8 @@
 import { getDb } from '../../../_shared/db.js';
 import { json, CORS } from '../../../_shared/http.js';
 import { putObject, getObject, deleteObject } from '../../../_shared/storage.js';
-import { dataRoute, storageReady, ownsProject } from '../../../_shared/api.js';
+import { dataRoute, storageReady, ownsProject, rowIsAdmin } from '../../../_shared/api.js';
+import { storageLeft } from '../../../_shared/billing.js';
 import { fileHeaders } from '../../../_shared/security.js';
 import { UUID_RE, GUEST_LIMITS, body, pageParams, fmtBytes } from '../../../_shared/util.js';
 import { sha256hex, imageSize, categoryOf, extOf, buildFileItem, cleanMedia } from '../../../_shared/files-util.js';
@@ -51,7 +52,7 @@ export const handle = dataRoute(async ({ seg, request, env, method, user, scope 
     }
     const f = fileFilters(src, 2);
     if (f.error) return json({ error: f.error }, 400);
-    const order = FILE_SORTS[qs.get('sort')] || FILE_SORTS.newest;
+    const order = Object.hasOwn(FILE_SORTS, qs.get('sort') || '') ? FILE_SORTS[qs.get('sort')] : FILE_SORTS.newest;
     // Sin ?page ni ?limit (o con ?limit=all) devuelve TODOS los archivos.
     const paged = qs.has('page') || (qs.has('limit') && qs.get('limit') !== 'all');
     const params = [user.id, ...f.params];
@@ -127,6 +128,11 @@ export const handle = dataRoute(async ({ seg, request, env, method, user, scope 
     const file = form.get('file');
     if (!file || typeof file === 'string') return json({ error: 'Falta el archivo (campo "file").' }, 400);
     if (file.size > maxBytes) return json({ error: 'El archivo supera el tamaño máximo.' }, 413);
+    // Espacio del plan: no se puede subir más de lo que cubre.
+    const { rows: me } = await db.query('SELECT email, is_admin FROM users WHERE id = $1', [user.id]);
+    if (file.size > await storageLeft(db, user.id, rowIsAdmin(me[0], env))) {
+      return json({ error: 'No tienes espacio suficiente en tu plan para este archivo. Libera espacio o mejora tu plan.', code: 'storage_full' }, 413);
+    }
     let projectId = form.get('project_id') && UUID_RE.test(form.get('project_id')) ? form.get('project_id') : null;
     if (scope) {
       if (projectId && projectId.toLowerCase() !== String(scope).toLowerCase()) return json({ error: 'Esta API key solo puede subir a su proyecto.' }, 403);

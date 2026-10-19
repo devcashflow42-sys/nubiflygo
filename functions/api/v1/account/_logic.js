@@ -202,8 +202,11 @@ export const handle = accountRoute(async ({ seg, request, env, method, auth }) =
     const pairKey = 'login-fail:' + email + '|' + ip, acctKey = 'login-acct:' + email;
     const pair = await rateLimit(db, pairKey, LIMITS.loginFail.n, LIMITS.loginFail.win);
     const acct = await rateLimit(db, acctKey, LIMITS.loginAcct.n, LIMITS.loginAcct.win);
-    if (!pair.ok || !acct.ok) {
-      const wait = Math.max(pair.ok ? 0 : pair.retryAfter, acct.ok ? 0 : acct.retryAfter);
+    // El tope por cuenta no bloquea al dueño desde una conexión donde ya entró antes:
+    // así un extraño no puede dejarlo fuera de su cuenta con intentos fallidos.
+    const acctBlocked = !acct.ok && !(await knownLoginIp(db, email, ip));
+    if (!pair.ok || acctBlocked) {
+      const wait = Math.max(pair.ok ? 0 : pair.retryAfter, acctBlocked ? acct.retryAfter : 0);
       secLog('login_locked', request, { email });
       // Aviso al dueño de la cuenta (si existe), como mucho uno por hora.
       try {
@@ -234,6 +237,15 @@ export const handle = accountRoute(async ({ seg, request, env, method, auth }) =
 
   return json({ error: 'Ruta de cuenta no encontrada.' }, 404);
 });
+
+// ¿El dueño de este correo ya inició sesión antes desde esta IP?
+async function knownLoginIp(db, email, ip) {
+  try {
+    const { rows } = await db.query(
+      'SELECT 1 FROM login_devices d JOIN users u ON u.id = d.user_id WHERE u.email = $1 AND d.ip = $2 LIMIT 1', [email, ip]);
+    return rows.length > 0;
+  } catch { return false; }
+}
 
 // Hash de relleno (se calcula una vez por instancia) para comparar en tiempo
 // constante cuando el correo no existe.

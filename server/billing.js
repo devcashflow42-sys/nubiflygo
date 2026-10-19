@@ -24,6 +24,22 @@ export const PLANS = {
   mega:  { id: 'mega',  name: 'Mega',  price: 199, feats: ['1 TB de almacenamiento', 'Proyectos ilimitados', '20 API keys', 'Automatizaciones avanzadas', 'Historial de versiones'] },
   super: { id: 'super', name: 'Super', price: 399, feats: ['5 TB de almacenamiento', 'API keys ilimitadas', 'Prioridad en la API', 'Soporte prioritario'] }
 };
+// Espacio de cada plan (el mismo que muestra la tarjeta de almacenamiento).
+const GB = 1024 * 1024 * 1024;
+export const PLAN_QUOTA = { free: 2 * GB, pro: 100 * GB, mega: 1024 * GB, super: 5 * 1024 * GB };
+
+// Bytes que el usuario aún puede subir según su plan vigente (Infinity para el administrador).
+export async function storageLeft(db, userId, isAdmin) {
+  if (isAdmin) return Infinity;
+  await ensureBilling(db);
+  const { rows } = await db.query(
+    `SELECT plan, plan_expires_at, (SELECT COALESCE(sum(size), 0) FROM files WHERE user_id = $1)::bigint AS used
+     FROM users WHERE id = $1`, [userId]);
+  if (!rows[0]) return 0;
+  const quota = PLAN_QUOTA[effectivePlan(rows[0])] || PLAN_QUOTA.free;
+  return quota - Number(rows[0].used || 0);
+}
+
 export const CURRENCY = 'MXN';
 export const PERIOD_DAYS = 30;
 const MP_API = 'https://api.mercadopago.com';
@@ -109,12 +125,26 @@ export async function applyPayment(db, env, payment, onlyUserId) {
   const okAmount = payment.currency_id === CURRENCY && Math.abs(amount - plan.price) < 0.01;
   const method = String(payment.payment_method_id || payment.payment_type_id || '').slice(0, 40) || null;
 
+  // Reembolso o contracargo de un pago que ya activó el plan: se quitan sus días.
+  if (status === 'refunded' || status === 'charged_back') {
+    const rev = await db.query(
+      `UPDATE payments SET status = $3 WHERE mp_payment_id = $1 AND user_id = $2 AND status = 'approved' RETURNING plan`,
+      [String(payment.id), userId, status]);
+    if (rev.rows[0]) {
+      await db.query(
+        `UPDATE users SET plan_expires_at = plan_expires_at - make_interval(days => $3)
+         WHERE id = $1 AND plan = $2 AND plan_expires_at IS NOT NULL`, [userId, rev.rows[0].plan, PERIOD_DAYS]);
+      try { await db.query('INSERT INTO activity (user_id, kind, text) VALUES ($1, $2, $3)', [userId, 'account', 'Pago ' + (status === 'refunded' ? 'reembolsado' : 'con contracargo') + ': se quitaron ' + PERIOD_DAYS + ' días del plan ' + plan.name]); } catch {}
+      return { applied: false, revoked: true, status, plan: plan.id };
+    }
+  }
+
   if (status !== 'approved' || !okAmount) {
     // Se registra (pendiente / rechazado) para el historial, sin activar nada.
     await db.query(
       `INSERT INTO payments (user_id, mp_payment_id, plan, amount, currency, status, method)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
-       ON CONFLICT (mp_payment_id) DO UPDATE SET status = EXCLUDED.status WHERE payments.status <> 'approved'`,
+       ON CONFLICT (mp_payment_id) DO UPDATE SET status = EXCLUDED.status WHERE payments.status NOT IN ('approved', 'refunded', 'charged_back')`,
       [userId, String(payment.id), plan.id, isFinite(amount) ? amount : 0, String(payment.currency_id || CURRENCY).slice(0, 3), okAmount ? status : 'invalid_amount', method]);
     return { applied: false, status: okAmount ? status : 'invalid_amount', plan: plan.id };
   }
@@ -123,7 +153,7 @@ export async function applyPayment(db, env, payment, onlyUserId) {
   const ins = await db.query(
     `INSERT INTO payments (user_id, mp_payment_id, plan, amount, currency, status, method)
      VALUES ($1, $2, $3, $4, $5, 'approved', $6)
-     ON CONFLICT (mp_payment_id) DO UPDATE SET status = 'approved' WHERE payments.status <> 'approved'
+     ON CONFLICT (mp_payment_id) DO UPDATE SET status = 'approved' WHERE payments.status NOT IN ('approved', 'refunded', 'charged_back')
      RETURNING id`, [userId, String(payment.id), plan.id, amount, CURRENCY, method]);
   if (!ins.rows[0]) {
     const { rows } = await db.query('SELECT plan, plan_expires_at FROM users WHERE id = $1', [userId]);

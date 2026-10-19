@@ -115,13 +115,15 @@ export async function deleteShare(db, userId, token) {
   return r.rowCount > 0;
 }
 
-/* Enlace público vigente (o null). count: 'views' | 'downloads' | null. */
-export async function publicShare(db, token, count) {
+/* Enlace público vigente (o null). count: 'views' | 'downloads' | null.
+   shouldCount (opcional): se consulta solo si el enlace existe y decide si
+   esta visita suma (p. ej. una por persona y hora). */
+export async function publicShare(db, token, count, shouldCount) {
   await ensureShares(db);
   if (!TOKEN_RE.test(token || '')) return null;
   const { rows } = await db.query(`${SHARE_SELECT} WHERE s.token = $1 AND (s.expires_at IS NULL OR s.expires_at > now())`, [token]);
   const r = rows[0];
-  if (r && (count === 'views' || count === 'downloads')) {
+  if (r && (count === 'views' || count === 'downloads') && (!shouldCount || await shouldCount())) {
     try { await db.query(`UPDATE shares SET ${count} = ${count} + 1 WHERE token = $1`, [token]); } catch {}
   }
   return r || null;

@@ -15,7 +15,7 @@
       if (location.protocol === 'file:') {
         base = location.href.replace(/[?#].*$/, '').replace(/[^/]*$/, '');
       }
-      document.write('<base href="' + base + '">');
+      document.write('<base href="' + base + '">');   // seguridad: permitido (valor fijo; debe ir en el HTML antes de los CSS)
     })();
   </script>
   <title>NubiFlyGo</title>

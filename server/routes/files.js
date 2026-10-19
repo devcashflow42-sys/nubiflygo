@@ -15,7 +15,10 @@ import { query } from '../db.js';
 import { requireAuth } from '../auth.js';
 import { config } from '../config.js';
 import { putObject, getObject, deleteObject } from '../storage.js';
-import { fileHeaders, safeKeyName, ownsProject } from '../security.js';
+import { fileHeaders, safeKeyName, ownsProject, isAdminEmail } from '../security.js';
+import { storageLeft } from '../billing.js';
+
+const db = { query };
 import { fileFilters, strictFilterError, FILE_SORTS, FILE_TYPE_SQL, FILE_TYPES, FILE_COLS, pageOf, readSelection, fileItem, deleteFilesWhere, logActivity, bulkResponse, fmtBytes } from '../lists.js';
 
 export const files = Router();
@@ -43,7 +46,7 @@ files.get('/', async (req, res, next) => {
   try {
     const f = fileFilters(req.query, 2);
     if (f.error) return res.status(400).json({ error: f.error });
-    const order = FILE_SORTS[req.query.sort] || FILE_SORTS.newest;
+    const order = Object.hasOwn(FILE_SORTS, String(req.query.sort || '')) ? FILE_SORTS[req.query.sort] : FILE_SORTS.newest;
     const pg = pageOf(req.query);
     const params = [req.user.id, ...f.params];
     let limitSql = '';
@@ -95,6 +98,12 @@ files.post('/upload', uploadFields, async (req, res, next) => {
     const projectId = req.body.project_id && UUID_RE.test(req.body.project_id) ? req.body.project_id : null;
     // El proyecto debe ser tuyo; el nombre del archivo nunca forma rutas.
     if (projectId && !(await ownsProject(req.user.id, projectId))) return res.status(404).json({ error: 'Proyecto no encontrado.' });
+    // Espacio del plan: no se puede subir más de lo que cubre.
+    const { rows: me } = await query('SELECT email, is_admin FROM users WHERE id = $1', [req.user.id]);
+    const isAdmin = !!me[0] && (me[0].is_admin || isAdminEmail(me[0].email));
+    if (req.file.size > await storageLeft(db, req.user.id, isAdmin)) {
+      return res.status(413).json({ error: 'No tienes espacio suficiente en tu plan para este archivo. Libera espacio o mejora tu plan.', code: 'storage_full' });
+    }
     const name = String(req.file.originalname || 'archivo').replace(/[\u0000-\u001f\u007f]/g, '').slice(0, 255) || 'archivo';
     // Subida idempotente (igual que en functions/): la misma upload_id no se duplica.
     const uploadId = String(req.body.upload_id || '').slice(0, 64);

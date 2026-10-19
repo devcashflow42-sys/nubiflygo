@@ -10,7 +10,7 @@
 import { getDb } from '../../../_shared/db.js';
 import { json, CORS } from '../../../_shared/http.js';
 import { dataRoute } from '../../../_shared/api.js';
-import { serverError } from '../../../_shared/security.js';
+import { serverError, rateLimit, tooMany } from '../../../_shared/security.js';
 import { ensureNotifications } from '../../../_shared/notify.js';
 
 const TICK_MS = 2000;
@@ -35,6 +35,10 @@ export async function signature(db, userId) {
 export const handle = dataRoute(async ({ request, env, method, user }) => {
   if (method !== 'GET') return json({ error: 'Método no permitido.' }, 405);
   const db = getDb(env);
+  // Cada conexión vive 25 s y se renueva sola (≈ 2–3 por minuto y pestaña):
+  // el límite frena a quien abra muchas a la vez para cargar la base.
+  const rl = await rateLimit(db, 'stream:' + user.id, 30, 60);
+  if (!rl.ok) return tooMany(rl.retryAfter);
   const enc = new TextEncoder();
   const signal = request.signal;
 

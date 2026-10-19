@@ -8,7 +8,7 @@
 import { getDb } from '../../../_shared/db.js';
 import { json } from '../../../_shared/http.js';
 import { getObject } from '../../../_shared/storage.js';
-import { fileHeaders, serverError } from '../../../_shared/security.js';
+import { fileHeaders, serverError, rateLimit, clientIp } from '../../../_shared/security.js';
 import { publicShare, publicView, previewKind } from '../../../_shared/shares.js';
 
 const NOT_FOUND = { error: 'Este enlace no existe o ya no está disponible.' };
@@ -23,7 +23,11 @@ export async function handle({ request, env }) {
   try {
     const db = getDb(env);
     const range = request.headers.get('Range');
-    const r = await publicShare(db, seg[1], !sub ? 'views' : (sub === 'download' && (!range || /^bytes=0-/.test(range)) ? 'downloads' : null));
+    const count = !sub ? 'views' : (sub === 'download' && (!range || /^bytes=0-/.test(range)) ? 'downloads' : null);
+    // Cada visitante cuenta una vez por hora y enlace (solo enlaces que existen):
+    // las cifras no se pueden inflar.
+    const once = async () => (await rateLimit(db, 'share-' + count + ':' + seg[1] + ':' + clientIp(request), 1, 3600)).ok;
+    const r = await publicShare(db, seg[1], count, once);
     if (!r) return json(NOT_FOUND, 404, PRIVATE);
 
     if (!sub) return json(publicView(r), 200, PRIVATE);

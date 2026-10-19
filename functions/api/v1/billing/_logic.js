@@ -75,9 +75,10 @@ async function webhook(request, env) {
   let b = {};
   try { b = await request.json(); } catch {}
   const type = b.type || url.searchParams.get('type') || url.searchParams.get('topic');
-  const dataId = (b.data && b.data.id) || url.searchParams.get('data.id') || url.searchParams.get('id');
+  // El mismo id que se firma es el que se consulta (primero el de la URL, como lo firma Mercado Pago).
+  const dataId = url.searchParams.get('data.id') || (b.data && b.data.id) || url.searchParams.get('id');
   if (type !== 'payment' || !dataId) return json({ ok: true, ignored: true });   // otros avisos: se ignoran
-  const okSig = await verifyWebhookSignature(env, request.headers.get('x-signature'), request.headers.get('x-request-id'), url.searchParams.get('data.id') || dataId);
+  const okSig = await verifyWebhookSignature(env, request.headers.get('x-signature'), request.headers.get('x-request-id'), dataId);
   if (!okSig) { secLog('mp_bad_signature', request, {}); return json({ error: 'Firma no válida.' }, 401); }
   if (!env.MP_ACCESS_TOKEN) return json({ error: 'Pagos no configurados.' }, 503);
   const payment = await fetchPayment(env, dataId);

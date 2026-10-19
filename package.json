@@ -3,6 +3,10 @@
   "private": true,
   "type": "module",
   "description": "NubiFlyGo — web y API en Cloudflare Pages",
+  "scripts": {
+    "seguridad": "node scripts/seguridad.mjs",
+    "seguridad:sitio": "node scripts/seguridad.mjs --url https://nubiflygo.com"
+  },
   "dependencies": {
     "@neondatabase/serverless": "^0.10.4",
     "aws4fetch": "^1.0.20"

@@ -128,8 +128,8 @@ export async function verifyGoogleIdToken(idToken, env, opts = {}) {
   if (payload.exp && now > payload.exp + 60) throw new Error('token_expired');
   if (payload.nbf && now + 60 < payload.nbf) throw new Error('token_early');
 
-  // Nonce (anti-repetición), solo si se pidió comprobarlo.
-  if (opts.nonce && payload.nonce && opts.nonce !== payload.nonce) throw new Error('token_nonce');
+  // Nonce (anti-repetición): si se pidió, el token debe traer exactamente ese.
+  if (opts.nonce && payload.nonce !== opts.nonce) throw new Error('token_nonce');
 
   // Correo verificado.
   const email = String(payload.email || '').trim().toLowerCase();
@@ -171,17 +171,20 @@ export function resolveRedirectUri(request, env) {
      · Correo reciclado / otra cuenta de Google con el mismo correo: se guarda
        el "sub" (ID fijo de Google). Si la cuenta ya tiene otro sub → se rechaza.
      · Pre-registro malicioso: alguien registra con contraseña TU correo (el
-       registro no verifica correo). Al vincular Google por primera vez se sube
-       session_version → se cierran todas las sesiones previas de esa cuenta.
+       registro no verifica correo). Al vincular Google o GitHub por primera vez
+       se cierran todas las sesiones previas y se anula esa contraseña, así quien
+       la creó ya no puede entrar; también se borran las API keys que existían.
+       GitHub guarda su ID en github_sub.
    Devuelve el usuario con isNew (recién creado) y linked (Google recién vinculado).
    ========================================================================== */
 // Crea la columna google_sub una sola vez. Dos inicios de sesión simultáneos
 // comparten la misma promesa; si otra instancia la creó a la vez (choque de
 // DDL), se comprueba que ya existe en lugar de fallar.
 let googleColumnsReady = null;
-const hasGoogleSub = async (db) => (await db.query(
+const hasColumn = async (db, name) => (await db.query(
   `SELECT 1 FROM information_schema.columns
-   WHERE table_schema = current_schema() AND table_name = 'users' AND column_name = 'google_sub'`)).rows.length > 0;
+   WHERE table_schema = current_schema() AND table_name = 'users' AND column_name = $1`, [name])).rows.length > 0;
+const hasGoogleSub = (db) => hasColumn(db, 'google_sub');
 function ensureGoogleColumns(db) {
   if (!googleColumnsReady) {
     googleColumnsReady = (async () => {
@@ -190,9 +193,13 @@ function ensureGoogleColumns(db) {
           await db.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS google_sub TEXT');
           await db.query('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_sub ON users(google_sub) WHERE google_sub IS NOT NULL');
         }
+        if (!(await hasColumn(db, 'github_sub'))) {
+          await db.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS github_sub TEXT');
+          await db.query('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_github_sub ON users(github_sub) WHERE github_sub IS NOT NULL');
+        }
         await db.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS session_version INTEGER NOT NULL DEFAULT 0');
       } catch (e) {
-        if (!(await hasGoogleSub(db))) throw e;   // de verdad falló
+        if (!(await hasGoogleSub(db)) || !(await hasColumn(db, 'github_sub'))) throw e;   // de verdad falló
       }
     })().catch(e => { googleColumnsReady = null; throw e; });
   }
@@ -203,15 +210,18 @@ export async function upsertGoogleUser(db, env, profile, request) {
   const email = String(profile.email || '').trim().toLowerCase();
   if (!email) throw new Error('token_email');
   const isGoogle = !profile.source || profile.source === 'Google';
-  const sub = isGoogle && profile.sub ? String(profile.sub).slice(0, 255) : null;
-  if (sub) await ensureGoogleColumns(db);
+  // Columna del ID fijo del proveedor (nombres fijos, nunca del usuario).
+  const subCol = isGoogle ? 'google_sub' : 'github_sub';
+  const sub = profile.sub ? String(profile.sub).slice(0, 255) : null;
+  if (!sub) throw new Error('token_sub');
+  await ensureGoogleColumns(db);
 
-  const cols = sub ? 'id, name, email, is_guest, google_sub' : 'id, name, email, is_guest';
+  const cols = 'id, name, email, is_guest, google_sub, github_sub';
 
-  // 1) Por sub de Google (aunque el usuario haya cambiado de correo).
+  // 1) Por ID del proveedor (aunque el usuario haya cambiado de correo).
   let user = null;
-  if (sub) {
-    const bySub = await db.query('SELECT ' + cols + ' FROM users WHERE google_sub = $1', [sub]);
+  {
+    const bySub = await db.query('SELECT ' + cols + ' FROM users WHERE ' + subCol + ' = $1', [sub]);
     user = bySub.rows[0] || null;
   }
   // 2) Por correo (sin distinguir mayúsculas).
@@ -226,15 +236,10 @@ export async function upsertGoogleUser(db, env, profile, request) {
   if (!user) {
     // 3) Cuenta NUEVA. ON CONFLICT: si otra petición la creó un instante antes, no falla.
     const hash = await hashUnusablePassword();
-    const ins = sub
-      ? await db.query(
-          `INSERT INTO users (name, email, password_hash, language, avatar_url, google_sub)
-           VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING RETURNING id, name, email`,
-          [profile.name, email, hash, detectLang(request), profile.picture, sub])
-      : await db.query(
-          `INSERT INTO users (name, email, password_hash, language, avatar_url)
-           VALUES ($1, $2, $3, $4, $5) ON CONFLICT DO NOTHING RETURNING id, name, email`,
-          [profile.name, email, hash, detectLang(request), profile.picture]);
+    const ins = await db.query(
+      `INSERT INTO users (name, email, password_hash, language, avatar_url, ${subCol})
+       VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING RETURNING id, name, email`,
+      [profile.name, email, hash, detectLang(request), profile.picture, sub]);
     if (ins.rows[0]) {
       user = ins.rows[0];
       isNew = true;
@@ -247,16 +252,22 @@ export async function upsertGoogleUser(db, env, profile, request) {
     }
   } else {
     if (user.is_guest) throw new Error('google_guest');
-    if (sub) {
-      if (user.google_sub && user.google_sub !== sub) throw new Error('google_sub_mismatch');
-      if (!user.google_sub) {
-        // Primera vez con Google en una cuenta que ya existía: vincular y
-        // cerrar las sesiones anteriores (por si la creó otra persona).
-        const upd = await db.query(
-          `UPDATE users SET google_sub = $2, session_version = COALESCE(session_version, 0) + 1
-           WHERE id = $1 AND google_sub IS NULL`, [user.id, sub]);
-        linked = upd.rowCount > 0;
-      }
+    if (user[subCol] && user[subCol] !== sub) throw new Error('google_sub_mismatch');
+    if (!user[subCol]) {
+      // Primera vez con este proveedor en una cuenta que ya existía: vincular y
+      // cerrar las sesiones anteriores. Si es el primer proveedor vinculado, la
+      // contraseña pudo ponerla otra persona (pre-registro): se anula.
+      const firstLink = !user.google_sub && !user.github_sub;
+      const upd = firstLink
+        ? await db.query(
+            `UPDATE users SET ${subCol} = $2, password_hash = $3, session_version = COALESCE(session_version, 0) + 1
+             WHERE id = $1 AND ${subCol} IS NULL`, [user.id, sub, await hashUnusablePassword()])
+        : await db.query(
+            `UPDATE users SET ${subCol} = $2, session_version = COALESCE(session_version, 0) + 1
+             WHERE id = $1 AND ${subCol} IS NULL`, [user.id, sub]);
+      linked = upd.rowCount > 0;
+      // Las API keys creadas antes tampoco sirven: las pudo crear quien puso la contraseña.
+      if (linked && firstLink) await db.query('DELETE FROM api_keys WHERE user_id = $1', [user.id]);
     }
     if (profile.picture) {
       try { await db.query('UPDATE users SET avatar_url = $2 WHERE id = $1', [user.id, profile.picture]); } catch {}

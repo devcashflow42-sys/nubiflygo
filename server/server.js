@@ -23,7 +23,10 @@ const PUBLIC = path.join(__dirname, '..', 'public');
 
 const app = express();
 app.disable('x-powered-by');
-app.set('trust proxy', 1);                 // detrás de Nginx/Cloudflare
+// Solo detrás de un proxy real (Nginx/Cloudflare) se lee la IP de X-Forwarded-For;
+// expuesto directo, esa cabecera la inventa el cliente y saltaría los límites.
+// TRUST_PROXY: número de proxies delante (por defecto 1 en producción, 0 en local).
+app.set('trust proxy', Number(process.env.TRUST_PROXY ?? (process.env.NODE_ENV === 'production' ? 1 : 0)));
 // Capa 5: cabeceras de seguridad en todas las respuestas.
 app.use(securityHeaders);
 // Capa 3: cuerpo JSON acotado (1 MB; la foto de perfil, data URL de hasta 2 MB, admite 3 MB).

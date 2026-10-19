@@ -248,6 +248,9 @@ ORDER BY table_name;
 -- Inicio de sesión con Google: ID fijo de la cuenta de Google (sub), una por usuario.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS google_sub TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_sub ON users(google_sub) WHERE google_sub IS NOT NULL;
+-- Inicio de sesión con GitHub: ID fijo de la cuenta de GitHub, una por usuario.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS github_sub TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_github_sub ON users(github_sub) WHERE github_sub IS NOT NULL;
 
 -- Control global de la app Android (GET /api/v1/app/status): versión publicada, URL de
 -- descarga, mantenimiento y suspensión. Una fila por plataforma; solo la cambia un admin.
