@@ -31,7 +31,7 @@ const MSG = {
   token_key: 'No se encontró la llave pública de Google para este token.',
   token_signature: 'La firma del token de Google no es válida.',
   token_iss: 'El token no fue emitido por Google.',
-  token_aud: 'El token de Google es para otra aplicación (client_id distinto).',
+  token_aud: 'El token de Google es para otra aplicación (client_id distinto). Agrega ese client_id a GOOGLE_ALLOWED_AUDIENCES.',
   token_expired: 'El token de Google caducó. Inténtalo de nuevo.',
   token_early: 'El token de Google aún no es válido (revisa la hora del dispositivo).',
   token_nonce: 'La comprobación de seguridad (nonce) no coincide.',
@@ -66,7 +66,8 @@ export async function onRequestPost({ request, env }) {
     profile = await verifyGoogleIdToken(credential, env, { nonce: b.nonce });
   } catch (e) {
     const code = String(e && e.message || 'token');
-    secLog('google_token_rejected', request, { code: MSG[code] ? code : 'token' });
+    // e.aud solo existe en token_aud: dice QUÉ client_id usó la app (no es secreto).
+    secLog('google_token_rejected', request, { code: MSG[code] ? code : 'token', aud: e && e.aud ? e.aud : undefined });
     return json({ error: MSG[code] || 'No se pudo validar el acceso con Google.', code: MSG[code] ? code : 'token' }, 401);
   }
 
@@ -74,9 +75,10 @@ export async function onRequestPost({ request, env }) {
     const db = getDb(env);
     const user = await upsertGoogleUser(db, env, profile, request);
     await recordLogin(db, user, request.headers.get('User-Agent'), clientIp(request), 'Google');
+    // 201 + isNew = cuenta recién creada (la app Android muestra "Bienvenido").
     return json(
-      { user: { id: user.id, name: user.name, email: user.email } },
-      200,
+      { user: { id: user.id, name: user.name, email: user.email }, isNew: !!user.isNew },
+      user.isNew ? 201 : 200,
       { 'Set-Cookie': await issueSession(user, env) }
     );
   } catch (e) {

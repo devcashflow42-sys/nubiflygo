@@ -117,7 +117,11 @@ export async function verifyGoogleIdToken(idToken, env, opts = {}) {
 
   // Audiencia (a quién se le emitió el token).
   const auds = allowedAudiences(env);
-  if (auds.length && !auds.includes(payload.aud)) throw new Error('token_aud');
+  if (auds.length && !auds.includes(payload.aud)) {
+    const err = new Error('token_aud');
+    err.aud = String(payload.aud || '');   // para el registro: qué client_id pidió el token
+    throw err;
+  }
 
   // Caducidad (con margen de 60 s por desfase de reloj).
   const now = Math.floor(Date.now() / 1000);
@@ -174,10 +178,12 @@ export async function upsertGoogleUser(db, env, profile, request) {
       'INSERT INTO users (name, email, password_hash, language, avatar_url) VALUES ($1, $2, $3, $4, $5) RETURNING id, name, email',
       [profile.name, email, hash, detectLang(request), profile.picture]);
     user = ins.rows[0];
+    user.isNew = true;
     try { await db.query('INSERT INTO activity (user_id, kind, text) VALUES ($1, $2, $3)', [user.id, 'account', 'Cuenta creada con ' + (profile.source || 'Google')]); } catch {}
   } else if (profile.picture) {
     try { await db.query('UPDATE users SET avatar_url = $2 WHERE id = $1', [user.id, profile.picture]); } catch {}
   }
+  if (user && user.isNew !== true) user.isNew = false;
   return user;
 }
 

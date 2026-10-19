@@ -53,6 +53,10 @@ export function fromApp(request, url) {
   const own = (url || new URL(request.url)).host.toLowerCase();
   const origin = request.headers.get('Origin');
   if (origin && origin !== 'null' && hostOf(origin) !== own) return false;    // otra web: nunca
+  // App Android/iOS: sin Origin y con su cabecera. Va ANTES de Sec-Fetch-Site
+  // porque algunos WebView/clientes HTTP mandan "none" o "cross-site" y la app
+  // quedaba bloqueada con 403. Seguro: otra web ya se descartó arriba por Origin.
+  if (!origin && request.headers.get(CLIENT_HEADER)) return true;
   const site = lower(request, 'sec-fetch-site');
   if (site) return site === 'same-origin';                                    // navegadores actuales
   if (origin && origin !== 'null') return true;                               // mismo Origin
