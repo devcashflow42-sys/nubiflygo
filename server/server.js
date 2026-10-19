@@ -12,11 +12,14 @@
 import express from 'express';
 import cookieParser from 'cookie-parser';
 import path from 'node:path';
+import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { config, checkConfig } from './config.js';
 import { api } from './routes-api.js';
 import { apiGate, securityHeaders, errorRef } from './security.js';
 import { migrateLegacySession } from './auth.js';
+import { query } from './db.js';
+import { publicShare, shareOgTags } from './shares.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC = path.join(__dirname, '..', 'public');
@@ -60,8 +63,22 @@ app.get(Object.keys(CLEAN), (req, res) => res.redirect(301, CLEAN[req.path]));
 app.use('/api', apiGate);
 app.use('/api/v1', api);
 
-// Enlace compartido: /s/<token> → página pública del archivo.
-app.get(/^\/s\/[A-Za-z0-9]{22}\/?$/, (_req, res) => res.sendFile(path.join(PUBLIC, 'share.html')));
+// Enlace compartido: /s/<token> → página pública con vista previa (Open Graph) del archivo.
+app.get(/^\/s\/[A-Za-z0-9]{22}\/?$/, async (req, res) => {
+  const file = path.join(PUBLIC, 'share.html');
+  try {
+    const token = req.path.split('/')[2];
+    const host = req.get('host') || '';
+    const origin = /localhost|127\.0\.0\.1/.test(host) ? req.protocol + '://' + host : 'https://nubiflygo.com';
+    let html = await readFile(file, 'utf8');
+    const r = await publicShare({ query }, token, null);
+    if (r) {
+      const block = '<!--OG:START-->\n' + shareOgTags(r, origin) + '\n<!--OG:END-->';
+      html = html.replace(/<!--OG:START-->[\s\S]*?<!--OG:END-->/, () => block);   // función: no interpreta $& $' en el nombre
+    }
+    res.type('html').send(html);
+  } catch { res.sendFile(file); }
+});
 
 // Páginas con ruta limpia.
 const PAGES = { '/': 'main.html', '/login': 'login.html', '/main': 'home.html' };

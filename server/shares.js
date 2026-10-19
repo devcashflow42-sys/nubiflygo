@@ -62,6 +62,38 @@ export function ownerView(r, origin) {
   };
 }
 
+// Etiquetas Open Graph para la vista previa al compartir el enlace (/s/<token>).
+// Si el archivo es imagen o tiene portada, se usa esa imagen; si no, el logo.
+export function shareOgTags(r, origin) {
+  const o = String(origin || 'https://nubiflygo.com').replace(/\/+$/, '');
+  const esc = (v) => String(v == null ? '' : v).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const meta = r.meta || {};
+  const base = o + '/api/v1/public/shares/' + r.token;
+  const kind = previewKind(r.mime, r.name);
+  const image = meta.thumb_key ? base + '/preview?cover=1'
+    : kind === 'image' ? base + '/preview'
+    : o + '/assets/og-image.png';
+  const title = esc((r.name || 'Archivo compartido') + ' \u00b7 NubiFlyGo');
+  const who = r.owner_name || 'Un usuario de NubiFlyGo';
+  const desc = esc(who + ' compartió un archivo contigo en NubiFlyGo.');   // se escapa una sola vez
+  const url = esc(o + '/s/' + r.token);
+  const img = esc(image);
+  return [
+    '<meta property="og:type" content="website">',
+    '<meta property="og:site_name" content="NubiFlyGo">',
+    '<meta property="og:title" content="' + title + '">',
+    '<meta property="og:description" content="' + desc + '">',
+    '<meta property="og:url" content="' + url + '">',
+    '<meta property="og:image" content="' + img + '">',
+    '<meta property="og:image:alt" content="' + title + '">',
+    '<meta property="og:locale" content="es_MX">',
+    '<meta name="twitter:card" content="summary_large_image">',
+    '<meta name="twitter:title" content="' + title + '">',
+    '<meta name="twitter:description" content="' + desc + '">',
+    '<meta name="twitter:image" content="' + img + '">'
+  ].join('\n');
+}
+
 // Datos públicos: SOLO el archivo (sin ids, proyecto, rutas ni correo).
 export function publicView(r) {
   const meta = r.meta || {};

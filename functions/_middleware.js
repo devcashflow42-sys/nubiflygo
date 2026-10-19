@@ -15,6 +15,8 @@
 import { apiGate, withSecurityHeaders, hasApiKey, fromApp, secLog } from './_shared/security.js';
 import { migrateLegacySession } from './_shared/http.js';
 import { getDb } from './_shared/db.js';
+import { publicShare, shareOgTags } from './_shared/shares.js';
+import { publicOrigin } from './_shared/http.js';
 import { appGateFor } from './_shared/appcontrol.js';
 
 // App Android suspendida, en mantenimiento o con una versión menor a la mínima:
@@ -65,7 +67,7 @@ async function route({ request, env, next }) {
   if (CLEAN[path]) return Response.redirect(url.origin + CLEAN[path] + url.search, 301);
 
   // Enlace compartido: /s/<token> → página pública del archivo.
-  if (/^\/s\/[A-Za-z0-9]{22}\/?$/.test(path)) return withSecurityHeaders(await serveAsset(env, url, '/share.html'), 'page');
+  if (/^\/s\/[A-Za-z0-9]{22}\/?$/.test(path)) return withSecurityHeaders(await serveSharePage(env, url, request), 'page');
 
   // Páginas con ruta limpia
   const file = PAGES[path];
@@ -84,6 +86,21 @@ async function route({ request, env, next }) {
     return Response.redirect(url.origin + '/', 302);
   }
   return withSecurityHeaders(res, /\.html?$/i.test(path) ? 'page' : 'asset');
+}
+
+// Enlace compartido: sirve share.html con la vista previa (Open Graph) del archivo.
+async function serveSharePage(env, url, request) {
+  const res = await serveAsset(env, url, '/share.html');
+  try {
+    const token = url.pathname.split('/')[2];
+    let html = await res.text();
+    const r = await publicShare(getDb(env), token, null);   // sin contar la visita
+    if (r) {
+      const block = '<!--OG:START-->\n' + shareOgTags(r, publicOrigin(env, request)) + '\n<!--OG:END-->';
+      html = html.replace(/<!--OG:START-->[\s\S]*?<!--OG:END-->/, () => block);   // función: no interpreta $& $' en el nombre
+    }
+    return new Response(html, { status: res.status, headers: res.headers });
+  } catch { return res; }   // ante cualquier fallo, la página por defecto
 }
 
 // Sirve un archivo de /public siguiendo la redirección interna de Pages.
