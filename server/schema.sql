@@ -199,3 +199,7 @@ CREATE TABLE IF NOT EXISTS shares (
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS shares_file_idx ON shares (file_id);
+
+-- Inicio de sesión con Google: ID fijo de la cuenta de Google (sub), una por usuario.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS google_sub TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_sub ON users(google_sub) WHERE google_sub IS NOT NULL;

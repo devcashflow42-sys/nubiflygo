@@ -244,3 +244,7 @@ WHERE table_schema = current_schema()
   AND table_name IN ('users', 'projects', 'api_keys', 'notes', 'documents', 'files', 'activity', 'api_key_usage', 'rate_limits', 'notifications', 'login_devices', 'payments', 'shares')
 GROUP BY table_name
 ORDER BY table_name;
+
+-- Inicio de sesión con Google: ID fijo de la cuenta de Google (sub), una por usuario.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS google_sub TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_sub ON users(google_sub) WHERE google_sub IS NOT NULL;

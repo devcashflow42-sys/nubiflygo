@@ -19,7 +19,7 @@
 import { getDb } from '../../_shared/db.js';
 import { json, issueSession, CORS } from '../../_shared/http.js';
 import { verifyGoogleIdToken, upsertGoogleUser } from '../../_shared/google.js';
-import { recordLogin } from '../../_shared/notify.js';
+import { recordLogin, notify } from '../../_shared/notify.js';
 import { rateLimit, tooMany, clientIp, serverError, secLog } from '../../_shared/security.js';
 
 // Mensajes claros por cada código de error de la verificación.
@@ -71,10 +71,39 @@ export async function onRequestPost({ request, env }) {
     return json({ error: MSG[code] || 'No se pudo validar el acceso con Google.', code: MSG[code] ? code : 'token' }, 401);
   }
 
+  // Límite por cuenta de Google además del de IP (redes móviles comparten IP).
+  const rlSub = await rateLimit(getDb(env), 'google-sub:' + profile.sub, 20, 900);
+  if (!rlSub.ok) { secLog('rate_limited', request, { what: 'google-sub' }); return tooMany(rlSub.retryAfter); }
+
+  let user;
+  const db = getDb(env);
   try {
-    const db = getDb(env);
-    const user = await upsertGoogleUser(db, env, profile, request);
+    user = await upsertGoogleUser(db, env, profile, request);
+  } catch (e) {
+    const code = String(e && e.message || '');
+    if (code === 'google_sub_mismatch') {
+      secLog('google_sub_mismatch', request, {});
+      return json({ error: 'Este correo ya está vinculado a otra cuenta de Google.', code }, 409);
+    }
+    if (code === 'google_guest') {
+      return json({ error: 'Este correo pertenece a una cuenta de invitado. Inténtalo más tarde.', code }, 409);
+    }
+    const ref = serverError(e, 'auth/google:upsert');
+    return json({ error: 'No se pudo crear tu cuenta. Inténtalo de nuevo (código ' + ref + ').', ref }, 500);
+  }
+
+  try {
     await recordLogin(db, user, request.headers.get('User-Agent'), clientIp(request), 'Google');
+    if (user.linked) {
+      try {
+        await notify(db, user.id, {
+          type: 'security',
+          title: 'Google vinculado a tu cuenta',
+          body: 'Ahora puedes entrar con Google. Por seguridad cerramos las demás sesiones. Si no creaste una contraseña en NubiFlyGo, cámbiala en Configuración.',
+          link: '/settings'
+        });
+      } catch {}
+    }
     // 201 + isNew = cuenta recién creada (la app Android muestra "Bienvenido").
     return json(
       { user: { id: user.id, name: user.name, email: user.email }, isNew: !!user.isNew },

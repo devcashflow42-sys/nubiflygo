@@ -162,29 +162,108 @@ export function resolveRedirectUri(request, env) {
 }
 
 /* ==========================================================================
-   upsertGoogleUser — crea el usuario si no existe, o recupera el que ya está,
-   buscando por correo. Mantiene al día la foto de perfil. Una sola función para
-   los dos caminos (idToken y redirección), así no hay lógica duplicada.
+   upsertGoogleUser — crea el usuario si no existe o recupera el que ya está.
+   Seguro ante:
+     · Doble petición simultánea (doble toque / web + app) con una cuenta NUEVA:
+       antes el 2º INSERT chocaba con el UNIQUE(email) → 500 y Google "se
+       cancelaba". Ahora INSERT … ON CONFLICT DO NOTHING + relectura.
+     · Mayúsculas en el correo: se busca con lower(email).
+     · Correo reciclado / otra cuenta de Google con el mismo correo: se guarda
+       el "sub" (ID fijo de Google). Si la cuenta ya tiene otro sub → se rechaza.
+     · Pre-registro malicioso: alguien registra con contraseña TU correo (el
+       registro no verifica correo). Al vincular Google por primera vez se sube
+       session_version → se cierran todas las sesiones previas de esa cuenta.
+   Devuelve el usuario con isNew (recién creado) y linked (Google recién vinculado).
    ========================================================================== */
+// Crea la columna google_sub una sola vez. Dos inicios de sesión simultáneos
+// comparten la misma promesa; si otra instancia la creó a la vez (choque de
+// DDL), se comprueba que ya existe en lugar de fallar.
+let googleColumnsReady = null;
+const hasGoogleSub = async (db) => (await db.query(
+  `SELECT 1 FROM information_schema.columns
+   WHERE table_schema = current_schema() AND table_name = 'users' AND column_name = 'google_sub'`)).rows.length > 0;
+function ensureGoogleColumns(db) {
+  if (!googleColumnsReady) {
+    googleColumnsReady = (async () => {
+      try {
+        if (!(await hasGoogleSub(db))) {
+          await db.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS google_sub TEXT');
+          await db.query('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_sub ON users(google_sub) WHERE google_sub IS NOT NULL');
+        }
+        await db.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS session_version INTEGER NOT NULL DEFAULT 0');
+      } catch (e) {
+        if (!(await hasGoogleSub(db))) throw e;   // de verdad falló
+      }
+    })().catch(e => { googleColumnsReady = null; throw e; });
+  }
+  return googleColumnsReady;
+}
+
 export async function upsertGoogleUser(db, env, profile, request) {
-  const email = profile.email;
-  const found = await db.query('SELECT id, name, email FROM users WHERE email = $1', [email]);
-  let user = found.rows[0];
+  const email = String(profile.email || '').trim().toLowerCase();
+  if (!email) throw new Error('token_email');
+  const isGoogle = !profile.source || profile.source === 'Google';
+  const sub = isGoogle && profile.sub ? String(profile.sub).slice(0, 255) : null;
+  if (sub) await ensureGoogleColumns(db);
+
+  const cols = sub ? 'id, name, email, is_guest, google_sub' : 'id, name, email, is_guest';
+
+  // 1) Por sub de Google (aunque el usuario haya cambiado de correo).
+  let user = null;
+  if (sub) {
+    const bySub = await db.query('SELECT ' + cols + ' FROM users WHERE google_sub = $1', [sub]);
+    user = bySub.rows[0] || null;
+  }
+  // 2) Por correo (sin distinguir mayúsculas).
+  if (!user) {
+    const byEmail = await db.query('SELECT ' + cols + ' FROM users WHERE lower(email) = $1 ORDER BY created_at LIMIT 1', [email]);
+    user = byEmail.rows[0] || null;
+  }
+
+  let isNew = false;
+  let linked = false;
 
   if (!user) {
-    // Contraseña aleatoria no usable: estas cuentas entran solo por Google/GitHub.
+    // 3) Cuenta NUEVA. ON CONFLICT: si otra petición la creó un instante antes, no falla.
     const hash = await hashUnusablePassword();
-    const ins = await db.query(
-      'INSERT INTO users (name, email, password_hash, language, avatar_url) VALUES ($1, $2, $3, $4, $5) RETURNING id, name, email',
-      [profile.name, email, hash, detectLang(request), profile.picture]);
-    user = ins.rows[0];
-    user.isNew = true;
-    try { await db.query('INSERT INTO activity (user_id, kind, text) VALUES ($1, $2, $3)', [user.id, 'account', 'Cuenta creada con ' + (profile.source || 'Google')]); } catch {}
-  } else if (profile.picture) {
-    try { await db.query('UPDATE users SET avatar_url = $2 WHERE id = $1', [user.id, profile.picture]); } catch {}
+    const ins = sub
+      ? await db.query(
+          `INSERT INTO users (name, email, password_hash, language, avatar_url, google_sub)
+           VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING RETURNING id, name, email`,
+          [profile.name, email, hash, detectLang(request), profile.picture, sub])
+      : await db.query(
+          `INSERT INTO users (name, email, password_hash, language, avatar_url)
+           VALUES ($1, $2, $3, $4, $5) ON CONFLICT DO NOTHING RETURNING id, name, email`,
+          [profile.name, email, hash, detectLang(request), profile.picture]);
+    if (ins.rows[0]) {
+      user = ins.rows[0];
+      isNew = true;
+      try { await db.query('INSERT INTO activity (user_id, kind, text) VALUES ($1, $2, $3)', [user.id, 'account', 'Cuenta creada con ' + (profile.source || 'Google')]); } catch {}
+    } else {
+      // Carrera: la creó la otra petición → la leemos.
+      const again = await db.query('SELECT ' + cols + ' FROM users WHERE lower(email) = $1 ORDER BY created_at LIMIT 1', [email]);
+      user = again.rows[0] || null;
+      if (!user) throw new Error('google_upsert');
+    }
+  } else {
+    if (user.is_guest) throw new Error('google_guest');
+    if (sub) {
+      if (user.google_sub && user.google_sub !== sub) throw new Error('google_sub_mismatch');
+      if (!user.google_sub) {
+        // Primera vez con Google en una cuenta que ya existía: vincular y
+        // cerrar las sesiones anteriores (por si la creó otra persona).
+        const upd = await db.query(
+          `UPDATE users SET google_sub = $2, session_version = COALESCE(session_version, 0) + 1
+           WHERE id = $1 AND google_sub IS NULL`, [user.id, sub]);
+        linked = upd.rowCount > 0;
+      }
+    }
+    if (profile.picture) {
+      try { await db.query('UPDATE users SET avatar_url = $2 WHERE id = $1', [user.id, profile.picture]); } catch {}
+    }
   }
-  if (user && user.isNew !== true) user.isNew = false;
-  return user;
+
+  return { id: user.id, name: user.name, email: user.email, isNew, linked };
 }
 
 // Hash PBKDF2 de una contraseña aleatoria (no usable para iniciar sesión con
