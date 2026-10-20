@@ -190,19 +190,26 @@
     const full = pct >= 80;
     const pctTxt = !quota ? '' : pct > 0 && pct < 1 ? 'menos del 1 %' : Math.round(pct) + ' %';
     const ofTxt = quota ? 'usados de ' + fmtQuota(quota) : 'usados · sin límite';
+    // En la tarjeta el espacio es poco: sin «usados» no se corta con cifras largas.
+    const shortOf = quota ? 'de ' + fmtQuota(quota) : 'sin límite';
     const mkBtn = () => el('button', { type: 'button', class: 'plan-btn', onclick: action }, [ upgrade ? el('span', { class: 'plan-bolt', html: ICN_BOLT }) : null, btn ].filter(Boolean));
 
-    // Barra por tipo (escritorio): cada tramo es la parte de lo usado.
-    const bar = el('div', { class: 'stg-bar', role: 'img', 'aria-label': formatBytes(use.total) + ' ' + ofTxt });
+    // Barra (escritorio): la parte llena es el % usado del plan y, dentro,
+    // cada tramo es un tipo de archivo. Con muy poco uso queda una franja de
+    // 8 px para que se vea (sin exagerar el % aunque haya varios tipos).
+    // Sin límite (admin) no hay barra: solo la leyenda.
+    const fill = el('div', { class: 'stg-fill' });
     const legend = el('ul', { class: 'stg-legend' });
     STG_TYPES.forEach(tp => {
       const n = use.by[tp.id];
       if (!n) return;
-      bar.appendChild(el('span', { class: 'stg-seg', style: { flexGrow: String(n), background: tp.color }, title: tp.label + ': ' + formatBytes(n) }));
+      fill.appendChild(el('span', { class: 'stg-seg', style: { flexGrow: String(n), background: tp.color }, title: tp.label + ': ' + formatBytes(n) }));
       legend.appendChild(el('li', {}, [ el('i', { style: { background: tp.color } }), el('span', { class: 'stg-l' }, tp.label), el('span', { class: 'stg-n' }, formatBytes(n)) ]));
     });
+    fill.style.width = 'max(' + pct.toFixed(2) + '%, ' + (fill.children.length ? 8 : 0) + 'px)';
+    const bar = quota ? el('div', { class: 'stg-bar', role: 'img', 'aria-label': formatBytes(use.total) + ' ' + ofTxt + (pctTxt ? ' (' + pctTxt + ')' : '') }, [ fill ]) : null;
     const desk = el('div', { class: 'stg-desk' }, [
-      el('div', { class: 'stg-amount' }, [ el('strong', {}, formatBytes(use.total)), el('span', {}, ' ' + ofTxt) ]),
+      el('div', { class: 'stg-amount' }, [ el('strong', {}, formatBytes(use.total)), el('span', {}, ' ' + shortOf) ]),
       bar,
       legend.children.length ? legend : el('p', { class: 'stg-empty' }, 'Aún no has subido archivos.')
     ]);

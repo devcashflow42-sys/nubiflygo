@@ -913,3 +913,21 @@ body.mp-paused .fb-now i { animation-play-state: paused; }
 }
 .fb-art.fb-text .fb-icon { display: grid; place-items: center; color: var(--accent-ink); }
 @media (max-width: 640px) { .fb-text-preview { padding: 42px 10px 30px; font-size: 11px; -webkit-line-clamp: 6; } }
+
+/* ─── Transición al cambiar de sección ───────────────────────────────────
+   Los bloques de la sección nueva entran en cascada: suben (o bajan, según
+   hacia dónde vayas en el menú) mientras aparecen. Lo activa main.js con la
+   clase .view-in; --v-from es la dirección y --v-i el turno de cada bloque.
+   El contenedor del cuerpo no se mueve: solo sus bloques, para que haya un
+   único movimiento a la vista. */
+@media (prefers-reduced-motion: no-preference) {
+  #view.view-in > *:not(.board-body),
+  #view.view-in > .board-body > * {
+    animation: viewIn .46s cubic-bezier(.16, 1, .3, 1) both;
+    animation-delay: calc(var(--v-i, 0) * 45ms);
+  }
+  @keyframes viewIn {
+    from { opacity: 0; transform: translate3d(0, var(--v-from, 14px), 0); }
+    to   { opacity: 1; transform: none; }
+  }
+}

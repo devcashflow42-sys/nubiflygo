@@ -329,10 +329,12 @@
   .stg-amount { margin: 12px 0 10px; font-size: 12.5px; color: var(--fg-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .stg-amount strong { font-size: 19px; font-weight: 700; color: var(--fg); letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
   .stg-bar {
-    display: flex; gap: 2px; height: 10px; border-radius: 999px; overflow: hidden; isolation: isolate;
+    display: flex; height: 10px; border-radius: 999px; overflow: hidden; isolation: isolate;
     background: var(--surface-sunken);
   }
-  .stg-seg { flex: 1 1 0; min-width: 5px; height: 100%; }   /* la barra redondea los extremos */
+  /* Parte usada (ancho = % del plan, lo fija session.js); dentro, un tramo por tipo. */
+  .stg-fill { display: flex; gap: 2px; height: 100%; max-width: 100%; border-radius: 999px; overflow: hidden; }
+  .stg-seg { flex: 1 1 0; min-width: 5px; height: 100%; }   /* la parte usada redondea los extremos */
   .stg-legend { list-style: none; margin: 10px 0 12px; padding: 0; display: grid; gap: 5px; }
   .stg-legend li { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--fg-muted); min-width: 0; }
   .stg-legend i { width: 8px; height: 8px; border-radius: 3px; flex-shrink: 0; }

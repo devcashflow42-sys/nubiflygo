@@ -12,6 +12,45 @@
     return wrap;
   }
 
+  /* ───────────── Transición al cambiar de sección ─────────────
+     Al entrar en una sección, sus bloques aparecen en cascada (de abajo si
+     vas hacia una sección más abajo del menú, de arriba si subes). Solo
+     cuando cambia la sección: redibujar por datos nuevos o por la búsqueda no
+     anima. Con «reducir movimiento» no se anima nada. */
+  const ROUTE_ORDER = ['dashboard', 'projects', 'project-form', 'notes', 'files', 'apikeys', 'notifications', 'settings'];
+  let lastViewKey = null;
+  function viewKey() {
+    return state.route + ':' + (state.projectId || '') + ':' + (state.noteId || '');
+  }
+  let viewAnimGen = 0;
+  function animateView(dir) {
+    const v = $('#view');
+    if (!v || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
+    // Bloques que se animan: los del panel y, del cuerpo, sus hijos (así se
+    // mueve una sola capa y no el contenedor con todo dentro).
+    const blocks = [];
+    Array.prototype.forEach.call(v.children, function (c) {
+      if (c.classList.contains('board-body')) Array.prototype.forEach.call(c.children, function (g) { blocks.push(g); });
+      else blocks.push(c);
+    });
+    if (!blocks.length) return;
+    v.classList.remove('view-in');
+    void v.offsetWidth;                       // reinicia la animación
+    v.style.setProperty('--v-from', (dir < 0 ? -14 : 14) + 'px');
+    blocks.forEach(function (b, i) { b.style.setProperty('--v-i', String(Math.min(i, 6))); });
+    v.classList.add('view-in');
+    // Al terminar se quita todo: si se quedara la animación, su «transform»
+    // final movería lo que lleva posición fija dentro de la sección (por
+    // ejemplo la página de subir archivos).
+    const mine = ++viewAnimGen;
+    setTimeout(function () {
+      if (mine !== viewAnimGen) return;
+      v.classList.remove('view-in');
+      v.style.removeProperty('--v-from');
+      blocks.forEach(function (b) { b.style.removeProperty('--v-i'); });
+    }, 6 * 45 + 460 + 120);
+  }
+
   /* ───────────── Main render ───────────── */
   function render(fromSearch) {
     renderNav();
@@ -34,7 +73,12 @@
       settings: viewSettings,
       notifications: viewNotifications
     };
+    const key = viewKey(), changed = key !== lastViewKey;
+    const dir = ROUTE_ORDER.indexOf(state.route) < ROUTE_ORDER.indexOf((lastViewKey || '').split(':')[0]) ? -1 : 1;
+    lastViewKey = key;
     (views[state.route] || viewDashboard)();
+    // La búsqueda redibuja la misma sección: no se anima (el foco se queda).
+    if (changed && !fromSearch) animateView(dir);
     // When a search re-render fires we want the input to stay focused
     if (fromSearch) {
       const s = document.querySelector('.search input');

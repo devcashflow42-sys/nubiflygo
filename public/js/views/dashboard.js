@@ -4,7 +4,12 @@
   /* ───────────── Dashboard view ───────────── */
   function viewDashboard() {
     const v = $('#view');
-    const totalDocs = store.projects.reduce((n, p) => n + (p.documents?.length || 0), 0);
+    // Documentos: todo lo que hay dentro de los proyectos, contado igual que en
+    // la tarjeta de cada proyecto (antes daba 0 si el proyecto no se había abierto).
+    const totalDocs = store.projects.reduce((n, p) => n + projectItemCount(p), 0);
+    // Archivos: los sueltos (fuera de proyectos), igual que el menú y la sección
+    // Archivos; los de cada proyecto ya cuentan en Documentos.
+    const looseFiles = (store.files || []).filter(f => !f.project_id).length;
 
     v.innerHTML = '';
     v.appendChild(pageToolbar({
@@ -26,7 +31,7 @@
     const tiles = el('div', { class: 'tiles' }, [
       tile(t('dashboard.tiles.projects'), store.projects.length, t('dashboard.tiles.activeGroups'), '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/></svg>'),
       tile(t('dashboard.tiles.documents'), totalDocs, t('dashboard.tiles.allProjects'), '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>'),
-      tile(t('dashboard.tiles.files'), (store.files || []).length, t('dashboard.tiles.uploaded'), '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="5" rx="1.5"/><path d="M4 9v9a1.5 1.5 0 0 0 1.5 1.5h13A1.5 1.5 0 0 0 20 18V9"/><line x1="9.5" y1="13" x2="14.5" y2="13"/></svg>'),
+      tile(t('dashboard.tiles.files'), looseFiles, t('dashboard.tiles.uploaded'), '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="5" rx="1.5"/><path d="M4 9v9a1.5 1.5 0 0 0 1.5 1.5h13A1.5 1.5 0 0 0 20 18V9"/><line x1="9.5" y1="13" x2="14.5" y2="13"/></svg>'),
       tile(t('dashboard.tiles.notes'), store.notes.length, t('dashboard.tiles.saved'), '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>'),
       tile(t('dashboard.tiles.apiKeys'), store.apiKeys.length, t('dashboard.tiles.active'), '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="m10.85 12.15 7.5-7.5 1.65 1.65 1.5-1.5-3.15-3.15-9 9"/></svg>')
     ]);

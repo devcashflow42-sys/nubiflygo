@@ -144,10 +144,15 @@
     v.appendChild(body);
   }
 
+  // Conteo real del contenido (documentos + archivos). Si el proyecto ya se
+  // abrió, usa lo cargado; si no, el total que devolvió la lista del servidor.
+  // Lo usan la tarjeta del proyecto y el Inicio, para que digan lo mismo.
+  function projectItemCount(p) {
+    return p._loaded ? (p.documents?.length || 0) : (p.contentCount != null ? p.contentCount : (p.documents?.length || 0));
+  }
+
   function projectCard(p) {
-    // Conteo real del contenido (documentos + archivos). Si el proyecto ya se
-    // abrió, usa lo cargado; si no, el total que devolvió la lista del servidor.
-    const docCount = p._loaded ? (p.documents?.length || 0) : (p.contentCount != null ? p.contentCount : (p.documents?.length || 0));
+    const docCount = projectItemCount(p);
     const memCount = p.members?.length || 0;
     const metaBits = [ docCount + (docCount === 1 ? ' doc' : ' docs') ];
     if (memCount) metaBits.push(memCount + (memCount === 1 ? ' miembro' : ' miembros'));

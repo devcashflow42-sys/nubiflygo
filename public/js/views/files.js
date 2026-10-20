@@ -55,7 +55,8 @@
       .catch(function (e) { filesLoaded = true; if (e.status !== 401) toast(e.message || 'No se pudieron cargar los archivos'); })
       .then(function () {
         filesLoading = false;
-        if (state.route === 'files' || (state.route === 'projects' && !state.projectId)) render();
+        // El Inicio también usa store.files (tarjeta «Archivos»).
+        if (state.route === 'files' || state.route === 'dashboard' || (state.route === 'projects' && !state.projectId)) render();
         // El almacenamiento del menú se calcula con store.files: se repinta en
         // cualquier sección (p. ej. entrada directa a /project/<id>).
         else if (window.paintPlanCard) { try { window.paintPlanCard(); } catch (e) {} }
