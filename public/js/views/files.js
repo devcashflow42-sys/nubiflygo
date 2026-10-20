@@ -53,7 +53,13 @@
       // Ante un error se marca como cargado para no reintentar en bucle
       // (el tiempo real volverá a cargar cuando haya conexión/sesión).
       .catch(function (e) { filesLoaded = true; if (e.status !== 401) toast(e.message || 'No se pudieron cargar los archivos'); })
-      .then(function () { filesLoading = false; if (state.route === 'files' || (state.route === 'projects' && !state.projectId)) render(); });
+      .then(function () {
+        filesLoading = false;
+        if (state.route === 'files' || (state.route === 'projects' && !state.projectId)) render();
+        // El almacenamiento del menú se calcula con store.files: se repinta en
+        // cualquier sección (p. ej. entrada directa a /project/<id>).
+        else if (window.paintPlanCard) { try { window.paintPlanCard(); } catch (e) {} }
+      });
   }
 
   function viewFiles() {

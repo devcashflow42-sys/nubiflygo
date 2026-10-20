@@ -8,15 +8,14 @@
   <!-- Base de rutas. En el servidor la app vive también en /project/<id>,
        /settings…, así que la base es la raíz "/" para que css/ y js/ carguen
        siempre bien. Si el archivo se abre localmente (file://), la base pasa a
-       ser su propia carpeta, de modo que el diseño aparece igual sin servidor. -->
+       ser su propia carpeta, de modo que el diseño aparece igual sin servidor.
+       La base va escrita en el HTML (no con JavaScript) para que el navegador
+       la vea desde el principio y no pida antes /project/css/… por error. -->
+  <base href="/">
   <script>
-    (function () {
-      var base = '/';
-      if (location.protocol === 'file:') {
-        base = location.href.replace(/[?#].*$/, '').replace(/[^/]*$/, '');
-      }
-      document.write('<base href="' + base + '">');   // seguridad: permitido (valor fijo; debe ir en el HTML antes de los CSS)
-    })();
+    if (location.protocol === 'file:') {
+      document.querySelector('base').href = location.href.replace(/[?#].*$/, '').replace(/[^/]*$/, '');
+    }
   </script>
   <title>NubiFlyGo</title>
   <meta name="description" content="Guarda, organiza y comparte tus archivos, música y fotos en un solo lugar.">

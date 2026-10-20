@@ -48,7 +48,10 @@ export function parseCookies(request) {
   const raw = request.headers.get('Cookie') || '';
   raw.split(';').forEach(p => {
     const i = p.indexOf('=');
-    if (i > -1) out[p.slice(0, i).trim()] = decodeURIComponent(p.slice(i + 1).trim());
+    if (i < 0) return;
+    // Una cookie mal codificada (p. ej. «%E0») no debe tumbar la petición:
+    // se ignora esa cookie y las demás se leen normal.
+    try { out[p.slice(0, i).trim()] = decodeURIComponent(p.slice(i + 1).trim()); } catch {}
   });
   return out;
 }
