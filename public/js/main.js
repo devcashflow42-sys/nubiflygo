@@ -22,33 +22,42 @@
   function viewKey() {
     return state.route + ':' + (state.projectId || '') + ':' + (state.noteId || '');
   }
-  let viewAnimGen = 0;
+  let viewAnimGen = 0, viewAnimBlocks = [];
+  function clearViewAnim() {
+    viewAnimBlocks.forEach(function (b) { b.classList.remove('v-anim'); b.style.removeProperty('--v-i'); });
+    viewAnimBlocks = [];
+    const v = $('#view'); if (v) v.style.removeProperty('--v-from');
+  }
   function animateView(dir) {
     const v = $('#view');
     if (!v || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
     // Bloques que se animan: los del panel y, del cuerpo, sus hijos (así se
-    // mueve una sola capa y no el contenedor con todo dentro).
+    // mueve una sola capa y no el contenedor con todo dentro). La barra
+    // superior (flecha, título, campana, acciones) se queda quieta: es el
+    // marco de la app y parpadearía en cada cambio.
     const blocks = [];
     Array.prototype.forEach.call(v.children, function (c) {
+      if (c.classList.contains('project-toolbar')) return;
       if (c.classList.contains('board-body')) Array.prototype.forEach.call(c.children, function (g) { blocks.push(g); });
       else blocks.push(c);
     });
     if (!blocks.length) return;
-    v.classList.remove('view-in');
+    clearViewAnim();
     void v.offsetWidth;                       // reinicia la animación
     v.style.setProperty('--v-from', (dir < 0 ? -14 : 14) + 'px');
-    blocks.forEach(function (b, i) { b.style.setProperty('--v-i', String(Math.min(i, 6))); });
-    v.classList.add('view-in');
+    // La marca va en CADA bloque, no en el contenedor: si llegan datos y la
+    // sección se vuelve a dibujar, los bloques nuevos ya no animan (antes
+    // reaparecían desde cero y se veía un parpadeo).
+    blocks.forEach(function (b, i) {
+      b.style.setProperty('--v-i', String(Math.min(i, 6)));
+      b.classList.add('v-anim');
+    });
+    viewAnimBlocks = blocks;
     // Al terminar se quita todo: si se quedara la animación, su «transform»
     // final movería lo que lleva posición fija dentro de la sección (por
     // ejemplo la página de subir archivos).
     const mine = ++viewAnimGen;
-    setTimeout(function () {
-      if (mine !== viewAnimGen) return;
-      v.classList.remove('view-in');
-      v.style.removeProperty('--v-from');
-      blocks.forEach(function (b) { b.style.removeProperty('--v-i'); });
-    }, 6 * 45 + 460 + 120);
+    setTimeout(function () { if (mine === viewAnimGen) clearViewAnim(); }, 6 * 45 + 460 + 120);
   }
 
   /* ───────────── Main render ───────────── */
