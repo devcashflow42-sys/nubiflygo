@@ -13,10 +13,6 @@ header.nav.is-scrolled{box-shadow:0 8px 25px -22px rgba(18,22,32,.55);border-bot
 @media (hover:hover){.btn:active{transform:translateY(0) scale(.985)}.card:active{transform:translateY(0) scale(.99)}}
 @media (hover:none){.card:hover{transform:none;box-shadow:none;border-color:var(--line)}.btn:active,.card:active{transform:scale(.985)}}
 
-/* ---------- Barra de progreso de lectura (bajo el menú) ---------- */
-.motion-on header.nav::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;
-  background:var(--fg);transform-origin:0 50%;transform:scaleX(var(--scroll-p,0));pointer-events:none}
-
 /* ---------- Hero: entrada al cargar y salida al hacer scroll ---------- */
 .hero{position:relative;isolation:isolate;
   transform:translate3d(0,calc(var(--hero-p,0) * -64px),0);opacity:calc(1 - var(--hero-p,0) * .8)}

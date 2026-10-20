@@ -1,8 +1,8 @@
 'use strict';
 /* motion.js — Movimiento de la landing al hacer scroll.
    · Estado del scroll: una sola lectura por cuadro (requestAnimationFrame).
-     Marca la sección activa del menú, llena la barra de progreso de lectura y
-     da al hero una salida suave (sube y se desvanece) con su fondo en paralaje.
+     Marca la sección activa del menú y da al hero una salida suave (sube y
+     se desvanece) con su fondo en paralaje.
    · Revelado: cada bloque entra una sola vez con su propio efecto (subir,
      barrido del título, consola en 3D, banda que se expande). Los que entran
      juntos se escalonan en el orden de la página. Al terminar se quitan las
@@ -38,9 +38,6 @@
       else entry.link.removeAttribute('aria-current');
     });
     if (reduce) return;
-    // Progreso de lectura (0 → 1) en la barra bajo el menú.
-    var max = root.scrollHeight - window.innerHeight;
-    root.style.setProperty('--scroll-p', max > 0 ? Math.min(1, y / max).toFixed(4) : '0');
     // Salida del hero: solo mientras está en pantalla.
     if (hero && heroH) {
       var p = Math.min(1, Math.max(0, y / heroH));
