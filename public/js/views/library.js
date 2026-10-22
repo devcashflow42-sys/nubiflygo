@@ -77,8 +77,12 @@
       image: S('<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>'),
       video: S('<rect x="2" y="5" width="15" height="14" rx="2"/><polygon points="22 7 17 11 17 13 22 17 22 7"/>'),
       doc: S('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/>'),
-      mixed: S('<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>')
-    }[k];
+      mixed: S('<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>'),
+      archive: S('<rect x="3" y="3" width="18" height="5" rx="1.5"/><path d="M5 8v11a1.5 1.5 0 0 0 1.5 1.5h11A1.5 1.5 0 0 0 19 19V8"/><line x1="10" y1="12" x2="14" y2="12"/>'),
+      other: S('<path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/>')
+      // Si llega un tipo que no está, se usa «other»: antes devolvía undefined
+      // y se pintaba esa palabra encima de la etiqueta.
+    }[k] || S('<path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/>');
   }
   // La categoría gana si 60 % o más del contenido es de ese tipo.
   function projectCategory(items) {
@@ -455,7 +459,7 @@
     const items = projectItems(p);
     const thumbs = items.map(libThumb).filter(Boolean).slice(0, 4);
     const cat = CAT[projectCategory(items)] || null;
-    const box = el('span', { class: 'pc-thumb' + (thumbs.length >= 4 ? ' is-grid' : ''), 'aria-hidden': 'true', style: { background: thumbs.length ? libGrad(p.id) : (cat ? cat.color : safeColor(p.color)) } });
+    const box = el('span', { class: 'pc-thumb' + (thumbs.length >= 4 ? ' is-grid' : ''), 'aria-hidden': 'true', style: { background: thumbs.length ? libGrad(p.id) : safeColor(p.color) } });
     if (thumbs.length >= 4) thumbs.forEach(u => { const i = el('img', { src: u, alt: '', loading: 'lazy', decoding: 'async' }); i.addEventListener('error', () => { i.style.visibility = 'hidden'; }); box.appendChild(i); });
     else if (thumbs.length) { const i = el('img', { src: thumbs[0], alt: '', loading: 'lazy', decoding: 'async' }); i.addEventListener('error', () => i.remove()); box.appendChild(i); }
     else box.appendChild(el('span', { class: 'pc-thumb-ico', html: cat ? cat.icon : KIND_ICON_LIB('mixed') }));

@@ -569,3 +569,32 @@
     .pc-rich .card-action { width: 36px; height: 36px; position: relative; }
     .pc-rich .card-action::after { content: ''; position: absolute; inset: -4px; }
   }
+
+  /* ───────── Correcciones de la revisión de diseño ───────── */
+  /* El «⋯» va fuera del botón de la fila (botones anidados no son válidos y
+     con el teclado se abría el proyecto en vez del menú). */
+  .pc-item { padding: 0; }
+  .pc-open {
+    display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0;
+    padding: 8px 4px 8px 14px;
+    border: 0; background: none; font: inherit; color: inherit;
+    text-align: left; cursor: pointer;
+  }
+  .pc-open:focus-visible, .pc-more:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .pc-item:hover { background: var(--surface-sunken); }
+  .pc-more { border: 0; background: none; margin-right: 4px; }
+  /* Un solo cuadro sólido por tarjeta, el del proyecto: las filas van todas en
+     el tono suave (lección de CLAUDE.md, un elemento visual por idea). */
+  .pc-ico.is-file { background: color-mix(in srgb, var(--k) 18%, var(--surface)); color: var(--k); }
+  .pc-ico.is-file svg { filter: none; }
+  /* Las tarjetas de la fila se estiran igual y el pie queda abajo del todo:
+     con align-items:start quedaban huecos de 150-210px. */
+  .project-grid.pg-rich { align-items: stretch; }
+  .pc-rich { display: flex; flex-direction: column; }
+  .pc-rich .pc-list { flex: 1; }
+  .pc-rich .pc-add { margin-top: auto; }
+  /* En el Inicio la tarjeta es más estrecha: el meta no puede partirse en tres. */
+  .pc-rich .project-meta { flex-wrap: nowrap; overflow: hidden; }
+  .pc-rich .project-meta span { white-space: nowrap; }
+  .pc-rich .project-meta span:last-child { overflow: hidden; text-overflow: ellipsis; }
+  .pc-empty { color: var(--fg-muted); }

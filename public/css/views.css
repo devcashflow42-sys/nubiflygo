@@ -113,7 +113,7 @@
        display:flex ganaba por orden de archivo. */
     .color-picker.pf-colors { display: grid; grid-template-columns: repeat(8, 1fr); gap: 0; }
     .pf-colors .color-swatch { justify-self: center; position: relative; }
-    .pf-colors .color-swatch::after { content: ''; position: absolute; inset: -8px; }
+    .pf-colors .color-swatch::after { content: ''; position: absolute; inset: -9px -8px; }
   }
   .form-area {
     width: 100%; min-height: 120px;
@@ -1101,3 +1101,25 @@ body.mp-paused .fb-now i { animation-play-state: paused; }
     .tr-acts { margin-left: auto; }
     .tr-btn { height: 44px; padding: 0 13px; border-radius: 10px; }
   }
+
+  /* ───────── Correcciones de la revisión de diseño ───────── */
+  .sk-line.w35 { width: 35%; }
+  /* Huecos mientras llega la lista: ni «vacío» ni saltos al cargar. */
+  .tr-row.is-sk, .pc-item.is-sk { pointer-events: none; }
+  .tr-row.is-sk .tr-ico, .pc-item.is-sk .pc-ico { background: var(--surface-sunken); }
+  .pc-item.is-sk { padding: 8px 8px 8px 14px; gap: 10px; }
+  .pc-item.is-sk .pc-txt2 { flex: 1; }
+
+  /* Contraste: medidos quedaban por debajo de 4.5:1 sobre el fondo de la fila.
+     El azul y el rojo se mantienen, pero con el tono que sí se lee. */
+  .tr-btn.is-restore { color: var(--accent-ink); }
+  .tr-btn.is-del { color: color-mix(in srgb, var(--danger) 72%, #000); }
+  :root[data-theme="dark"] .tr-btn.is-del { color: color-mix(in srgb, var(--danger) 60%, #fff); }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .tr-btn.is-del { color: color-mix(in srgb, var(--danger) 60%, #fff); }
+  }
+  .tr-left.soon { color: #8a5a0a; }
+  :root[data-theme="dark"] .tr-left.soon { color: var(--warn); }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .tr-left.soon { color: var(--warn); } }
+  /* Separación entre Restaurar y Eliminar: a 6px se tocaban con el dedo. */
+  @media (max-width: 720px) { .tr-acts { gap: 12px; } }

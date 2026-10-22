@@ -98,10 +98,7 @@
     v.innerHTML = '';
     v.appendChild(pageToolbar({
       back: () => go('dashboard'),
-      title: 'Proyectos',
-      actions: [
-        el('button', { class: 'btn btn-primary btn-sm', onclick: () => openProjectModal(), html: ICON_PLUS_SM + '<span style="margin-left:4px">Nuevo</span>' })
-      ]
+      title: 'Proyectos'
     }));
 
     if (!projectsLoaded) {
@@ -120,7 +117,9 @@
         el('h2', {}, 'Proyectos'),
         (function () {
           const t = el('p');
-          t.innerHTML = nP + (nP === 1 ? ' proyecto' : ' proyectos') + ' · ' + nArch + (nArch === 1 ? ' archivo' : ' archivos')
+          // El número de archivos solo cuando de verdad se sabe.
+          const sabe = typeof filesLoaded === 'undefined' || filesLoaded;
+          t.innerHTML = (nP ? nP + (nP === 1 ? ' proyecto' : ' proyectos') + (sabe ? ' · ' + nArch + (nArch === 1 ? ' archivo' : ' archivos') : '') : 'Todavía no tienes ninguno')
             + '<span class="sec-hero-extra"><br>Reúne aquí tus archivos, documentos y notas por tema.</span>';
           return t;
         })()
@@ -204,6 +203,10 @@
   // Filas de la tarjeta: primero las carpetas (de más a menos), y con el hueco
   // que quede, los archivos más recientes.
   function projectRows(p) {
+    // null = todavía no se sabe (los archivos están de camino). Decir «no has
+    // subido nada» antes de tiempo era mentira, y además la tarjeta crecía
+    // de golpe cuando llegaban.
+    if (typeof filesLoaded !== 'undefined' && !filesLoaded && !p._loaded) return null;
     const files = projectItems(p).filter(f => f.kind !== 'document');
     const by = new Map();
     files.forEach(f => {
@@ -245,15 +248,16 @@
   function projectRow(p, r) {
     const ico = el('span', { class: 'pc-ico ' + (r.folder ? 'is-folder' : 'is-file'), html: KIND_ICON_LIB(r.kind === 'doc' && r.folder ? 'doc' : r.kind) });
     ico.style.setProperty('--k', r.color);
-    const abrir = () => go('projects', { projectId: p.id });
-    return el('button', { class: 'pc-item', type: 'button', onclick: abrir }, [
-      ico,
-      el('div', { class: 'pc-txt2' }, [
-        el('div', { class: 'pc-nm', title: r.name }, r.name),
-        el('div', { class: 'pc-sub' }, r.sub)
+    return el('div', { class: 'pc-item' }, [
+      el('button', { class: 'pc-open', type: 'button', onclick: () => go('projects', { projectId: p.id }) }, [
+        ico,
+        el('div', { class: 'pc-txt2' }, [
+          el('div', { class: 'pc-nm', title: r.name }, r.name),
+          el('div', { class: 'pc-sub' }, r.sub)
+        ])
       ]),
-      el('span', {
-        class: 'pc-more', role: 'button', tabindex: '0',
+      el('button', {
+        class: 'pc-more', type: 'button',
         title: 'Más opciones', 'aria-label': 'Más opciones de ' + r.name,
         html: PC_ICN.more,
         onclick: (e) => { e.stopPropagation(); pcMenu(p, r); }
@@ -315,9 +319,13 @@
           el('div', { class: 'project-meta' }, metaBits.map((t, i) => el('span', {}, (i > 0 ? '· ' : '') + t)))
         ])
       ]),
-      rows.length
-        ? el('div', { class: 'pc-list' }, rows.map(r => projectRow(p, r)))
-        : el('div', { class: 'pc-list' }, [ el('div', { class: 'pc-empty' }, 'Todavía no has subido nada aquí.') ]),
+      rows === null
+        ? el('div', { class: 'pc-list' }, [0, 1, 2].map(() => el('div', { class: 'pc-item is-sk' }, [
+            el('span', { class: 'pc-ico' }), el('div', { class: 'pc-txt2' }, [ el('div', { class: 'sk-line w60' }), el('div', { class: 'sk-line w35' }) ])
+          ])))
+        : rows.length
+          ? el('div', { class: 'pc-list' }, rows.map(r => projectRow(p, r)))
+          : el('div', { class: 'pc-list' }, [ el('div', { class: 'pc-empty' }, 'Todavía no has subido nada aquí.') ]),
       el('button', { class: 'pc-add', type: 'button', onclick: () => go('projects', { projectId: p.id }) }, [
         el('span', { html: PC_ICN.plus }), el('span', {}, 'Agregar archivo')
       ])

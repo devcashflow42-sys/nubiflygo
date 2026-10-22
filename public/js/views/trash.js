@@ -33,6 +33,18 @@
     if (it.kind === 'apikey') bits.push('desactivada mientras esté aquí');
     return bits.join(' · ');
   }
+  // «hace 2 días», «hace 5 min»… timeAgo abrevia y devuelve «ahora» o una
+  // fecha suelta, que con «hace» delante no se leen bien.
+  function cuando(iso) {
+    const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+    if (s < 60) return 'Lo borraste hace un momento';
+    if (s < 3600) { const m = Math.floor(s / 60); return 'Lo borraste hace ' + m + (m === 1 ? ' minuto' : ' minutos'); }
+    if (s < 86400) { const h = Math.floor(s / 3600); return 'Lo borraste hace ' + h + (h === 1 ? ' hora' : ' horas'); }
+    const d = Math.floor(s / 86400);
+    if (d < 7) return 'Lo borraste hace ' + d + (d === 1 ? ' día' : ' días');
+    const sem = Math.floor(d / 7);
+    return 'Lo borraste hace ' + sem + (sem === 1 ? ' semana' : ' semanas');
+  }
   function fmtSize(n) {
     if (!n) return '0 B';
     const u = ['B', 'KB', 'MB', 'GB', 'TB'];
@@ -62,16 +74,17 @@
   function viewTrash() {
     const v = $('#view');
     v.innerHTML = '';
-    v.appendChild(pageToolbar({ menu: () => openMobile(), title: 'Papelera' }));
+    v.appendChild(pageToolbar({ back: () => go('dashboard'), menu: () => openMobile(), title: 'Papelera' }));
 
     // La papelera se pide la primera vez que se entra (como las demás listas).
     if (!trashLoaded && !trashLoading) loadTrash();
+    const cargando = !trashLoaded;
     const items = Array.isArray(store.trash) ? store.trash : [];
     const q = (state.search || '').trim().toLowerCase();
     const shown = q ? items.filter(x => (x.title || '').toLowerCase().includes(q)) : items;
 
     // Banner de la sección: dice el plazo y lo que ocupa, y deja vaciarla.
-    v.appendChild(el('div', { class: 'board-tools', style: { paddingTop: '14px' } }, [ searchInput('Buscar en la papelera...') ]));
+    if (items.length) v.appendChild(el('div', { class: 'board-tools', style: { paddingTop: '14px' } }, [ searchInput('Buscar en la papelera...') ]));
     const banner = el('div', { class: 'sec-hero is-trash' }, [
       el('span', { class: 'sec-hero-ico', html: TR_ICN.trash }),
       el('div', { class: 'sec-hero-info' }, [
@@ -95,7 +108,14 @@
     v.insertBefore(banner, v.querySelector('.board-tools'));
 
     const body = el('div', { class: 'board-body' });
-    if (!items.length) {
+    if (cargando) {
+      // Mientras llega: filas de hueco. Decir «está vacía» sería mentira.
+      const sk = el('div', { class: 'tr-list' });
+      for (let i = 0; i < 3; i++) sk.appendChild(el('div', { class: 'tr-row is-sk' }, [
+        el('span', { class: 'tr-ico' }), el('div', { class: 'tr-main' }, [ el('div', { class: 'sk-line w60' }), el('div', { class: 'sk-line w35' }) ])
+      ]));
+      body.appendChild(sk);
+    } else if (!items.length) {
       body.appendChild(emptyBlock('La papelera está vacía',
         'Lo que borres aparecerá aquí durante ' + (store.trashDays || 30) + ' días, por si cambias de idea.', null));
     } else if (!shown.length) {
@@ -125,7 +145,7 @@
       ]),
       el('div', { class: 'tr-from' }, [
         el('span', {}, [ 'Estaba en ', el('b', {}, it.parent || (it.kind === 'project' ? 'Proyectos' : it.kind === 'note' ? 'Notas' : it.kind === 'apikey' ? 'API keys' : 'Archivos')) ]),
-        el('span', {}, 'Lo borraste ' + timeAgo(new Date(it.deleted_at).getTime()))
+        el('span', {}, cuando(it.deleted_at))
       ]),
       el('div', { class: 'tr-left' + (left <= 7 ? ' soon' : '') },
         left <= 0 ? 'Se va hoy' : left === 1 ? 'Queda 1 día' : 'Quedan ' + left + ' días'),
