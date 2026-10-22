@@ -7,6 +7,12 @@
 
   // Convierte un archivo del servidor al formato de la vista. GET /files trae
   // el item completo (size = { bytes, formatted }); se aceptan ambos formatos.
+  function heroBytes(n) {
+    const u = ['B', 'KB', 'MB', 'GB', 'TB'];
+    let i = 0, v = Number(n) || 0;
+    while (v >= 1024 && i < u.length - 1) { v /= 1024; i++; }
+    return (v >= 10 || i === 0 ? Math.round(v) : v.toFixed(1)) + ' ' + u[i];
+  }
   function mapServerFile(f) {
     const mime = f.mime || f.mime_type || '';
     return {
@@ -69,20 +75,19 @@
     if (!Array.isArray(store.files)) store.files = [];
     const mine = ownFiles();
 
-    v.appendChild(pageToolbar({
-      back: () => go('dashboard'),
+    v.appendChild(pageToolbar({ back: () => go('dashboard'), title: 'Archivos' }));
+    // Banner de la sección, el mismo que en Proyectos y Papelera.
+    const bytesMine = mine.reduce((t, f) => t + (Number(f.size) || 0), 0);
+    v.appendChild(sectionHero({
+      variant: 'files',
+      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="5" rx="1.5"/><path d="M4 9v9a1.5 1.5 0 0 0 1.5 1.5h13A1.5 1.5 0 0 0 20 18V9"/><line x1="9.5" y1="13" x2="14.5" y2="13"/></svg>',
       title: 'Archivos',
-      actions: [
-        el('button', {
-          class: 'btn btn-primary btn-sm', onclick: () => uploadFiles(),
-          html: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><span style="margin-left:5px">Subir</span>'
-        })
-      ]
+      summary: filesLoaded
+        ? (mine.length ? mine.length + (mine.length === 1 ? ' archivo' : ' archivos') + (bytesMine ? ' · ' + heroBytes(bytesMine) : '') : 'Todavía no has subido ninguno')
+        : 'Cargando…',
+      detail: 'Sube y publica imágenes, videos, música, PDF y más. Se actualiza en tiempo real.',
+      action: { label: 'Subir', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>', onClick: () => uploadFiles() }
     }));
-    v.appendChild(el('div', { class: 'board-head' }, [
-      el('h2', {}, 'Archivos'),
-      el('p', { class: 'subtitle' }, 'Sube y publica imágenes, videos, música, PDF y más. Se actualiza en tiempo real.')
-    ]));
 
     // Primera vez: trae los archivos del servidor.
     if (!filesLoaded) {

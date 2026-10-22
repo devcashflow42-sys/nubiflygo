@@ -82,7 +82,7 @@
   /* ─── Project cards ─── */
   .project-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr));
     gap: 12px;
   }
   .project-card {
@@ -513,7 +513,7 @@
 
   /* ───────── Tarjeta de proyecto con su contenido dentro ─────────
      Cada fila lleva a un sitio, así que la tarjeta entera ya no es un botón. */
-  .project-grid.pg-rich { grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); align-items: start; }
+  .project-grid.pg-rich { grid-template-columns: repeat(auto-fill, minmax(min(330px, 100%), 1fr)); align-items: start; }
   .pc-rich { padding: 46px 0 0; cursor: default; }
   .pc-rich .pc-head { display: flex; align-items: center; gap: 12px; padding: 0 16px 14px; cursor: pointer; }
   .pc-rich .pc-head .pc-txt { min-width: 0; }

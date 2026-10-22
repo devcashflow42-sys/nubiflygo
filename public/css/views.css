@@ -1156,3 +1156,9 @@ body.mp-paused .fb-now i { animation-play-state: paused; }
   }
   /* Eligiendo: la fila deja su columna de botones a la barra de arriba. */
   .tr-row.is-picking { grid-template-columns: 18px 34px minmax(0, 1.5fr) minmax(0, 1.4fr) auto; }
+
+  /* Un color por sección, para distinguirlas de un vistazo sin cambiar nada
+     más. Proyectos se queda con el azul de la marca (el valor por defecto). */
+  .sec-hero.is-files { --sh-a: #0e7a8a; --sh-b: #0b4450; --sh-c: #111a20; }
+  .sec-hero.is-notes { --sh-a: #b7791f; --sh-b: #6b4612; --sh-c: #1a1510; }
+  .sec-hero.is-keys  { --sh-a: #5b3cc4; --sh-b: #30205f; --sh-c: #141126; }

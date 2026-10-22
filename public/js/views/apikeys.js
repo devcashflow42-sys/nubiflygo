@@ -124,15 +124,20 @@
     v.appendChild(pageToolbar({
       back: () => go('dashboard'),
       title: 'API keys',
-      // El botón de crear solo aparece cuando ya sabemos que NO es invitado.
-      actions: guest === false ? [
-        el('button', { class: 'btn btn-primary btn-sm', onclick: () => openKeyModal(), html: ICON_PLUS_SM + '<span style="margin-left:4px">Generar clave</span>' })
-      ] : []
     }));
-    v.appendChild(el('div', { class: 'board-head' }, [
-      el('h2', {}, 'API keys')
-    ]));
-    v.appendChild(el('p', { class: 'subtitle', style: { padding: '0 20px 10px', margin: '-6px 0 0', color: 'var(--fg-muted)', fontSize: '13.5px' } }, 'Usa estas claves para autenticar peticiones a tu API. Trátalas como contraseñas — no las compartas.'));
+    // El botón de crear solo aparece cuando ya sabemos que NO es invitado.
+    v.appendChild(sectionHero({
+      variant: 'keys',
+      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="4.5"/><path d="m10.7 12.3 8.3-8.3M16 6l3 3M14 8l3 3"/></svg>',
+      title: 'API keys',
+      summary: guest
+        ? 'Las claves necesitan una cuenta'
+        : (apiKeysLoaded
+          ? (store.apiKeys.length ? store.apiKeys.length + (store.apiKeys.length === 1 ? ' clave activa' : ' claves activas') : 'Todavía no tienes ninguna')
+          : 'Cargando…'),
+      detail: 'Autentican las peticiones a tu API. Trátalas como contraseñas: no las compartas.',
+      action: guest === false ? { label: 'Generar clave', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>', onClick: () => openKeyModal() } : null
+    }));
 
     if (guest) {
       v.appendChild(el('div', { class: 'board-body' }, [ guestKeysBlock('') ]));
