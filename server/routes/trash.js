@@ -26,7 +26,7 @@ trash.get('/', wrap(async (req, res) => {
 // POST /trash/restore  { kind, id }
 trash.post('/restore', wrap(async (req, res) => {
   const b = req.body || {};
-  const table = KIND_TABLE[String(b.kind || '')];
+  const table = Object.prototype.hasOwnProperty.call(KIND_TABLE, String(b.kind || '')) ? KIND_TABLE[String(b.kind)] : null;
   if (!table) return res.status(400).json({ error: 'kind debe ser project, file, document, note o apikey.' });
   if (!UUID_RE.test(String(b.id || ''))) return res.status(400).json({ error: 'Id no válido.' });
   if (table === 'projects') {
@@ -42,7 +42,7 @@ trash.post('/restore', wrap(async (req, res) => {
 
 // DELETE /trash/:kind/:id — borrar un elemento de verdad
 trash.delete('/:kind/:id', wrap(async (req, res) => {
-  if (!KIND_TABLE[req.params.kind]) return res.status(400).json({ error: 'Tipo no válido.' });
+  if (!Object.prototype.hasOwnProperty.call(KIND_TABLE, String(req.params.kind))) return res.status(400).json({ error: 'Tipo no válido.' });
   if (!UUID_RE.test(req.params.id)) return res.status(400).json({ error: 'Id no válido.' });
   const r = await purgeOne(req.user.id, req.params.id);
   if (!r.deleted) return res.status(404).json({ error: 'No está en la papelera.' });

@@ -112,7 +112,9 @@ export const GUEST_KEY_ERROR = 'Las API keys requieren una cuenta. Crea una cuen
 export function keyPolicy(auth, seg, method) {
   if (!auth || !auth.viaKey) return null;
   if (auth.isGuest) return { status: 403, error: GUEST_KEY_ERROR };
-  const svc = seg[0] || '';
+  // En minúsculas: el enrutador no distingue mayúsculas, así que con «Trash»
+  // o «ApiKeys» la comparación exacta dejaba pasar la petición.
+  const svc = String(seg[0] || '').toLowerCase();
   if (svc === 'apikeys' || svc === 'admin') return { status: 403, error: 'Las API keys no pueden administrar claves ni entrar a la administración. Usa la app con tu sesión.' };
   // La papelera es de la cuenta: restaurar o borrar para siempre se hace desde
   // la app, nunca desde una integración.
@@ -324,7 +326,9 @@ export async function handleCrud(table, columns, id, request, env, method, user,
       // Límite para invitados (proyectos/notas).
       if (user.isGuest && (table === 'projects' || table === 'notes')) {
         const cap = GUEST_LIMITS[table];
-        const { rows: c } = await db.query(`SELECT count(*)::int AS n FROM ${table} WHERE user_id = $1 AND deleted_at IS NULL`, [user.id]);
+        // Cuenta también lo que está en la papelera: si no, bastaba con
+        // borrar y volver a crear para saltarse el tope.
+        const { rows: c } = await db.query(`SELECT count(*)::int AS n FROM ${table} WHERE user_id = $1`, [user.id]);
         if (((c[0] && c[0].n) || 0) >= cap) {
           return json({ error: 'Como invitado puedes crear hasta ' + cap + ' ' + (table === 'projects' ? 'proyectos' : 'notas') + '. Crea una cuenta gratis para tener más.' }, 403);
         }

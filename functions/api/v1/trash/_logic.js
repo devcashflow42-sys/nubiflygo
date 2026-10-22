@@ -13,7 +13,10 @@ import {
   purgeExpired, purgeOne, purgeAll, restoreOne, restoreProject
 } from '../../../_shared/trash.js';
 
-export const handle = dataRoute(async ({ seg, request, env, method, user }) => {
+export const handle = dataRoute(async ({ seg, request, env, method, user, auth }) => {
+  // Doble cierre: keyPolicy ya lo bloquea, pero esto no depende de cómo venga
+  // escrita la ruta en la URL.
+  if (auth && auth.viaKey) return json({ error: 'La papelera solo se usa desde la app con tu sesión.' }, 403);
   const db = getDb(env);
 
   // GET /trash
@@ -31,7 +34,7 @@ export const handle = dataRoute(async ({ seg, request, env, method, user }) => {
   // POST /trash/restore  { kind, id }
   if (seg.length === 2 && seg[1] === 'restore' && method === 'POST') {
     const b = await body(request);
-    const table = KIND_TABLE[String(b.kind || '')];
+    const table = Object.prototype.hasOwnProperty.call(KIND_TABLE, String(b.kind || '')) ? KIND_TABLE[String(b.kind)] : null;
     if (!table) return json({ error: 'kind debe ser project, file, document, note o apikey.' }, 400);
     if (!UUID_RE.test(String(b.id || ''))) return json({ error: 'Id no válido.' }, 400);
     if (table === 'projects') {
@@ -47,7 +50,7 @@ export const handle = dataRoute(async ({ seg, request, env, method, user }) => {
 
   // DELETE /trash/:kind/:id — borrar un elemento de verdad
   if (seg.length === 3 && method === 'DELETE') {
-    if (!KIND_TABLE[seg[1]]) return json({ error: 'Tipo no válido.' }, 400);
+    if (!Object.prototype.hasOwnProperty.call(KIND_TABLE, String(seg[1]))) return json({ error: 'Tipo no válido.' }, 400);
     if (!UUID_RE.test(seg[2])) return json({ error: 'Id no válido.' }, 400);
     const r = await purgeOne(db, env, user.id, seg[2]);
     if (r.remaining) return json({ ok: false, pending: true, remaining: r.remaining,

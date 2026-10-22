@@ -149,5 +149,8 @@
     // (/main, /project, /note, /archive, /apikeys).
     try { if (typeof applyUrl === 'function') applyUrl(location.pathname); } catch (e) {}
     try { if (typeof syncUrl === 'function') syncUrl(true); } catch (e) {}
+    // La papelera se pide ya: su contador del menú y lo que ocupa del plan
+    // tienen que ser correctos sin tener que entrar en la sección.
+    try { if (typeof loadTrash === 'function') loadTrash(); } catch (e) {}
     render();
   })();

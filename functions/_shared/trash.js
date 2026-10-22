@@ -137,6 +137,13 @@ async function purgeMatching(db, env, userId, cond, params) {
     const r2 = await db.query(`DELETE FROM ${t} WHERE user_id = $1${ofProject}`, [userId, ...params]);
     n += (r1.rowCount || 0) + (r2.rowCount || 0);
   }
+  // Las claves que el usuario tiró por su cuenta no deben irse con el proyecto:
+  // su clave externa es CASCADE, así que se desenganchan antes de borrarlo.
+  await db.query(
+    `UPDATE api_keys SET project_id = NULL
+     WHERE user_id = $1 AND deleted_at IS NOT NULL AND NOT trashed_with_project
+       AND project_id IN (SELECT id FROM projects WHERE user_id = $1 AND deleted_at IS NOT NULL${cond})`,
+    [userId, ...params]);
   // 4) Y por último los proyectos.
   const p = await db.query(`DELETE FROM projects WHERE user_id = $1${mine}`, [userId, ...params]);
   return { deleted: n + (p.rowCount || 0), bytes: a.bytes + b.bytes, remaining: 0 };

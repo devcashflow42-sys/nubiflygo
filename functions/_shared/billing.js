@@ -30,7 +30,7 @@ export async function storageLeft(db, userId, isAdmin) {
   if (isAdmin) return Infinity;
   await ensureBilling(db);
   const { rows } = await db.query(
-    `SELECT plan, plan_expires_at, (SELECT COALESCE(sum(size), 0) FROM files WHERE user_id = $1 AND deleted_at IS NULL)::bigint AS used
+    `SELECT plan, plan_expires_at, (SELECT COALESCE(sum(size), 0) FROM files WHERE user_id = $1)::bigint AS used
      FROM users WHERE id = $1`, [userId]);
   if (!rows[0]) return 0;
   const quota = PLAN_QUOTA[effectivePlan(rows[0])] || PLAN_QUOTA.free;

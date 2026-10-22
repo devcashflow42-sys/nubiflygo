@@ -20,7 +20,7 @@ import { storageLeft } from '../billing.js';
 
 const db = { query };
 import { fileFilters, strictFilterError, FILE_SORTS, FILE_TYPE_SQL, FILE_TYPES, FILE_COLS, pageOf, readSelection, fileItem, logActivity, bulkResponse, fmtBytes } from '../lists.js';
-import { trashOne, trashFilesWhere } from '../trash.js';
+import { trashOne, trashFilesWhere, purgeExpired } from '../trash.js';
 
 export const files = Router();
 files.use(requireAuth);
@@ -102,6 +102,7 @@ files.post('/upload', uploadFields, async (req, res, next) => {
     // Espacio del plan: no se puede subir más de lo que cubre.
     const { rows: me } = await query('SELECT email, is_admin FROM users WHERE id = $1', [req.user.id]);
     const isAdmin = !!me[0] && (me[0].is_admin || isAdminEmail(me[0].email));
+    try { await purgeExpired(req.user.id); } catch {}
     if (req.file.size > await storageLeft(db, req.user.id, isAdmin)) {
       return res.status(413).json({ error: 'No tienes espacio suficiente en tu plan para este archivo. Libera espacio o mejora tu plan.', code: 'storage_full' });
     }
@@ -160,7 +161,7 @@ files.patch('/:id', async (req, res, next) => {
     if (typeof b.published !== 'boolean') return res.status(400).json({ error: 'Nada que actualizar.' });
     const { rows } = await query(
       `UPDATE files SET published = $3, published_at = CASE WHEN $3 THEN now() ELSE NULL END, updated_at = now()
-       WHERE id = $1 AND user_id = $2 RETURNING id`,
+       WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL RETURNING id`,
       [req.params.id, req.user.id, b.published]);
     if (!rows[0]) return res.status(404).json({ error: 'Archivo no encontrado.' });
     res.json({ ok: true, published: b.published });

@@ -24,7 +24,7 @@ import { fileHeaders } from '../../../_shared/security.js';
 import { UUID_RE, GUEST_LIMITS, body, pageParams, fmtBytes } from '../../../_shared/util.js';
 import { sha256hex, imageSize, categoryOf, extOf, buildFileItem, cleanMedia } from '../../../_shared/files-util.js';
 import { fileFilters, strictFilterError, FILE_SORTS, FILE_TYPE_SQL, FILE_TYPES, readSelection, logActivity, bulkResponse } from '../../../_shared/bulk.js';
-import { trashOne, trashFilesWhere } from '../../../_shared/trash.js';
+import { trashOne, trashFilesWhere, purgeExpired } from '../../../_shared/trash.js';
 
 const THUMB_MAX = 400 * 1024;   // la portada la genera el navegador (≈ 20–60 KB)
 
@@ -120,7 +120,8 @@ export const handle = dataRoute(async ({ seg, request, env, method, user, scope 
       return json({ error: 'Las subidas necesitan configurar el almacenamiento (AWS_ENDPOINT_URL_S3, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY) en Cloudflare.' }, 503);
     }
     if (user.isGuest) {
-      const { rows: c } = await db.query('SELECT count(*)::int AS n FROM files WHERE user_id = $1 AND deleted_at IS NULL', [user.id]);
+      // La papelera cuenta: si no, se podía borrar y subir otra vez sin fin.
+      const { rows: c } = await db.query('SELECT count(*)::int AS n FROM files WHERE user_id = $1', [user.id]);
       if (((c[0] && c[0].n) || 0) >= GUEST_LIMITS.files) {
         return json({ error: 'Como invitado puedes subir hasta ' + GUEST_LIMITS.files + ' archivos. Crea una cuenta gratis para más.' }, 403);
       }
@@ -132,6 +133,9 @@ export const handle = dataRoute(async ({ seg, request, env, method, user, scope 
     if (file.size > maxBytes) return json({ error: 'El archivo supera el tamaño máximo.' }, 413);
     // Espacio del plan: no se puede subir más de lo que cubre.
     const { rows: me } = await db.query('SELECT email, is_admin FROM users WHERE id = $1', [user.id]);
+    // Antes de medir el cupo se tira lo que ya pasó de los 30 días: si no, una
+    // papelera que nadie abre dejaría el plan lleno para siempre.
+    try { await purgeExpired(db, env, user.id); } catch {}
     if (file.size > await storageLeft(db, user.id, rowIsAdmin(me[0], env))) {
       return json({ error: 'No tienes espacio suficiente en tu plan para este archivo. Libera espacio o mejora tu plan.', code: 'storage_full' }, 413);
     }
@@ -236,7 +240,7 @@ export const handle = dataRoute(async ({ seg, request, env, method, user, scope 
     if (typeof b.published !== 'boolean') return json({ error: 'Nada que actualizar.' }, 400);
     const { rows } = await db.query(
       `UPDATE files SET published = $3, published_at = CASE WHEN $3 THEN now() ELSE NULL END, updated_at = now()
-       WHERE id = $1 AND user_id = $2 RETURNING id`,
+       WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL RETURNING id`,
       [seg[1], user.id, b.published]);
     return rows[0] ? json({ ok: true, published: b.published }) : json({ error: 'Archivo no encontrado.' }, 404);
   }

@@ -78,9 +78,11 @@
         el('h2', {}, 'Papelera'),
         (function () {
           const p = el('p');
-          p.innerHTML = 'Lo que borras se guarda <b>' + (store.trashDays || 30) + ' días</b> y luego se elimina solo.'
-            + '<span class="sec-hero-extra"> Mientras tanto puedes devolverlo a su sitio. '
-            + 'Ya no ocupa espacio de tu plan.</span>';
+          const ocupa = Number(store.trashBytes) || 0;
+          p.innerHTML = 'Lo que borras se guarda <b>' + (store.trashDays || 30) + ' días</b> y luego se elimina solo'
+            + (ocupa ? '; ocupa <b>' + fmtSize(ocupa) + '</b> de tu plan' : '') + '.'
+            + '<span class="sec-hero-extra"> Mientras tanto puedes devolverlo a su sitio; '
+            + 'vacíala para liberar el espacio.</span>';
           return p;
         })()
       ]),

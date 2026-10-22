@@ -154,13 +154,17 @@
     { id: 'video', label: 'Videos', color: '#5bb8e8' },
     { id: 'audio', label: 'Música', color: '#35b98f' },
     { id: 'doc', label: 'Documentos', color: '#f2b92c' },
-    { id: 'other', label: 'Otros', color: '#8b5cf6' }
+    { id: 'other', label: 'Otros', color: '#8b5cf6' },
+    // Lo borrado sigue ocupando plan hasta que se va de la papelera; se pinta
+    // aparte para que el total de la tarjeta sea el mismo que bloquea las
+    // subidas.
+    { id: 'trash', label: 'Papelera', color: '#6b6a63' }
   ];
   const ICN_CLOUD_S = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.5 19H8a5.5 5.5 0 1 1 1.06-10.9A6.5 6.5 0 0 1 21 11.5 3.75 3.75 0 0 1 17.5 19z"/></svg>';
   function fmtQuota(b) { return b >= 1024 * GB ? (b / (1024 * GB)) + ' TB' : (b / GB) + ' GB'; }
   // Uso por tipo con los archivos que ya conoce la página (los de proyectos incluidos).
   function storageUsage() {
-    const by = { image: 0, video: 0, audio: 0, doc: 0, other: 0 };
+    const by = { image: 0, video: 0, audio: 0, doc: 0, other: 0, trash: 0 };
     let total = 0;
     (typeof store !== 'undefined' && Array.isArray(store.files) ? store.files : []).forEach(f => {
       const n = Number(f.size) || 0;
@@ -168,6 +172,9 @@
       by[k === 'pdf' ? 'doc' : k === 'archive' ? 'other' : (by[k] != null ? k : 'other')] += n;
       total += n;
     });
+    const enPapelera = Number(typeof store !== 'undefined' ? store.trashBytes : 0) || 0;
+    by.trash = enPapelera;
+    total += enPapelera;
     return { by, total };
   }
   let lastUser = null;

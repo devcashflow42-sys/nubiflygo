@@ -13,7 +13,10 @@ import { dataRoute, ensureUsageTable, ownsProject, GUEST_KEY_ERROR } from '../..
 import { ensureSecurityColumns } from '../../../_shared/security.js';
 import { UUID_RE, body } from '../../../_shared/util.js';
 
-export const handle = dataRoute(async ({ seg, request, env, method, user }) => {
+export const handle = dataRoute(async ({ seg, request, env, method, user, auth }) => {
+  // Doble cierre, igual que la papelera: las claves no se administran con una
+  // clave, venga como venga escrita la ruta.
+  if (auth && auth.viaKey) return json({ error: 'Las API keys no pueden administrar claves. Usa la app con tu sesión.' }, 403);
   const db = getDb(env);
   await ensureSecurityColumns(db);
   const id = seg[1];
