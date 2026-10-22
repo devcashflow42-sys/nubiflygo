@@ -79,7 +79,13 @@
   function viewTrash() {
     const v = $('#view');
     v.innerHTML = '';
-    v.appendChild(pageToolbar({ back: () => go('dashboard'), menu: () => openMobile(), title: 'Papelera' }));
+    const hayAlgo = Array.isArray(store.trash) && store.trash.length > 0;
+    v.appendChild(pageToolbar({
+      back: () => go('dashboard'), menu: () => openMobile(), title: 'Papelera',
+      actions: hayAlgo ? [
+        el('button', { class: 'btn btn-sm', onclick: emptyTrash, html: TR_ICN.trash + '<span style="margin-left:5px">Vaciar</span>' })
+      ] : []
+    }));
 
     // La papelera se pide la primera vez que se entra (como las demás listas).
     if (!trashLoaded && !trashLoading) loadTrash();
@@ -88,29 +94,15 @@
     const q = (state.search || '').trim().toLowerCase();
     const shown = q ? items.filter(x => (x.title || '').toLowerCase().includes(q)) : items;
 
-    // Banner de la sección: dice el plazo y lo que ocupa, y deja vaciarla.
+    // Título y, debajo, el plazo y lo que ocupa: igual que Archivos o API keys.
+    v.appendChild(el('div', { class: 'board-head' }, [ el('h2', {}, 'Papelera') ]));
+    const aviso = el('p', { class: 'subtitle', style: { padding: '0 20px 10px', margin: '-6px 0 0', color: 'var(--fg-muted)', fontSize: '13.5px' } });
+    const ocupa = Number(store.trashBytes) || 0;
+    aviso.textContent = 'Lo que borras se guarda ' + (store.trashDays || 30) + ' días y luego se elimina solo'
+      + (ocupa ? '; ocupa ' + fmtSize(ocupa) + ' de tu plan' : '')
+      + '. Mientras tanto puedes devolverlo a su sitio.';
+    v.appendChild(aviso);
     if (items.length) v.appendChild(el('div', { class: 'board-tools', style: { paddingTop: '14px' } }, [ searchInput('Buscar en la papelera...') ]));
-    const banner = el('div', { class: 'sec-hero is-trash' }, [
-      el('span', { class: 'sec-hero-ico', html: TR_ICN.trash }),
-      el('div', { class: 'sec-hero-info' }, [
-        el('h2', {}, 'Papelera'),
-        (function () {
-          const p = el('p');
-          const ocupa = Number(store.trashBytes) || 0;
-          p.innerHTML = 'Lo que borras se guarda <b>' + (store.trashDays || 30) + ' días</b> y luego se elimina solo'
-            + (ocupa ? '; ocupa <b>' + fmtSize(ocupa) + '</b> de tu plan' : '') + '.'
-            + '<span class="sec-hero-extra"> Mientras tanto puedes devolverlo a su sitio; '
-            + 'vacíala para liberar el espacio.</span>';
-          return p;
-        })()
-      ]),
-      items.length ? el('div', { class: 'sec-hero-acts' }, [
-        el('button', { class: 'ph-btn', onclick: emptyTrash }, [
-          el('span', { html: TR_ICN.trash }), el('span', {}, 'Vaciar papelera')
-        ])
-      ]) : null
-    ].filter(Boolean));
-    v.insertBefore(banner, v.querySelector('.board-tools'));
 
     const body = el('div', { class: 'board-body' });
     if (cargando) {

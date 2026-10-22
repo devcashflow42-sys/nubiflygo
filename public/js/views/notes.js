@@ -26,16 +26,12 @@
     if (state.noteId) return viewNoteEditor();
     const v = $('#view');
     v.innerHTML = '';
-    v.appendChild(pageToolbar({ back: () => go('dashboard'), title: 'Notas' }));
-    v.appendChild(sectionHero({
-      variant: 'notes',
-      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v12l-4 4H4z"/><path d="M20 16h-4v4"/></svg>',
+    v.appendChild(pageToolbar({
+      back: () => go('dashboard'),
       title: 'Notas',
-      summary: notesLoaded
-        ? (store.notes.length ? store.notes.length + (store.notes.length === 1 ? ' nota' : ' notas') : 'Todavía no tienes ninguna')
-        : 'Cargando…',
-      detail: 'Apuntes rápidos, con color, dentro o fuera de un proyecto.',
-      action: { label: 'Nueva nota', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>', onClick: () => createNote() }
+      actions: [
+        el('button', { class: 'btn btn-primary btn-sm', onclick: () => createNote(), html: ICON_PLUS_SM + '<span style="margin-left:4px">Nueva</span>' })
+      ]
     }));
     if (!notesLoaded) {
       loadNotes();

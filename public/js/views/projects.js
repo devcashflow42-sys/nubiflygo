@@ -98,7 +98,10 @@
     v.innerHTML = '';
     v.appendChild(pageToolbar({
       back: () => go('dashboard'),
-      title: 'Proyectos'
+      title: 'Proyectos',
+      actions: [
+        el('button', { class: 'btn btn-primary btn-sm', onclick: () => openProjectModal(), html: ICON_PLUS_SM + '<span style="margin-left:4px">Nuevo</span>' })
+      ]
     }));
 
     if (!projectsLoaded) {
@@ -108,28 +111,6 @@
       ]));
       return;
     }
-    // Banner de la sección: dice de un vistazo cuánto hay y deja crear uno.
-    const nP = store.projects.length;
-    const nArch = (store.files || []).filter(f => f.project_id).length;
-    v.appendChild(el('div', { class: 'sec-hero' }, [
-      el('span', { class: 'sec-hero-ico', html: PC_ICN.folder }),
-      el('div', { class: 'sec-hero-info' }, [
-        el('h2', {}, 'Proyectos'),
-        (function () {
-          const t = el('p');
-          // El número de archivos solo cuando de verdad se sabe.
-          const sabe = typeof filesLoaded === 'undefined' || filesLoaded;
-          t.innerHTML = (nP ? nP + (nP === 1 ? ' proyecto' : ' proyectos') + (sabe ? ' · ' + nArch + (nArch === 1 ? ' archivo' : ' archivos') : '') : 'Todavía no tienes ninguno')
-            + '<span class="sec-hero-extra"><br>Reúne aquí tus archivos, documentos y notas por tema.</span>';
-          return t;
-        })()
-      ]),
-      el('div', { class: 'sec-hero-acts' }, [
-        el('button', { class: 'ph-btn', onclick: () => openProjectModal() }, [
-          el('span', { html: PC_ICN.plus }), el('span', {}, 'Nuevo proyecto')
-        ])
-      ])
-    ]));
     v.appendChild(el('div', { class: 'board-tools', style: { paddingTop: '14px' } }, [
       searchInput('Buscar proyectos…')
     ]));

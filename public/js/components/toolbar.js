@@ -1,34 +1,6 @@
 'use strict';
 /* components/toolbar.js — pageToolbar: barra superior propia de cada vista (flecha, título, acciones). */
 
-  /* Banner de sección: el mismo en Proyectos, Archivos, Notas, API keys y
-     Papelera. Recibe el icono, el título, el resumen (texto corto), el detalle
-     (se esconde en el teléfono) y, si hay, un botón de acción.
-     Va a juego con la portada de un proyecto: mismo degradado, título en serif
-     y botón redondeado. */
-  function sectionHero(cfg) {
-    const info = el('div', { class: 'sec-hero-info' }, [ el('h2', {}, cfg.title) ]);
-    const p = el('p');
-    p.textContent = cfg.summary || '';
-    if (cfg.detail) {
-      const extra = el('span', { class: 'sec-hero-extra' });
-      extra.textContent = ' ' + cfg.detail;
-      p.appendChild(extra);
-    }
-    info.appendChild(p);
-    const hero = el('div', { class: 'sec-hero' + (cfg.variant ? ' is-' + cfg.variant : '') }, [
-      el('span', { class: 'sec-hero-ico', html: cfg.icon }),
-      info,
-      cfg.action ? el('div', { class: 'sec-hero-acts' }, [
-        el('button', { class: 'ph-btn', onclick: cfg.action.onClick }, [
-          el('span', { html: cfg.action.icon }), el('span', {}, cfg.action.label)
-        ])
-      ]) : null
-    ].filter(Boolean));
-    return hero;
-  }
-  window.sectionHero = sectionHero;
-
   function pageToolbar(cfg) {
     const bar = el('div', { class: 'project-toolbar' });
     // Back ("up") arrow sits leftmost on every view that has one, so it reads

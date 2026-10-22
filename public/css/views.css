@@ -1000,52 +1000,6 @@ body.mp-paused .fb-now i { animation-play-state: paused; }
   }
 }
 
-  /* ───────── Banner de sección (Proyectos, Papelera) ─────────
-     Mismo lenguaje que la portada de un proyecto: degradado, título en serif y
-     botón redondeado. En Android se recorta el texto secundario para que no se
-     coma un cuarto de la pantalla (medido: pasaba de 191px a 142px). */
-  .sec-hero {
-    position: relative; overflow: hidden;
-    display: flex; gap: 16px; align-items: center;
-    margin: 16px 20px 2px; padding: 18px 20px; border-radius: 22px;
-    color: #fff; min-height: 104px;
-    background: linear-gradient(135deg, var(--sh-a, #2b5fff), var(--sh-b, #1a3bb8) 55%, var(--sh-c, #141432));
-  }
-  .sec-hero::after {
-    content: ''; position: absolute; inset: 0; pointer-events: none;
-    background: linear-gradient(180deg, transparent 40%, rgba(0, 0, 0, .28));
-  }
-  .sec-hero > * { position: relative; z-index: 1; }
-  .sec-hero.is-trash { --sh-a: #596273; --sh-b: #343a46; --sh-c: #15161a; }
-  .sec-hero-ico {
-    width: 56px; height: 56px; border-radius: 15px; flex: none;
-    display: grid; place-items: center;
-    background: rgba(255, 255, 255, .16); border: 1px solid rgba(255, 255, 255, .24);
-  }
-  .sec-hero-ico svg { width: 27px; height: 27px; }
-  .sec-hero-info { flex: 1; min-width: 0; }
-  .sec-hero h2 {
-    margin: 0 0 4px; font-family: 'Instrument Serif', serif; font-weight: 400;
-    font-size: 27px; line-height: 1.1; letter-spacing: -.01em;
-  }
-  .sec-hero p { margin: 0; font-size: 13px; opacity: .9; line-height: 1.45; max-width: 580px; }
-  .sec-hero p b { font-weight: 600; opacity: 1; }
-  .sec-hero-acts { display: flex; gap: 8px; flex-wrap: wrap; }
-  .sec-hero-extra { display: inline; }
-  @media (max-width: 720px) {
-    .sec-hero { flex-wrap: wrap; gap: 10px 12px; margin: 12px 14px 2px; padding: 14px; min-height: 0; }
-    .sec-hero h2 { font-size: 21px; margin-bottom: 2px; }
-    .sec-hero p { font-size: 12.5px; line-height: 1.4; }
-    .sec-hero-extra { display: none; }
-    .sec-hero-ico { width: 44px; height: 44px; border-radius: 12px; }
-    .sec-hero-ico svg { width: 21px; height: 21px; }
-    .sec-hero-acts { flex-basis: 100%; }
-    /* .ph-btn esconde su texto en móvil (regla del héroe del proyecto); aquí es
-       la acción principal de la sección, así que se mantiene, y a 44px. */
-    .sec-hero-acts .ph-btn { flex: 1; width: auto; height: 44px; padding: 0 16px; justify-content: center; }
-    .sec-hero-acts .ph-btn span { display: inline; }
-  }
-
   /* ───────── Papelera ───────── */
   .tr-list { display: flex; flex-direction: column; gap: 8px; }
   .tr-row {
@@ -1156,9 +1110,3 @@ body.mp-paused .fb-now i { animation-play-state: paused; }
   }
   /* Eligiendo: la fila deja su columna de botones a la barra de arriba. */
   .tr-row.is-picking { grid-template-columns: 18px 34px minmax(0, 1.5fr) minmax(0, 1.4fr) auto; }
-
-  /* Un color por sección, para distinguirlas de un vistazo sin cambiar nada
-     más. Proyectos se queda con el azul de la marca (el valor por defecto). */
-  .sec-hero.is-files { --sh-a: #0e7a8a; --sh-b: #0b4450; --sh-c: #111a20; }
-  .sec-hero.is-notes { --sh-a: #b7791f; --sh-b: #6b4612; --sh-c: #1a1510; }
-  .sec-hero.is-keys  { --sh-a: #5b3cc4; --sh-b: #30205f; --sh-c: #141126; }
