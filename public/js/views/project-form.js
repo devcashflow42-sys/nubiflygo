@@ -12,7 +12,9 @@
     const existing = state.editingProject ? store.projects.find(p => p.id === state.editingProject) : null;
     let name = existing?.name || '';
     let description = existing?.description || '';
-    let color = existing?.color || PROJECT_COLORS[0];
+    let color = safeColor(existing?.color);
+    // Icono elegido; null = «Auto» (el icono se pone solo según lo que suba).
+    let icon = (existing && projectIcon(existing)) ? existing.icon : null;
     let visibility = existing?.visibility || 'private';
     if (visibility === 'team') visibility = 'private';
 
@@ -51,24 +53,63 @@
     descSec.appendChild(descInp);
     form.appendChild(descSec);
 
-    // Color
-    const colorSec = el('div', { class: 'form-section' });
-    colorSec.appendChild(el('label', { class: 'form-section-label' }, 'Color'));
-    const picker = el('div', { class: 'color-picker' });
+    // Icono y color (opcional). Una vista previa enseña cómo quedará el
+    // proyecto; debajo, los iconos y los colores. Sin tocar nada se queda en
+    // «Auto»: el icono se pone solo según lo que suba, como hasta ahora.
+    const identSec = el('div', { class: 'form-section' });
+    identSec.appendChild(el('label', { class: 'form-section-label', id: 'pf-ident' }, 'Icono y color'));
+    identSec.appendChild(el('span', { class: 'form-section-hint' }, 'Opcional. Si lo dejas en «Auto», el icono se pone solo según lo que subas.'));
+    const prevTile = el('span', { class: 'pf-prev-tile', 'aria-hidden': 'true' });
+    const prevName = el('strong', { class: 'pf-prev-name' });
+    const prevCap = el('span', { class: 'pf-prev-cap' });
+    const icons = el('div', { class: 'pf-icons', role: 'group', 'aria-labelledby': 'pf-ident' });
+    const swatches = el('div', { class: 'color-picker pf-colors', role: 'group', 'aria-label': 'Color del proyecto' });
+    // Icono que se ve con «Auto»: el de su categoría si ya tiene contenido, o el
+    // genérico de un proyecto nuevo (el mismo que enseña su encabezado).
+    function autoIcon() {
+      const items = existing ? projectItems(existing) : [];
+      const cat = CAT[projectCategory(items)];
+      return cat ? cat.icon : KIND_ICON_LIB('mixed');
+    }
+    function paintPreview() {
+      const chosen = PROJECT_ICONS.find(i => i.id === icon) || null;
+      prevTile.style.background = color;
+      prevTile.innerHTML = chosen ? chosen.svg : autoIcon();
+      prevName.textContent = (titleInp.value || '').trim() || 'Tu proyecto';
+      const ci = PROJECT_COLORS.indexOf(color);
+      prevCap.textContent = (chosen ? chosen.label : 'Auto · según lo que subas') + (ci > -1 ? ' · ' + PROJECT_COLOR_NAMES[ci] : '');
+    }
+    function renderIcons() {
+      icons.innerHTML = '';
+      const opt = (id, label, svg, extra) => el('button', {
+        type: 'button', class: 'pf-icon' + (extra || ''), title: label, 'aria-label': label,
+        'aria-pressed': String(icon === id), html: svg,
+        onclick: () => { icon = id; renderIcons(); paintPreview(); }
+      });
+      icons.appendChild(opt(null, 'Auto (según lo que subas)', LIB_ICN.spark, ' is-auto'));
+      PROJECT_ICONS.forEach(i => icons.appendChild(opt(i.id, i.label, i.svg)));
+    }
     function renderPicker() {
-      picker.innerHTML = '';
-      PROJECT_COLORS.forEach(c => {
-        picker.appendChild(el('button', {
+      swatches.innerHTML = '';
+      PROJECT_COLORS.forEach((c, k) => {
+        swatches.appendChild(el('button', {
           type: 'button', class: 'color-swatch',
-          'aria-pressed': String(c === color),
+          'aria-pressed': String(c === color), 'aria-label': PROJECT_COLOR_NAMES[k], title: PROJECT_COLOR_NAMES[k],
           style: { background: c },
-          onclick: () => { color = c; renderPicker(); }
+          onclick: () => { color = c; renderPicker(); paintPreview(); }
         }));
       });
     }
+    identSec.appendChild(el('div', { class: 'pf-ident' }, [
+      el('div', { class: 'pf-prev' }, [ prevTile, el('div', { class: 'pf-prev-txt' }, [ prevName, prevCap ]) ]),
+      icons,
+      swatches
+    ]));
+    renderIcons();
     renderPicker();
-    colorSec.appendChild(picker);
-    form.appendChild(colorSec);
+    paintPreview();
+    titleInp.addEventListener('input', paintPreview);
+    form.appendChild(identSec);
 
     // Visibility
     const visSec = el('div', { class: 'form-section' });
@@ -117,11 +158,12 @@
       if (!t) { titleInp.focus(); toast('Añade un título'); return; }
       if (existing) {
         try {
-          await apiPatch('/projects/' + existing.id, { name: t, description, color });
+          await apiPatch('/projects/' + existing.id, { name: t, description, color, icon });
         } catch (e) { toast(e.message || 'No se pudo guardar'); return; }
         existing.name = t;
         existing.description = description;
         existing.color = color;
+        existing.icon = icon;
         existing.visibility = visibility;
         existing.updatedAt = Date.now();
         toast('Proyecto actualizado');
@@ -130,11 +172,12 @@
       } else {
         let item;
         try {
-          const d = await apiPost('/projects', { name: t, description, color });
+          const d = await apiPost('/projects', icon ? { name: t, description, color, icon } : { name: t, description, color });
           item = d.item;
         } catch (e) { toast(e.message || 'No se pudo crear el proyecto'); return; }
         const p = {
-          id: item.id, name: item.name, description: item.description || '', color: item.color || color,
+          id: item.id, name: item.name, description: item.description || '', color: safeColor(item.color || color),
+          icon: item.icon || null,
           visibility, members: [], documents: [],
           createdAt: item.created_at ? Date.parse(item.created_at) : Date.now(),
           updatedAt: item.updated_at ? Date.parse(item.updated_at) : Date.now()

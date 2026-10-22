@@ -101,7 +101,6 @@
   /* ───────────── Piezas visuales ───────────── */
   const LIB_ICN = {
     play: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="7 4 20 12 7 20 7 4"/></svg>',
-    shuffle: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>',
     upload: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 8.5h.5a4 4 0 0 1 .5 7.97"/><polyline points="9 14 12 11 15 14"/><line x1="12" y1="11" x2="12" y2="20"/></svg>',
     plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
     globe: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>',
@@ -293,11 +292,15 @@
   function projectHero(p, items, actions) {
     const cat = projectCategory(items);
     const meta = CAT[cat] || CAT.mixed;
-    const thumbs = items.map(libThumb).filter(Boolean).slice(0, 4);
+    // Icono elegido por el usuario: gana a las portadas y a la categoría
+    // automática (es una elección explícita). Sin elegir («Auto»), como siempre.
+    const chosen = projectIcon(p);
+    const thumbs = chosen ? [] : items.map(libThumb).filter(Boolean).slice(0, 4);
     const cover = el('div', { class: 'ph-cover' + (thumbs.length < 4 ? ' is-solid' : '') });
-    if (thumbs.length >= 4) thumbs.forEach(u => { const i = el('img', { src: u, alt: '', loading: 'lazy', decoding: 'async' }); i.addEventListener('error', () => { i.style.visibility = 'hidden'; }); cover.appendChild(i); });
+    if (chosen) { cover.style.background = safeColor(p.color); cover.appendChild(el('span', { class: 'ph-cover-ico', html: chosen.svg })); }
+    else if (thumbs.length >= 4) thumbs.forEach(u => { const i = el('img', { src: u, alt: '', loading: 'lazy', decoding: 'async' }); i.addEventListener('error', () => { i.style.visibility = 'hidden'; }); cover.appendChild(i); });
     else if (thumbs.length) { const i = el('img', { src: thumbs[0], alt: '', decoding: 'async' }); i.addEventListener('error', () => i.remove()); cover.style.background = libGrad(p.name); cover.appendChild(i); }
-    else { cover.style.background = meta.hero ? libGrad(p.name) : (p.color || '#6b6a63'); cover.appendChild(el('span', { class: 'ph-cover-ico', html: meta.icon })); }
+    else { cover.style.background = meta.hero ? libGrad(p.name) : safeColor(p.color); cover.appendChild(el('span', { class: 'ph-cover-ico', html: meta.icon })); }
 
     let summary;
     if (cat === 'music') {
@@ -309,7 +312,9 @@
       summary = [ c.image && c.image + (c.image === 1 ? ' foto' : ' fotos'), c.video && c.video + (c.video === 1 ? ' video' : ' videos'), c.audio && c.audio + (c.audio === 1 ? ' canción' : ' canciones'), c.doc && c.doc + (c.doc === 1 ? ' documento' : ' documentos') ];
       if (!items.length) summary = [ 'Vacío · sube archivos o crea un documento' ];
     }
-    const bg = meta.hero || ('linear-gradient(135deg,' + (p.color || '#2b5fff') + ',' + 'color-mix(in srgb,' + (p.color || '#2b5fff') + ' 45%, #111) 60%, #121218)');
+    // Con icono elegido el fondo va con su color; si no, el de la categoría.
+    const c = safeColor(p.color);
+    const bg = (!chosen && meta.hero) || ('linear-gradient(135deg,' + c + ',' + 'color-mix(in srgb,' + c + ' 45%, #111) 60%, #121218)');
     return el('section', { class: 'ph', style: { background: bg }, 'aria-label': 'Proyecto ' + p.name }, [
       cover,
       el('div', { class: 'ph-info' }, [
@@ -326,7 +331,7 @@
     ]);
   }
   function heroBtn(label, icon, onclick, cls) {
-    return el('button', { type: 'button', class: 'ph-btn' + (cls ? ' ' + cls : ''), onclick, 'aria-label': label, title: label, html: icon + (cls === 'is-icon' || cls === 'ph-play' ? '' : '<span>' + esc(label) + '</span>') });
+    return el('button', { type: 'button', class: 'ph-btn' + (cls ? ' ' + cls : ''), onclick, 'aria-label': label, title: label, html: icon + (cls === 'is-icon' ? '' : '<span>' + esc(label) + '</span>') });
   }
 
   /* ───────────── Archivos: colecciones inteligentes ───────────── */
@@ -435,12 +440,19 @@
     ]);
   }
 
-  // Miniatura de la tarjeta de proyecto: mosaico de portadas o icono de su categoría.
+  // Miniatura de la tarjeta de proyecto: el icono que eligió el usuario sobre su
+  // color o, si está en «Auto», mosaico de portadas o icono de su categoría.
   function projectThumb(p) {
+    const chosen = projectIcon(p);
+    if (chosen) {
+      const box = el('span', { class: 'pc-thumb', 'aria-hidden': 'true', style: { background: safeColor(p.color) } });
+      box.appendChild(el('span', { class: 'pc-thumb-ico', html: chosen.svg }));
+      return box;
+    }
     const items = projectItems(p);
     const thumbs = items.map(libThumb).filter(Boolean).slice(0, 4);
     const cat = CAT[projectCategory(items)] || null;
-    const box = el('span', { class: 'pc-thumb' + (thumbs.length >= 4 ? ' is-grid' : ''), 'aria-hidden': 'true', style: { background: thumbs.length ? libGrad(p.id) : (cat ? cat.color : (p.color || 'var(--fg-faint)')) } });
+    const box = el('span', { class: 'pc-thumb' + (thumbs.length >= 4 ? ' is-grid' : ''), 'aria-hidden': 'true', style: { background: thumbs.length ? libGrad(p.id) : (cat ? cat.color : safeColor(p.color)) } });
     if (thumbs.length >= 4) thumbs.forEach(u => { const i = el('img', { src: u, alt: '', loading: 'lazy', decoding: 'async' }); i.addEventListener('error', () => { i.style.visibility = 'hidden'; }); box.appendChild(i); });
     else if (thumbs.length) { const i = el('img', { src: thumbs[0], alt: '', loading: 'lazy', decoding: 'async' }); i.addEventListener('error', () => i.remove()); box.appendChild(i); }
     else box.appendChild(el('span', { class: 'pc-thumb-ico', html: cat ? cat.icon : KIND_ICON_LIB('mixed') }));

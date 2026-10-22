@@ -48,6 +48,45 @@
   }
   .form-title-input::placeholder { color: var(--fg-faint); font-style: italic; }
   .form-title-input:focus { border-color: var(--fg); }
+
+  /* ─── Icono y color del proyecto ───
+     Una tarjeta: arriba la vista previa (el cuadrado tal como saldrá en el
+     encabezado y en las tarjetas), debajo los iconos y los colores. El color se
+     ve en un solo sitio, la vista previa; el icono elegido solo lleva un aro. */
+  .pf-ident {
+    border: 1px solid var(--border); border-radius: 14px;
+    background: var(--surface-2); padding: 14px;
+  }
+  .pf-prev { display: flex; align-items: center; gap: 14px; padding-bottom: 14px; margin-bottom: 14px; border-bottom: 1px solid var(--border); }
+  .pf-prev-tile {
+    width: 56px; height: 56px; border-radius: 14px; flex: 0 0 auto;
+    display: grid; place-items: center; color: #fff;
+    box-shadow: 0 8px 18px -10px rgba(0, 0, 0, .45);
+    transition: background .2s ease;
+  }
+  .pf-prev-tile svg { width: 26px; height: 26px; }
+  .pf-prev-txt { display: flex; flex-direction: column; min-width: 0; gap: 2px; }
+  .pf-prev-name {
+    font-family: 'Instrument Serif', serif; font-weight: 400; font-size: 22px; line-height: 1.15;
+    color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .pf-prev-cap { font-size: 12.5px; color: var(--fg-muted); }
+  .pf-icons { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 6px; }
+  @media (max-width: 560px) { .pf-icons { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+  .pf-icon {
+    aspect-ratio: 1; min-height: 40px; border-radius: 11px; cursor: pointer;
+    display: grid; place-items: center;
+    background: var(--surface); color: var(--fg-muted);
+    border: 1px solid var(--border);
+    transition: color .15s, border-color .15s, box-shadow .15s, transform .1s;
+  }
+  .pf-icon svg { width: 19px; height: 19px; }
+  .pf-icon:hover { color: var(--fg); border-color: var(--border-strong); }
+  .pf-icon:active { transform: scale(.95); }
+  .pf-icon[aria-pressed="true"] { color: var(--fg); border-color: var(--fg); box-shadow: 0 0 0 1px var(--fg); }
+  .pf-icon.is-auto svg { width: 17px; height: 17px; }
+  .pf-colors { margin-top: 14px; }
+  @media (prefers-reduced-motion: reduce) { .pf-prev-tile, .pf-icon { transition: none; } }
   .form-area {
     width: 100%; min-height: 120px;
     padding: 14px 16px;

@@ -27,8 +27,22 @@ import {
 export const projects = Router();
 projects.use(requireAuth);
 
-const COLS = ['name', 'description', 'color'];
-const SELECT = 'id, name, description, color, created_at, updated_at';
+// Columna del icono elegido (NULL = «Auto»). Copia de
+// functions/api/v1/projects/_logic.js (misma lógica): primero una lectura, y el
+// ALTER TABLE solo si de verdad falta la columna.
+let iconColumnReady = false;
+async function ensureProjectIcon() {
+  if (iconColumnReady) return;
+  const { rows } = await query(
+    `SELECT 1 FROM information_schema.columns
+     WHERE table_schema = current_schema() AND table_name = 'projects' AND column_name = 'icon'`);
+  if (!rows.length) await query('ALTER TABLE projects ADD COLUMN IF NOT EXISTS icon TEXT');
+  iconColumnReady = true;
+}
+projects.use((req, res, next) => { ensureProjectIcon().then(() => next(), next); });
+
+const COLS = ['name', 'description', 'color', 'icon'];
+const SELECT = 'id, name, description, color, icon, created_at, updated_at';
 const byNewest = (a, b) => (Date.parse(b.created_at) || 0) - (Date.parse(a.created_at) || 0);
 const fileListItem = (r) => Object.assign(fileItem(r), { kind: 'file' });
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
@@ -37,7 +51,7 @@ const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).cat
 projects.get('/', wrap(async (req, res) => {
   const uid = req.user.id;
   const { rows } = await query(
-    `SELECT p.id, p.name, p.description, p.color, p.created_at, p.updated_at,
+    `SELECT p.id, p.name, p.description, p.color, p.icon, p.created_at, p.updated_at,
        (SELECT count(*) FROM documents d WHERE d.project_id = p.id AND d.user_id = $1)::int AS doc_count,
        (SELECT count(*) FROM files f WHERE f.project_id = p.id AND f.user_id = $1)::int AS file_count,
        (SELECT coalesce(sum(size), 0) FROM files f WHERE f.project_id = p.id AND f.user_id = $1)::bigint AS bytes,
@@ -57,7 +71,7 @@ projects.get('/', wrap(async (req, res) => {
   const items = rows.map(r => {
     const bytes = Number(r.bytes) || 0;
     const it = {
-      id: r.id, name: r.name, description: r.description || '', color: r.color || '',
+      id: r.id, name: r.name, description: r.description || '', color: r.color || '', icon: r.icon || null,
       created_at: r.created_at, updated_at: r.updated_at, doc_count: r.doc_count, file_count: r.file_count,
       stats: { documents: r.doc_count, files: r.file_count, total_items: r.doc_count + r.file_count,
         published: r.published_count, api_keys: r.api_keys, storage: { bytes, formatted: fmtBytes(bytes) } },
@@ -145,7 +159,7 @@ projects.get('/:id', wrap(async (req, res) => {
   const bytes = Number(st.bytes) || 0;
   res.json({ success: true, status: 200, message: '', error: null, data: { item: {
     id: p.id, owner_id: p.user_id, name: p.name, description: p.description || '', color: p.color || '',
-    icon: 'folder-kanban', banner: { enabled: false, url: null }, visibility: 'private', status: 'active',
+    icon: p.icon || null, banner: { enabled: false, url: null }, visibility: 'private', status: 'active',
     stats: { documents: st.documents, files: st.files, total_items: st.documents + st.files,
       published: st.pub_docs + st.pub_files, members: 0, api_keys: st.api_keys, storage: { bytes, formatted: fmtBytes(bytes) } },
     permissions: { can_view: true, can_edit: true, can_delete: true, can_upload: true, can_publish: true },

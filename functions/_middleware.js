@@ -29,8 +29,8 @@ async function androidGate(request, env, path) {
   return new Response(JSON.stringify(Object.assign({ success: false }, hit.body)), { status: hit.status, headers: h });
 }
 
-const PAGES = { '/': 'main.html', '/login': 'login.html', '/main': 'home.html' };
-const CLEAN = { '/main.html': '/', '/index.html': '/', '/login.html': '/login', '/home.html': '/main' };
+const PAGES = { '/': 'main.html', '/login': 'login.html', '/main': 'home.html', '/bienvenida': 'bienvenida.html' };
+const CLEAN = { '/main.html': '/', '/index.html': '/', '/login.html': '/login', '/home.html': '/main', '/bienvenida.html': '/bienvenida' };
 
 // Secciones de la app (SPA): todas sirven home.html para que la entrada directa
 // y la recarga abran la sección correcta. El front (nav.js) ajusta la vista

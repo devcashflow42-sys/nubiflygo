@@ -27,8 +27,14 @@ apikeys.get('/', async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+// Copia de functions/_shared/api.js (mismo texto que en Cloudflare).
+const GUEST_KEY_ERROR = 'Las API keys requieren una cuenta. Crea una cuenta gratis para generarlas y usarlas.';
+
 apikeys.post('/', async (req, res, next) => {
   try {
+    // Las cuentas de invitado no generan claves (son temporales y sin verificar).
+    const { rows: me } = await query('SELECT is_guest FROM users WHERE id = $1', [req.user.id]);
+    if (me[0] && me[0].is_guest) return res.status(403).json({ error: GUEST_KEY_ERROR });
     const b = req.body || {};
     const name = String(b.name || 'Clave').slice(0, 80);
     // Permisos admitidos: 'all', 'write' (escritura restringida de la app) y 'read'.

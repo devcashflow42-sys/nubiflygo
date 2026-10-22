@@ -72,13 +72,24 @@ Claves inválidas, vencidas o ausentes → **401**.
 | `POST /account/login` | `{email,password}` → inicia sesión (cookie) | pública |
 | `POST /account/logout` | Cierra sesión | cookie |
 | `GET  /account/profile` | Datos del usuario | cookie o key |
-| `PATCH /account/profile` | `{name?, language?, current_password?, new_password?}` → actualiza el perfil (cambiar la contraseña cierra las demás sesiones) | cookie |
+| `PATCH /account/profile` | `{name?, language?, interests?, birthday?, onboarded?, ui_prefs?, current_password?, new_password?}` → actualiza el perfil (cambiar la contraseña cierra las demás sesiones) | cookie |
 | `GET  /account/avatar` | Foto de perfil subida (imagen) | cookie o key |
 | `POST /account/avatar` | `{image: "data:image/jpeg;base64,…"}` (JPG, PNG, WEBP o GIF, máx. 2 MB) → guarda la foto | cookie |
 | `DELETE /account/avatar` | Quita la foto de perfil | cookie |
 
 `GET /account/profile` incluye `plan`, `plan_label` y `has_paid_plan`
 (`false` si el usuario todavía no tiene un plan de pago: Gratis, invitado o administrador).
+
+**Bienvenida de la primera vez** (los devuelve también `GET /account/profile`):
+
+| Campo | Qué es |
+|---|---|
+| `interests` | Lista de lo que va a guardar. Solo se aceptan `image`, `video`, `audio`, `doc` y `other`; lo demás se descarta. Lista vacía = ninguno. |
+| `birthday` | Fecha de nacimiento `AAAA-MM-DD`. Se rechazan las fechas irreales, las futuras, las anteriores a 1900 y los menores de 13 años (400). `""` o `null` la borra. |
+| `onboarded_at` | Cuándo completó la bienvenida. Se marca enviando `onboarded: true` y **no se puede deshacer** desde el cliente. Mientras esté vacío, la app lleva a `/bienvenida`. |
+
+El día de su cumpleaños, el primer `GET /account/profile` crea una notificación
+de felicitación (una sola al año).
 | `GET/POST /projects` · `GET/PATCH/DELETE /projects/:id` | Proyectos (lista con información completa) | cookie o key |
 | `GET /projects/:id/items` | Todos los elementos del proyecto (documentos + archivos) | cookie o key |
 | `DELETE /projects/:id/items` · `POST /projects/:id/items/delete` | Vaciar el proyecto (todo o por ids) | cookie o key |
@@ -165,11 +176,11 @@ Borrar el archivo también borra sus enlaces.
 curl https://nubiflygo.com/api/v1/projects \
   -H "Authorization: Bearer sk_tu_clave"
 
-# Crear un proyecto
+# Crear un proyecto (icon es opcional; sin él se pone solo según el contenido)
 curl -X POST https://nubiflygo.com/api/v1/projects \
   -H "Authorization: Bearer sk_tu_clave" \
   -H "Content-Type: application/json" \
-  -d '{"name":"Mi proyecto","color":"#3b82f6"}'
+  -d '{"name":"Mi proyecto","color":"#2b5fff","icon":"rocket"}'
 
 # Subir (publicar) un archivo
 curl -X POST https://nubiflygo.com/api/v1/files/upload \
@@ -255,13 +266,20 @@ Parámetros opcionales:
 Cada proyecto trae su información completa:
 
 ```json
-{ "id": "…", "name": "Música", "doc_count": 5, "file_count": 110,
+{ "id": "…", "name": "Música", "color": "#10b981", "icon": "music", "doc_count": 5, "file_count": 110,
   "stats": { "documents": 5, "files": 110, "total_items": 115, "published": 3, "api_keys": 1,
              "storage": { "bytes": 315000000, "formatted": "300.4 MB" } },
   "items_url": "/api/v1/projects/<id>/items" }
 ```
 
 Con `?include=items`, cada proyecto incluye también todos sus elementos (`items`).
+
+**Icono y color** (al crear con `POST` o editar con `PATCH`):
+
+| Campo | Valores |
+|---|---|
+| `icon` | `folder`, `music`, `photo`, `video`, `doc`, `code`, `design`, `work`, `study`, `travel`, `home`, `money`, `star`, `heart`, `rocket`, `idea`, `chart` o `shop`. `null` o `""` = automático: el icono se pone solo según el contenido. Otro valor → 400. |
+| `color` | Solo hexadecimal, `#abc` o `#aabbcc` (la app usa `#2b5fff`, `#8b5cf6`, `#ef4444`, `#f59e0b`, `#10b981`, `#06b6d4`, `#ec4899` y `#f97316`). Otro valor, o `null` → 400. |
 
 ### `GET /projects/:id` y `GET /projects/:id/items`
 

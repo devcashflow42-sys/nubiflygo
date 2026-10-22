@@ -90,24 +90,57 @@
     document.querySelectorAll('.live-badge .live-txt').forEach(n => { n.textContent = liveText(); });
   }
 
+  /* ─── Invitados: sin API keys ───
+     Una cuenta de invitado es temporal y sin verificar: no genera ni usa claves
+     (el servidor lo impide también; esto es para que se entienda por qué). Mientras
+     no llega el perfil se responde null, para no enseñar un botón que no servirá. */
+  let guestWaitArmed = false;
+  function guestKeysState() {
+    if (window.currentUser) return !!window.currentUser.is_guest;
+    if (window.currentUserError || !window.loadCurrentUser) return false;
+    if (!guestWaitArmed) {
+      guestWaitArmed = true;
+      window.loadCurrentUser().then(function () { render(); }, function () {});
+    }
+    return null;
+  }
+  const ICON_LOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10.5" width="16" height="10.5" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15.6" r="1.4"/></svg>';
+  function guestKeysBlock(where) {
+    return el('div', { class: 'empty guest-keys' }, [
+      el('div', { class: 'guest-keys-ico', html: ICON_LOCK, 'aria-hidden': 'true' }),
+      el('h3', {}, 'Las API keys son para cuentas registradas'),
+      el('p', {}, 'Como invitado no puedes generar ni usar claves secretas' + (where ? ' ' + where : '') +
+        ': tu cuenta es temporal. Crea una cuenta gratis y conecta tus apps de forma segura.'),
+      el('div', { class: 'empty-actions' }, [
+        el('a', { class: 'btn btn-primary', href: '/login' }, 'Crear cuenta gratis')
+      ])
+    ]);
+  }
+
   function viewApiKeys() {
     const v = $('#view');
     v.innerHTML = '';
+    const guest = guestKeysState();
     v.appendChild(pageToolbar({
       back: () => go('dashboard'),
       title: 'API keys',
-      actions: [
+      // El botón de crear solo aparece cuando ya sabemos que NO es invitado.
+      actions: guest === false ? [
         el('button', { class: 'btn btn-primary btn-sm', onclick: () => openKeyModal(), html: ICON_PLUS_SM + '<span style="margin-left:4px">Generar clave</span>' })
-      ]
+      ] : []
     }));
     v.appendChild(el('div', { class: 'board-head' }, [
       el('h2', {}, 'API keys')
     ]));
     v.appendChild(el('p', { class: 'subtitle', style: { padding: '0 20px 10px', margin: '-6px 0 0', color: 'var(--fg-muted)', fontSize: '13.5px' } }, 'Usa estas claves para autenticar peticiones a tu API. Trátalas como contraseñas — no las compartas.'));
 
+    if (guest) {
+      v.appendChild(el('div', { class: 'board-body' }, [ guestKeysBlock('') ]));
+      return;
+    }
     // Primera vez: trae las claves del servidor y muestra "cargando".
-    if (!apiKeysLoaded) {
-      if (!apiKeysLoading) loadApiKeys();
+    if (guest === null || !apiKeysLoaded) {
+      if (!apiKeysLoaded && !apiKeysLoading) loadApiKeys();
       v.appendChild(el('div', { class: 'board-body' }, [ skelTiles(4), skelList(1, true) ]));
       return;
     }

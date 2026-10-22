@@ -9,7 +9,7 @@
 import { getDb } from './db.js';
 import { json, getUser } from './http.js';
 import { deleteObject } from './storage.js';
-import { preflight, segmentsOf, body, UUID_RE, GUEST_LIMITS, CRUD_MAX } from './util.js';
+import { preflight, segmentsOf, body, UUID_RE, GUEST_LIMITS, CRUD_MAX, PROJECT_ICON_IDS, COLOR_RE } from './util.js';
 import { serverError, secLog, ensureSecurityColumns } from './security.js';
 import { notifySafe, hourKey } from './notify.js';
 
@@ -101,9 +101,14 @@ export async function authenticate(request, env) {
    · Solo lectura: nada que no sea GET.
    · Clave de un proyecto: solo ese proyecto y su contenido (documentos,
      notas y archivos del proyecto); no puede borrar el proyecto en sí.
+   · Cuenta de invitado: ninguna clave sirve, tampoco las de sus proyectos.
+     Es una cuenta temporal y sin verificar; con una clave se podría
+     automatizar el abuso de la API (crear invitados en serie y usarlos).
    Devuelve null si se permite, o { status, error }. */
+export const GUEST_KEY_ERROR = 'Las API keys requieren una cuenta. Crea una cuenta gratis para generarlas y usarlas.';
 export function keyPolicy(auth, seg, method) {
   if (!auth || !auth.viaKey) return null;
+  if (auth.isGuest) return { status: 403, error: GUEST_KEY_ERROR };
   const svc = seg[0] || '';
   if (svc === 'apikeys' || svc === 'admin') return { status: 403, error: 'Las API keys no pueden administrar claves ni entrar a la administración. Usa la app con tu sesión.' };
   if (svc === 'account' && !(method === 'GET' && (seg[1] === 'profile' || seg[1] === 'avatar'))) {
@@ -279,6 +284,15 @@ export function dataRoute(logicFn) {
    ========================================================================== */
 function crudValue(table, col, v) {
   if (col === 'published') return v === true || v === 'true';
+  if (table === 'projects' && col === 'icon') {
+    // Lista cerrada de iconos; null o '' vuelven a «Auto».
+    if (v === null || v === '') return null;
+    return typeof v === 'string' && PROJECT_ICON_IDS.includes(v) ? v : undefined;
+  }
+  if (table === 'projects' && col === 'color') {
+    // Solo hexadecimal (y nunca null: la columna no admite vacíos).
+    return typeof v === 'string' && COLOR_RE.test(v) ? v.toLowerCase() : undefined;
+  }
   if (v === null) return null;
   if (typeof v === 'object') return undefined;                 // nada de objetos/arreglos
   const max = (CRUD_MAX[table] && CRUD_MAX[table][col]) || 2000;

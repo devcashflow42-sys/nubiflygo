@@ -147,6 +147,26 @@
     const userInp = input(sGet('username', (u.email || '').split('@')[0] || ''), { id: 'set-username', placeholder: 'usuario' });
     const langSel = select(u.language || 'es', LANGS, { id: 'set-lang' });
     const bioInp = el('textarea', { id: 'set-bio', placeholder: 'Cuéntanos un poco sobre ti…' }, sGet('bio', ''));
+    // Cumpleaños: el mismo dato que se pide en la bienvenida. Sin fechas
+    // futuras ni menores de 13 años (el servidor lo vuelve a comprobar).
+    const hoy = new Date();
+    const bdayMax = new Date(Date.UTC(hoy.getUTCFullYear() - 13, hoy.getUTCMonth(), hoy.getUTCDate())).toISOString().slice(0, 10);
+    const bdayInp = input(u.birthday || '', { id: 'set-bday', type: 'date', min: '1900-01-01', max: bdayMax });
+    // Gustos: los mismos cinco tipos con los que la app ordena los archivos.
+    const picked = Array.isArray(u.interests) ? u.interests.slice() : [];
+    const kindsBox = el('div', { class: 'chips set-kinds' }, INTEREST_KINDS.map(k => {
+      const on = picked.indexOf(k.id) > -1;
+      const chip = el('button', {
+        type: 'button', class: 'chip' + (on ? ' on' : ''), 'aria-pressed': on ? 'true' : 'false',
+        onclick: function () {
+          const i = picked.indexOf(k.id);
+          if (i > -1) picked.splice(i, 1); else picked.push(k.id);
+          chip.classList.toggle('on', i < 0);
+          chip.setAttribute('aria-pressed', i < 0 ? 'true' : 'false');
+        }
+      }, k.label);
+      return chip;
+    }));
 
     const ava = el('div', { class: 'set-ava' });
     if (typeof paintAvatar === 'function') paintAvatar(ava, u, initialsOf(u));
@@ -181,11 +201,13 @@
         field('Nombre completo', nameInp, { icon: SI.user }),
         field('Correo electrónico', mailInp, { icon: SI.mail, hint: 'El correo no puede modificarse aquí.' }),
         field('Nombre de usuario', userInp, { icon: SI.at }),
-        field('Idioma de la interfaz', langSel, { icon: SI.globe })
+        field('Idioma de la interfaz', langSel, { icon: SI.globe }),
+        field('Cumpleaños', bdayInp, { icon: SI.cal, hint: 'Te felicitamos ese día. Solo tú lo ves.', optional: true })
       ]),
+      el('div', { class: 'set-fields one' }, [ field('Lo que guardas', kindsBox, { hint: 'Ordena tu espacio según lo que más subes.', optional: true }) ]),
       el('div', { class: 'set-fields one' }, [ field('Biografía', bioInp, { optional: true }) ]),
       el('div', { class: 'set-foot' }, [
-        btn('Guardar cambios', 'accent', function () { saveProfile({ nameInp: nameInp, langSel: langSel, userInp: userInp, bioInp: bioInp, u: u }); })
+        btn('Guardar cambios', 'accent', function () { saveProfile({ nameInp: nameInp, langSel: langSel, userInp: userInp, bioInp: bioInp, bdayInp: bdayInp, picked: picked, u: u }); })
       ])
     ]);
     root.appendChild(card(SI.user, 'Perfil de la cuenta', 'Administra la información principal de tu cuenta y cómo se muestra a otros.', [profileBody]));
@@ -514,6 +536,9 @@
       payload.name = nm;
     }
     if (ctx.langSel.value && ctx.langSel.value !== u.language) payload.language = ctx.langSel.value;
+    if (ctx.bdayInp && ctx.bdayInp.value !== (u.birthday || '')) payload.birthday = ctx.bdayInp.value;
+    const before = Array.isArray(u.interests) ? u.interests.slice().sort().join(',') : '';
+    if (ctx.picked && ctx.picked.slice().sort().join(',') !== before) payload.interests = ctx.picked;
     // Preferencias locales (siempre).
     sSet('username', ctx.userInp.value.trim());
     sSet('bio', ctx.bioInp.value);
@@ -757,6 +782,15 @@
   }
 
   /* ───────────── Vista principal ───────────── */
+  // Los mismos cinco tipos de la bienvenida y de la tarjeta de almacenamiento.
+  const INTEREST_KINDS = [
+    { id: 'audio', label: 'Música' },
+    { id: 'image', label: 'Fotos' },
+    { id: 'video', label: 'Videos' },
+    { id: 'doc', label: 'Documentos' },
+    { id: 'other', label: 'Otros' }
+  ];
+
   const SETTINGS_TABS = [
     { id: 'general', label: 'Configuración general', icon: SI.cog, render: tabGeneral },
     { id: 'workspace', label: 'Espacio de trabajo', icon: SI.box, render: tabWorkspace },

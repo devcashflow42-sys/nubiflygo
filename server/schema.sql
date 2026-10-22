@@ -24,6 +24,8 @@ CREATE TABLE IF NOT EXISTS projects (
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+-- Icono que eligió el usuario (uno de 18 ids); NULL = «Auto», según el contenido
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS icon        TEXT;
 CREATE INDEX IF NOT EXISTS idx_projects_user ON projects(user_id);
 
 -- Claves API por proyecto
@@ -113,6 +115,11 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_data TEXT;
 -- Preferencias de interfaz guardadas en la cuenta (orden/posición de widgets flotantes)
 ALTER TABLE users ADD COLUMN IF NOT EXISTS ui_prefs         JSONB NOT NULL DEFAULT '{}'::jsonb;
+-- Bienvenida de la primera vez: qué va a guardar, su cumpleaños y la marca de
+-- que ya la completó (las cuentas anteriores se dan por completadas).
+ALTER TABLE users ADD COLUMN IF NOT EXISTS interests        JSONB NOT NULL DEFAULT '[]'::jsonb;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS birthday         DATE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS onboarded_at     TIMESTAMPTZ;
 
 -- ─────────────────────────── Uso de las API keys ───────────────────────────
 -- Una fila por clave y día (UTC): éxitos (respuesta < 400) y fallas (≥ 400).

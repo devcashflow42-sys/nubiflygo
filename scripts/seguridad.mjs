@@ -135,7 +135,7 @@ if (urlArg) {
 
   if (!/^https:\/\//.test(base) && !/^http:\/\/(localhost|127\.0\.0\.1)/.test(base)) bad('El sitio debe usar https://');
 
-  for (const page of ['/', '/login', '/main']) {
+  for (const page of ['/', '/login', '/main', '/bienvenida']) {
     const r = await get(page);
     if (r.error) { bad(`${page}: no responde (${r.error.message})`); continue; }
     const h = (n) => r.headers.get(n) || '';

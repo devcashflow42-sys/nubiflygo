@@ -10,7 +10,7 @@ import { getDb } from '../../../_shared/db.js';
 import { json, issueSession, clearCookie } from '../../../_shared/http.js';
 import { hashPassword, verifyPassword } from '../../../_shared/crypto.js';
 import { accountRoute, rowIsAdmin, isAdminEmail } from '../../../_shared/api.js';
-import { EMAIL_RE, normLang, body } from '../../../_shared/util.js';
+import { EMAIL_RE, normLang, body, cleanInterests, cleanBirthday, isBirthdayToday } from '../../../_shared/util.js';
 import { rateLimit, rateReset, tooMany, clientIp, secLog, ensureSecurityColumns } from '../../../_shared/security.js';
 import { recordLogin, notifySafe, hourKey, deviceInfo, deviceLabel, ensureNotifications } from '../../../_shared/notify.js';
 import { ensureBilling, effectivePlan, PLANS } from '../../../_shared/billing.js';
@@ -61,17 +61,26 @@ export const handle = accountRoute(async ({ seg, request, env, method, auth }) =
   }
 
   // Preferencias de interfaz guardadas en la cuenta (no en el navegador).
-  if (action === 'profile' || action === 'avatar') { await ensureUiPrefsColumn(db); await ensureBilling(db); }
+  if (action === 'profile' || action === 'avatar') { await ensureUiPrefsColumn(db); await ensureOnboardingColumns(db); await ensureBilling(db); }
 
   if (action === 'profile' && method === 'GET') {
     if (!auth) return json({ error: 'No autenticado.' }, 401);
     const { rows } = await db.query(`SELECT ${PROFILE_COLS} FROM users WHERE id = $1`, [auth.user.id]);
     if (!rows[0]) return json({ error: 'Usuario no encontrado.' }, 404);
+    if (auth.viaKey) {
+      // La fecha de nacimiento solo la ve su dueño en la app («Solo tú puedes
+      // verlo»): una integración con API key no la recibe.
+      delete rows[0].birthday;
+    } else {
+      // La app pide el perfil al arrancar: es el momento de felicitarle.
+      await birthdayGreeting(db, rows[0]);
+    }
     return json({ user: shapeUser(rows[0], env) });
   }
 
-  // Ajustes: actualizar el propio perfil (nombre, idioma y, opcionalmente, la
-  // contraseña —requiere la actual—). El correo no se cambia aquí.
+  // Ajustes: actualizar el propio perfil (nombre, idioma, gustos, cumpleaños y,
+  // opcionalmente, la contraseña —requiere la actual—). El correo no se cambia
+  // aquí (no hay forma de cambiarlo en toda la API).
   if (action === 'profile' && method === 'PATCH') {
     if (!auth) return json({ error: 'No autenticado.' }, 401);
     const b = await body(request);
@@ -91,6 +100,32 @@ export const handle = accountRoute(async ({ seg, request, env, method, auth }) =
       if (!ui) return json({ error: 'Preferencias de interfaz no válidas.' }, 400);
       // Mezcla superficial: solo cambia las claves enviadas.
       sets.push(`ui_prefs = coalesce(ui_prefs, '{}'::jsonb) || $${i++}::jsonb`); vals.push(JSON.stringify(ui));
+    }
+    if (b.interests !== undefined) {
+      const list = cleanInterests(b.interests);
+      if (!list) return json({ error: 'Lista de gustos no válida.' }, 400);
+      sets.push('interests = $' + (i++)); vals.push(JSON.stringify(list));
+    }
+    if (b.birthday !== undefined) {
+      const bd = cleanBirthday(b.birthday);
+      if (bd === false) return json({ error: 'Revisa tu fecha de nacimiento.' }, 400);
+      sets.push('birthday = $' + (i++)); vals.push(bd || null);
+    }
+    // Bienvenida terminada. Solo se MARCA (nunca se deshace desde el cliente) y
+    // solo si el perfil quedó completo: si no, "obligatoria" sería solo la
+    // pantalla, y una petición suelta la saltaría dejando la cuenta sin datos.
+    if (b.onboarded === true) {
+      let okGustos = Array.isArray(b.interests) && cleanInterests(b.interests).length > 0;
+      let okFecha = b.birthday !== undefined && !!cleanBirthday(b.birthday);
+      if (!okGustos || !okFecha) {
+        const cur = await db.query(`SELECT jsonb_array_length(coalesce(interests, '[]'::jsonb)) AS n, birthday FROM users WHERE id = $1`, [auth.user.id]);
+        const r = cur.rows[0] || {};
+        if (b.interests === undefined) okGustos = (Number(r.n) || 0) > 0;
+        if (b.birthday === undefined) okFecha = !!r.birthday;
+      }
+      if (!okGustos) return json({ error: 'Elige al menos un tipo de contenido.' }, 400);
+      if (!okFecha) return json({ error: 'Pon tu fecha de nacimiento para continuar.' }, 400);
+      sets.push('onboarded_at = coalesce(onboarded_at, now())');
     }
     let newSession = false;
     if (b.new_password) {
@@ -282,7 +317,11 @@ async function dummyHash() { if (!DUMMY) DUMMY = await hashPassword(crypto.rando
 /* ---------------- Ayudantes del perfil ---------------- */
 
 // Columnas públicas del perfil (nunca incluye password_hash ni avatar_data).
-const PROFILE_COLS = 'id, name, email, created_at, is_guest, guest_expires_at, language, plan, is_admin, avatar_url, ui_prefs, plan_expires_at, plan_cancel_at_period_end';
+// La fecha de nacimiento sale con to_char para que los dos controladores de
+// base de datos (neon http y pg) devuelvan siempre el mismo texto AAAA-MM-DD.
+const PROFILE_COLS = `id, name, email, created_at, is_guest, guest_expires_at, language, plan, is_admin,
+  avatar_url, ui_prefs, plan_expires_at, plan_cancel_at_period_end,
+  interests, to_char(birthday, 'YYYY-MM-DD') AS birthday, onboarded_at`;
 
 // Planes sin pago: el usuario "todavía no tiene un plan de pago".
 const FREE_PLANS = ['free', ''];
@@ -295,6 +334,7 @@ function shapeUser(u, env) {
   u.plan_label = u.is_admin ? 'Sin límites' : (u.is_guest ? 'Invitado' : (u.plan === 'free' ? 'Gratis' : (PLANS[u.plan] ? PLANS[u.plan].name : u.plan)));
   u.has_paid_plan = !u.is_admin && !u.is_guest && !FREE_PLANS.includes(u.plan);
   if (!u.has_paid_plan) { u.plan_expires_at = null; u.plan_cancel_at_period_end = false; }
+  if (!Array.isArray(u.interests)) u.interests = [];
   return u;
 }
 
@@ -326,6 +366,54 @@ async function ensureUiPrefsColumn(db) {
   if (uiPrefsColumnReady) return;
   await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS ui_prefs JSONB NOT NULL DEFAULT '{}'::jsonb`);
   uiPrefsColumnReady = true;
+}
+
+/* Columnas de la bienvenida: gustos, cumpleaños y la marca de "ya completada".
+   Las cuentas que ya existían al publicar la bienvenida se dan por completadas
+   (si no, verían la pantalla de golpe):
+   - si la marca se crea aquí, toda cuenta que ya está es de antes;
+   - si ya estaba (alguien aplicó antes el .sql), se usa una fecha fija, que
+     nunca alcanza a una cuenta nueva por mucho que tarde en completarla. */
+const ONBOARDING_SINCE = '2026-10-22';
+// Primero una lectura (como ensureSecurityColumns): un ALTER TABLE bloquea la
+// tabla aunque la columna ya exista, así que solo se lanza si de verdad falta.
+const ONBOARDING_DDL = {
+  interests: `ALTER TABLE users ADD COLUMN IF NOT EXISTS interests JSONB NOT NULL DEFAULT '[]'::jsonb`,
+  birthday: 'ALTER TABLE users ADD COLUMN IF NOT EXISTS birthday DATE',
+  onboarded_at: 'ALTER TABLE users ADD COLUMN IF NOT EXISTS onboarded_at TIMESTAMPTZ'
+};
+let onboardingColumnsReady = false;
+async function ensureOnboardingColumns(db) {
+  if (onboardingColumnsReady) return;
+  const { rows } = await db.query(
+    `SELECT column_name AS c FROM information_schema.columns
+     WHERE table_schema = current_schema() AND table_name = 'users'
+       AND column_name IN ('interests', 'birthday', 'onboarded_at')`);
+  const have = new Set(rows.map(r => r.c));
+  for (const [c, sql] of Object.entries(ONBOARDING_DDL)) if (!have.has(c)) await db.query(sql);
+  if (!have.has('onboarded_at')) {
+    await db.query('UPDATE users SET onboarded_at = created_at WHERE onboarded_at IS NULL');
+  } else {
+    // Solo se escribe si queda alguna cuenta antigua por marcar.
+    const old = await db.query('SELECT 1 FROM users WHERE onboarded_at IS NULL AND created_at < $1 LIMIT 1', [ONBOARDING_SINCE]);
+    if (old.rows.length) await db.query('UPDATE users SET onboarded_at = created_at WHERE onboarded_at IS NULL AND created_at < $1', [ONBOARDING_SINCE]);
+  }
+  onboardingColumnsReady = true;
+}
+
+// Felicitación del día de su cumpleaños. El dedupe_key («birthday:<año>») deja
+// pasar una sola al año aunque recargue la página muchas veces, y la tabla
+// conserva esa marca aunque borre el aviso.
+async function birthdayGreeting(db, u) {
+  if (!u.birthday || u.is_guest || !isBirthdayToday(u.birthday)) return;
+  const first = String(u.name || '').trim().split(/\s+/)[0] || '';
+  await notifySafe(db, u.id, {
+    type: 'info',
+    title: '¡Feliz cumpleaños' + (first ? ', ' + first : '') + '!',
+    body: 'Que tengas un gran día. Gracias por estar en NubiFlyGo.',
+    link: '/settings',
+    dedupe: 'birthday:' + new Date().toISOString().slice(0, 4)
+  });
 }
 
 // Solo se aceptan claves conocidas y valores válidos (nada de datos libres).

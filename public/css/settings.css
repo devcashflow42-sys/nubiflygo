@@ -180,6 +180,9 @@
 /* ─── Campos de formulario ─── */
 .set-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .set-fields.one { grid-template-columns: 1fr; }
+/* Mismo aire entre bloques de campos que dentro de cada bloque: si no, la
+   pista de un campo queda pegada a la etiqueta del siguiente. */
+.set-fields + .set-fields { margin-top: 14px; }
 @media (max-width: 620px) { .set-fields { grid-template-columns: 1fr; } }
 .set-field { min-width: 0; }
 .set-field > label {

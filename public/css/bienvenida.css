@@ -1,0 +1,98 @@
+/* bienvenida.css — Solo lo que la pantalla de bienvenida añade a login.css:
+   el avance de pasos, las tarjetas de gustos, la fila de botones y la foto.
+   Todo lo demás (colores, tipografía, .wrap, .btn, .field, .err, modo claro y
+   oscuro, animación «rise») viene tal cual del acceso, para que se vea igual. */
+
+/* login.css pone display:flex en .btn, y eso gana al atributo hidden: sin esto
+   el botón «Atrás» se vería en el primer paso. */
+[hidden] { display: none !important; }
+
+/* El título recibe el foco al cambiar de paso para que los lectores de
+   pantalla lo anuncien. No es un control, así que no lleva recuadro. */
+#ob-step h1:focus { outline: none; }
+
+/* ---------- Salida (cerrar sesión) ---------- */
+.ob-out { text-align: center; margin-top: 18px; }
+.ob-out button {
+  background: none; border: 0; padding: 4px 8px; font: inherit; font-size: .84rem;
+  font-weight: 500; color: var(--muted); transition: color .15s;
+  animation: rise .55s cubic-bezier(.22,.61,.36,1) both; animation-delay: .4s;
+}
+.ob-out button:hover { color: var(--text); text-decoration: underline; }
+
+/* ---------- Avance (una sola barra de tres tramos) ---------- */
+.ob-steps { display: flex; gap: 6px; margin-bottom: 10px; }
+.ob-steps span {
+  flex: 1; height: 4px; border-radius: 999px; background: var(--shape);
+  transition: background .35s cubic-bezier(.22,.61,.36,1);
+}
+.ob-steps span.on { background: var(--accent); }
+.ob-count { color: var(--muted); font-size: .78rem; letter-spacing: .06em; margin-bottom: 18px; }
+
+/* ---------- Tarjetas de gustos ---------- */
+.ob-kinds { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 22px; }
+@media (min-width: 420px) { .ob-kinds { grid-template-columns: repeat(3, 1fr); } }
+.ob-kind {
+  position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+  padding: 14px 12px; min-height: 104px; text-align: left;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--input); color: var(--text); font: inherit;
+  transition: border-color .15s, box-shadow .15s, background .15s, transform .12s;
+  animation: rise .5s cubic-bezier(.22,.61,.36,1) both;
+  animation-delay: calc(var(--k, 0) * 45ms + 120ms);
+}
+.ob-kind:hover { background: var(--panel); }
+.ob-kind:active { transform: scale(.985); }
+.ob-kind .ic { width: 26px; height: 26px; color: var(--muted); margin-bottom: 8px; transition: color .15s; }
+.ob-kind .ic svg { width: 100%; height: 100%; display: block; }
+.ob-kind .nm { font-weight: 600; font-size: .92rem; }
+.ob-kind .ds { color: var(--muted); font-size: .76rem; line-height: 1.35; }
+/* Elegida: borde de acento y una sola marca arriba a la derecha. */
+.ob-kind[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.ob-kind[aria-pressed="true"] .ic { color: var(--accent); }
+.ob-kind .tick {
+  position: absolute; top: 10px; right: 10px; width: 18px; height: 18px; border-radius: 50%;
+  background: var(--accent); color: var(--on-accent);
+  display: grid; place-items: center; opacity: 0; transform: scale(.6);
+  transition: opacity .18s, transform .18s cubic-bezier(.22,1.4,.5,1);
+}
+.ob-kind .tick svg { width: 11px; height: 11px; }
+.ob-kind[aria-pressed="true"] .tick { opacity: 1; transform: scale(1); }
+
+/* ---------- Botones de abajo ---------- */
+.ob-actions { display: flex; gap: 10px; align-items: center; margin-top: 26px; }
+.ob-actions .btn { margin-top: 0; }
+.ob-actions .ob-back { width: auto; padding: 0 20px; flex: 0 0 auto; }
+.btn-ghost { background: transparent; color: var(--muted); }
+.btn-ghost:hover { background: var(--panel); color: var(--text); }
+
+/* ---------- Paso 3: la foto ---------- */
+.ob-photo { display: flex; align-items: center; gap: 16px; margin-top: 22px; margin-bottom: 20px; }
+.ob-ava {
+  width: 72px; height: 72px; border-radius: 50%; flex: 0 0 auto; overflow: hidden;
+  background: var(--panel); border: 1px solid var(--border);
+  display: grid; place-items: center;
+  color: var(--muted); font-weight: 600; font-size: 1.3rem; letter-spacing: .02em;
+  transition: opacity .2s;
+}
+.ob-ava img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ob-ava.busy { opacity: .5; }
+.ob-photo-acts { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.ob-photo-acts button {
+  background: none; border: 0; padding: 0; font: inherit; font-size: .86rem; font-weight: 500;
+  color: var(--accent); text-align: left;
+}
+.ob-photo-acts button:hover { text-decoration: underline; }
+.ob-photo-acts .rm { color: var(--muted); }
+
+/* Campo de solo lectura (el correo): se ve, pero no se toca. */
+.field input[readonly] { background: var(--panel); color: var(--muted); cursor: not-allowed; }
+.field .hint { color: var(--muted); font-size: .78rem; margin-top: 6px; }
+
+/* Los campos de cada paso entran antes que en el acceso: aquí el usuario ya
+   viene de pulsar «Continuar» y una espera larga se nota. */
+#ob-step .field { animation-delay: .1s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ob-kind, .ob-steps span, .ob-kind .tick { animation: none !important; transition: none !important; }
+}

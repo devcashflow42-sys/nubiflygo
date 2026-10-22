@@ -9,7 +9,15 @@
       if (k === 'class') n.className = props[k];
       else if (k === 'html') n.innerHTML = props[k];
       else if (k.startsWith('on') && typeof props[k] === 'function') n.addEventListener(k.slice(2), props[k]);
-      else if (k === 'style' && typeof props[k] === 'object') Object.assign(n.style, props[k]);
+      else if (k === 'style' && typeof props[k] === 'object') {
+        // Las variables CSS (--c, …) solo se aplican con setProperty: asignadas
+        // como propiedad normal se ignoran sin avisar (por eso el color del
+        // proyecto no se veía en su tarjeta ni en los puntos del menú).
+        for (const s in props[k]) {
+          if (s.startsWith('--')) n.style.setProperty(s, props[k][s]);
+          else n.style[s] = props[k][s];
+        }
+      }
       else if (props[k] !== null && props[k] !== undefined) n.setAttribute(k, props[k]);
     }
     (Array.isArray(children) ? children : [children]).forEach(c => {

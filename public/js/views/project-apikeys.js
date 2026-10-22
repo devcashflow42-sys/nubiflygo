@@ -25,8 +25,11 @@
      solicitudes del mes con su gráfica de 7 días y botón para borrarla), y una
      para crear otra. */
   function tabApiKey(p, body) {
+    // Invitado: ni crea ni usa claves del proyecto (ver guestKeysBlock en apikeys.js).
+    const guest = guestKeysState();
+    if (guest) { body.appendChild(guestKeysBlock('para este proyecto')); return; }
     // Carga las claves reales del usuario y filtra las de este proyecto.
-    if (!apiKeysLoaded) {
+    if (guest === null || !apiKeysLoaded) {
       ensureApiKeys();
       body.appendChild(skelList(2, true));
       return;

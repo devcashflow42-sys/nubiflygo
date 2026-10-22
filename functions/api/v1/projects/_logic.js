@@ -34,8 +34,22 @@ import { fileFilters, wantsAll, readSelection, deleteFilesWhere, logActivity, bu
 const FILE_COLS = 'id, user_id, project_id, name, original_name, size, mime, storage_key, meta, published, published_at, created_at, updated_at';
 const DOC_COLS = 'id, project_id, title, left(content, 240) AS excerpt, published, published_at, created_at, updated_at';
 
+// Columna del icono elegido (NULL = «Auto»). Primero una lectura: el ALTER
+// TABLE bloquea la tabla aunque la columna ya exista, así que solo se lanza si
+// de verdad falta (una vez por instancia).
+let iconColumnReady = false;
+async function ensureProjectIcon(db) {
+  if (iconColumnReady) return;
+  const { rows } = await db.query(
+    `SELECT 1 FROM information_schema.columns
+     WHERE table_schema = current_schema() AND table_name = 'projects' AND column_name = 'icon'`);
+  if (!rows.length) await db.query('ALTER TABLE projects ADD COLUMN IF NOT EXISTS icon TEXT');
+  iconColumnReady = true;
+}
+
 export const handle = dataRoute(async ({ seg, request, env, method, user }) => {
   const db = getDb(env);
+  await ensureProjectIcon(db);
   const qs = new URL(request.url).searchParams;
 
   /* ─── Colección: /projects ─── */
@@ -55,7 +69,7 @@ export const handle = dataRoute(async ({ seg, request, env, method, user }) => {
 
   // Todo lo de un proyecto exige que sea del usuario.
   const { rows: prows } = await db.query(
-    'SELECT id, user_id, name, description, color, created_at, updated_at FROM projects WHERE id = $1 AND user_id = $2',
+    'SELECT id, user_id, name, description, color, icon, created_at, updated_at FROM projects WHERE id = $1 AND user_id = $2',
     [id, user.id]);
   const project = prows[0];
 
@@ -108,7 +122,7 @@ export const handle = dataRoute(async ({ seg, request, env, method, user }) => {
 // Lista de proyectos con su información completa (y, si se pide, sus elementos).
 async function projectList(db, env, userId, qs) {
   const { rows } = await db.query(
-    `SELECT p.id, p.name, p.description, p.color, p.created_at, p.updated_at,
+    `SELECT p.id, p.name, p.description, p.color, p.icon, p.created_at, p.updated_at,
        (SELECT count(*) FROM documents d WHERE d.project_id = p.id AND d.user_id = $1)::int AS doc_count,
        (SELECT count(*) FROM files f WHERE f.project_id = p.id AND f.user_id = $1)::int AS file_count,
        (SELECT coalesce(sum(size), 0) FROM files f WHERE f.project_id = p.id AND f.user_id = $1)::bigint AS bytes,
@@ -131,7 +145,7 @@ async function projectList(db, env, userId, qs) {
   const items = rows.map(r => {
     const bytes = Number(r.bytes) || 0;
     const it = {
-      id: r.id, name: r.name, description: r.description || '', color: r.color || '',
+      id: r.id, name: r.name, description: r.description || '', color: r.color || '', icon: r.icon || null,
       created_at: r.created_at, updated_at: r.updated_at,
       doc_count: r.doc_count, file_count: r.file_count,
       stats: {
@@ -171,7 +185,7 @@ async function projectDetail(db, env, project, userId, request) {
     name: project.name,
     description: project.description || '',
     color: project.color || '',
-    icon: 'folder-kanban',
+    icon: project.icon || null,          // icono elegido; null = «Auto»
     banner: { enabled: false, url: null },
     visibility: 'private',
     status: 'active',

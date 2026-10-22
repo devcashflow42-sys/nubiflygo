@@ -145,7 +145,11 @@ function sessionShape(r, hereLabel) {
 }
 
 // Columnas públicas del perfil (nunca incluye password_hash ni avatar_data).
-const PROFILE_COLS = 'id, name, email, created_at, is_guest, guest_expires_at, language, plan, is_admin, avatar_url, ui_prefs, plan_expires_at, plan_cancel_at_period_end';
+// La fecha de nacimiento sale con to_char para que los dos controladores de
+// base de datos (neon http y pg) devuelvan siempre el mismo texto AAAA-MM-DD.
+const PROFILE_COLS = `id, name, email, created_at, is_guest, guest_expires_at, language, plan, is_admin,
+  avatar_url, ui_prefs, plan_expires_at, plan_cancel_at_period_end,
+  interests, to_char(birthday, 'YYYY-MM-DD') AS birthday, onboarded_at`;
 
 // Preferencias de interfaz en la cuenta (orden/posición de los widgets flotantes).
 let uiPrefsReady = false;
@@ -154,6 +158,81 @@ async function ensureUiPrefs() {
   await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS ui_prefs JSONB NOT NULL DEFAULT '{}'::jsonb`);
   uiPrefsReady = true;
 }
+/* Columnas de la bienvenida: gustos, cumpleaños y la marca de "ya completada".
+   Copia de functions/api/v1/account/_logic.js (misma lógica). Las cuentas que
+   ya existían al publicar la bienvenida se dan por completadas: todas si la
+   marca se crea aquí; si ya estaba (se aplicó antes el .sql), las anteriores a
+   una fecha fija, que nunca alcanza a una cuenta nueva. */
+const ONBOARDING_SINCE = '2026-10-22';
+let onboardingReady = false;
+// Primero una lectura: un ALTER TABLE bloquea la tabla aunque la columna ya
+// exista, así que solo se lanza si de verdad falta.
+const ONBOARDING_DDL = {
+  interests: `ALTER TABLE users ADD COLUMN IF NOT EXISTS interests JSONB NOT NULL DEFAULT '[]'::jsonb`,
+  birthday: 'ALTER TABLE users ADD COLUMN IF NOT EXISTS birthday DATE',
+  onboarded_at: 'ALTER TABLE users ADD COLUMN IF NOT EXISTS onboarded_at TIMESTAMPTZ'
+};
+async function ensureOnboarding() {
+  if (onboardingReady) return;
+  const { rows } = await query(
+    `SELECT column_name AS c FROM information_schema.columns
+     WHERE table_schema = current_schema() AND table_name = 'users'
+       AND column_name IN ('interests', 'birthday', 'onboarded_at')`);
+  const have = new Set(rows.map(r => r.c));
+  for (const [c, sql] of Object.entries(ONBOARDING_DDL)) if (!have.has(c)) await query(sql);
+  if (!have.has('onboarded_at')) {
+    await query('UPDATE users SET onboarded_at = created_at WHERE onboarded_at IS NULL');
+  } else {
+    const old = await query('SELECT 1 FROM users WHERE onboarded_at IS NULL AND created_at < $1 LIMIT 1', [ONBOARDING_SINCE]);
+    if (old.rows.length) await query('UPDATE users SET onboarded_at = created_at WHERE onboarded_at IS NULL AND created_at < $1', [ONBOARDING_SINCE]);
+  }
+  onboardingReady = true;
+}
+
+// Copia de functions/_shared/util.js (misma lógica).
+const INTEREST_IDS = ['image', 'video', 'audio', 'doc', 'other'];
+function cleanInterests(v) {
+  if (!Array.isArray(v) || v.length > 20) return null;
+  const seen = v.filter(x => INTEREST_IDS.includes(x));
+  return INTEREST_IDS.filter(id => seen.includes(id));
+}
+const MIN_AGE = 13;
+function cleanBirthday(v) {
+  if (v === null || v === '') return '';
+  const s = String(v).trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
+  const d = new Date(s + 'T00:00:00Z');
+  if (!Number.isFinite(d.getTime()) || d.toISOString().slice(0, 10) !== s) return false;
+  if (Number(s.slice(0, 4)) < 1900) return false;
+  const ms = Date.now() - d.getTime();
+  if (ms < 0) return false;
+  if (ms / (365.2425 * 24 * 3600 * 1000) < MIN_AGE) return false;
+  return s;
+}
+function isBirthdayToday(birthday) {
+  const bd = String(birthday || '').slice(0, 10);
+  const hoy = new Date().toISOString().slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(bd)) return false;
+  if (bd.slice(5) === hoy.slice(5)) return true;
+  // Nacida un 29 de febrero: en los años que no lo tienen, se felicita el 28.
+  const y = Number(hoy.slice(0, 4));
+  const bisiesto = (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+  return bd.slice(5) === '02-29' && hoy.slice(5) === '02-28' && !bisiesto;
+}
+
+// Felicitación del día de su cumpleaños (una al año por el dedupe_key).
+async function birthdayGreeting(u) {
+  if (!u.birthday || u.is_guest || !isBirthdayToday(u.birthday)) return;
+  const first = String(u.name || '').trim().split(/\s+/)[0] || '';
+  await notifySafe(db, u.id, {
+    type: 'info',
+    title: '¡Feliz cumpleaños' + (first ? ', ' + first : '') + '!',
+    body: 'Que tengas un gran día. Gracias por estar en NubiFlyGo.',
+    link: '/settings',
+    dedupe: 'birthday:' + new Date().toISOString().slice(0, 4)
+  });
+}
+
 const WIDGET_IDS = ['music'];
 function cleanUiPrefs(v) {
   if (!v || typeof v !== 'object' || Array.isArray(v)) return null;
@@ -173,7 +252,7 @@ function cleanUiPrefs(v) {
   }
   return Object.keys(out).length ? out : null;
 }
-account.use(['/profile', '/avatar'], (req, res, next) => { ensureUiPrefs().then(() => ensureBilling(db)).then(() => next(), next); });
+account.use(['/profile', '/avatar'], (req, res, next) => { ensureUiPrefs().then(ensureOnboarding).then(() => ensureBilling(db)).then(() => next(), next); });
 const LANGS = ['es', 'en', 'pt', 'fr', 'de', 'it', 'zh', 'ja'];
 const normLang = (v) => { const c = String(v || '').slice(0, 2).toLowerCase(); return LANGS.includes(c) ? c : 'es'; };
 
@@ -186,6 +265,7 @@ function shapeUser(u) {
   u.plan_label = u.is_admin ? 'Sin límites' : (u.is_guest ? 'Invitado' : (u.plan === 'free' ? 'Gratis' : (PLANS[u.plan] ? PLANS[u.plan].name : u.plan)));
   u.has_paid_plan = !u.is_admin && !u.is_guest && u.plan !== 'free';
   if (!u.has_paid_plan) { u.plan_expires_at = null; u.plan_cancel_at_period_end = false; }
+  if (!Array.isArray(u.interests)) u.interests = [];
   return u;
 }
 
@@ -194,11 +274,14 @@ account.get('/profile', requireAuth, async (req, res, next) => {
   try {
     const { rows } = await query(`SELECT ${PROFILE_COLS} FROM users WHERE id = $1`, [req.user.id]);
     if (!rows[0]) return res.status(404).json({ error: 'Usuario no encontrado.' });
+    // La app pide el perfil al arrancar: es el momento de felicitarle.
+    await birthdayGreeting(rows[0]);
     res.json({ user: shapeUser(rows[0]) });
   } catch (err) { next(err); }
 });
 
-// PATCH /profile — nombre, idioma y, opcionalmente, la contraseña (requiere la actual).
+// PATCH /profile — nombre, idioma, gustos, cumpleaños y, opcionalmente, la
+// contraseña (requiere la actual). El correo no se cambia aquí.
 account.patch('/profile', requireAuth, async (req, res, next) => {
   try {
     const b = req.body || {};
@@ -217,6 +300,32 @@ account.patch('/profile', requireAuth, async (req, res, next) => {
       const ui = cleanUiPrefs(b.ui_prefs);
       if (!ui) return res.status(400).json({ error: 'Preferencias de interfaz no válidas.' });
       sets.push(`ui_prefs = coalesce(ui_prefs, '{}'::jsonb) || $${i++}::jsonb`); vals.push(JSON.stringify(ui));
+    }
+    if (b.interests !== undefined) {
+      const list = cleanInterests(b.interests);
+      if (!list) return res.status(400).json({ error: 'Lista de gustos no válida.' });
+      sets.push('interests = $' + (i++)); vals.push(JSON.stringify(list));
+    }
+    if (b.birthday !== undefined) {
+      const bd = cleanBirthday(b.birthday);
+      if (bd === false) return res.status(400).json({ error: 'Revisa tu fecha de nacimiento.' });
+      sets.push('birthday = $' + (i++)); vals.push(bd || null);
+    }
+    // Bienvenida terminada. Solo se MARCA (nunca se deshace desde el cliente) y
+    // solo si el perfil quedó completo: si no, "obligatoria" sería solo la
+    // pantalla, y una petición suelta la saltaría dejando la cuenta sin datos.
+    if (b.onboarded === true) {
+      let okGustos = Array.isArray(b.interests) && cleanInterests(b.interests).length > 0;
+      let okFecha = b.birthday !== undefined && !!cleanBirthday(b.birthday);
+      if (!okGustos || !okFecha) {
+        const cur = await query(`SELECT jsonb_array_length(coalesce(interests, '[]'::jsonb)) AS n, birthday FROM users WHERE id = $1`, [req.user.id]);
+        const r = cur.rows[0] || {};
+        if (b.interests === undefined) okGustos = (Number(r.n) || 0) > 0;
+        if (b.birthday === undefined) okFecha = !!r.birthday;
+      }
+      if (!okGustos) return res.status(400).json({ error: 'Elige al menos un tipo de contenido.' });
+      if (!okFecha) return res.status(400).json({ error: 'Pon tu fecha de nacimiento para continuar.' });
+      sets.push('onboarded_at = coalesce(onboarded_at, now())');
     }
     let newSession = false;
     if (b.new_password) {

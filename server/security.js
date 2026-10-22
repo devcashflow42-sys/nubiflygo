@@ -208,12 +208,25 @@ export async function ownsProject(userId, projectId) {
 // Largo máximo de cada texto (igual que CRUD_MAX en Cloudflare). Devuelve el
 // valor recortado, null, o undefined si no es válido (objetos/arreglos).
 const CRUD_MAX = {
-  projects:  { name: 120, description: 2000, color: 32 },
+  projects:  { name: 120, description: 2000, color: 7, icon: 16 },
   notes:     { title: 300, body: 200000, project_id: 36 },
   documents: { title: 300, content: 500000, project_id: 36 }
 };
+// Icono y color de un proyecto. Copia de functions/_shared/util.js (misma
+// lógica): lista cerrada de 18 iconos (null o '' = «Auto») y color solo en
+// hexadecimal, porque va dentro de degradados y variables CSS en la página.
+const PROJECT_ICON_IDS = ['folder', 'music', 'photo', 'video', 'doc', 'code', 'design', 'work', 'study',
+  'travel', 'home', 'money', 'star', 'heart', 'rocket', 'idea', 'chart', 'shop'];
+const COLOR_RE = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
 export function cleanValue(table, col, v) {
   if (col === 'published') return v === true || v === 'true';
+  if (table === 'projects' && col === 'icon') {
+    if (v === null || v === undefined || v === '') return null;
+    return typeof v === 'string' && PROJECT_ICON_IDS.includes(v) ? v : undefined;
+  }
+  if (table === 'projects' && col === 'color') {
+    return typeof v === 'string' && COLOR_RE.test(v) ? v.toLowerCase() : undefined;
+  }
   if (v === null || v === undefined) return null;
   if (typeof v === 'object') return undefined;
   return String(v).slice(0, (CRUD_MAX[table] && CRUD_MAX[table][col]) || 2000);

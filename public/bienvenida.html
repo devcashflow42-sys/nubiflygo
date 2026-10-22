@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <!-- Tema: el que eligió el usuario (Claro/Oscuro) o, si no, el del dispositivo. -->
+  <script>try{var t=(JSON.parse(localStorage.getItem('workspace:prefs')||'{}')||{}).theme;document.documentElement.setAttribute('data-theme',t==='dark'||t==='light'?t:'auto');}catch(e){}</script>
+<title>NubiFlyGo · Te damos la bienvenida</title>
+  <meta name="description" content="Prepara tu espacio de trabajo en NubiFlyGo.">
+  <!-- Pantalla privada de la cuenta: no se indexa ni se comparte. -->
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/assets/favicon.svg">
+  <link rel="mask-icon" href="/assets/favicon.svg" color="#15171A">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d1117" media="(prefers-color-scheme: dark)">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- Mismos estilos que la pantalla de crear cuenta; bienvenida.css solo añade
+     las tarjetas de gustos, los pasos y la foto. -->
+<link rel="stylesheet" href="css/login.css">
+<link rel="stylesheet" href="css/bienvenida.css">
+</head>
+<body>
+<header class="toolbar">
+  <div class="brand">
+    <span class="brand-logo"><svg class="brand-cloud" viewBox="0 0 512 300" width="24" fill="currentColor" aria-hidden="true"><path d="M 505.22 172.06 C 502.62 161.46 496.62 146.51 490.10 137.12 C 483.58 127.74 475.07 121.14 466.12 115.75 C 457.17 110.36 447.52 106.45 436.40 104.80 C 425.28 103.15 408.33 112.53 399.38 105.84 C 390.43 99.15 387.56 74.30 382.70 64.65 C 377.83 55.01 375.83 53.96 370.18 47.97 C 364.53 41.97 358.28 34.85 348.81 28.68 C 339.33 22.51 325.78 14.86 313.35 10.95 C 300.93 7.04 288.59 4.61 274.25 5.21 C 259.91 5.82 242.18 8.69 227.32 14.60 C 212.46 20.51 197.43 29.81 185.09 40.67 C 172.75 51.53 160.93 66.22 153.29 79.77 C 145.64 93.33 140.69 109.40 139.21 122.00 C 137.73 134.60 141.90 147.20 144.42 155.37 C 146.94 163.54 150.25 166.32 154.33 171.01 C 158.41 175.71 160.33 179.27 168.93 183.53 C 177.53 187.79 191.26 194.48 205.95 196.56 C 220.63 198.65 255.30 194.82 257.04 196.04 C 258.78 197.26 228.28 202.38 216.37 203.86 C 204.47 205.34 195.26 205.60 185.61 204.90 C 175.97 204.21 166.84 202.73 158.50 199.69 C 150.16 196.65 141.90 191.78 135.56 186.66 C 129.22 181.53 124.61 176.40 120.44 168.93 C 116.27 161.46 111.75 152.07 110.53 141.82 C 109.32 131.56 110.27 117.40 113.14 107.41 C 116.01 97.41 130.87 86.38 127.74 81.86 C 124.61 77.34 103.67 79.68 94.37 80.29 C 85.07 80.90 80.99 81.51 71.95 85.51 C 62.91 89.50 48.14 98.19 40.15 104.28 C 32.15 110.36 28.33 116.18 23.98 122.00 C 19.64 127.83 16.95 132.52 14.08 139.21 C 11.21 145.90 8.26 154.68 6.78 162.15 C 5.30 169.62 4.26 175.10 5.21 184.05 C 6.17 193.00 8.60 206.21 12.51 215.85 C 16.42 225.50 21.81 234.19 28.68 241.92 C 35.54 249.66 43.27 257.04 53.70 262.26 C 64.13 267.47 78.21 271.82 91.24 273.21 C 104.28 274.60 117.05 273.29 131.91 270.60 C 146.77 267.90 165.28 262.52 180.40 257.04 C 195.52 251.57 204.56 247.48 222.63 237.75 C 240.71 228.02 272.16 207.34 288.85 198.65 C 305.53 189.96 310.40 187.79 322.74 185.61 C 335.08 183.44 353.15 184.40 362.88 185.61 C 372.62 186.83 375.31 189.52 381.13 192.91 C 386.95 196.30 401.55 202.82 397.82 205.95 C 394.08 209.08 376.01 203.51 358.71 211.68 C 341.42 219.85 310.14 244.88 294.06 254.96 C 277.99 265.04 273.90 266.86 262.26 272.16 C 250.61 277.46 235.67 283.29 224.20 286.76 C 212.73 290.24 195.69 291.80 193.43 293.02 C 191.17 294.23 200.47 295.02 210.64 294.06 C 220.81 293.11 241.58 290.85 254.44 287.28 C 267.30 283.72 259.74 275.12 287.80 272.68 C 315.87 270.25 395.12 273.81 422.84 272.68 C 450.56 271.55 445.00 269.38 454.13 265.91 C 463.25 262.43 470.55 258.00 477.59 251.83 C 484.63 245.66 491.67 237.40 496.36 228.89 C 501.05 220.37 504.27 210.21 505.74 200.73 C 507.22 191.26 507.83 182.66 505.22 172.06 Z"/></svg></span>
+    <span data-i18n="app.brand">NubiFlyGo</span>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- Panel de información (solo escritorio), igual que en el acceso -->
+  <aside class="side" aria-label="Información">
+    <svg class="side-shape" viewBox="0 0 512 300" fill="currentColor" aria-hidden="true">
+      <path d="M 505.22 172.06 C 502.62 161.46 496.62 146.51 490.10 137.12 C 483.58 127.74 475.07 121.14 466.12 115.75 C 457.17 110.36 447.52 106.45 436.40 104.80 C 425.28 103.15 408.33 112.53 399.38 105.84 C 390.43 99.15 387.56 74.30 382.70 64.65 C 377.83 55.01 375.83 53.96 370.18 47.97 C 364.53 41.97 358.28 34.85 348.81 28.68 C 339.33 22.51 325.78 14.86 313.35 10.95 C 300.93 7.04 288.59 4.61 274.25 5.21 C 259.91 5.82 242.18 8.69 227.32 14.60 C 212.46 20.51 197.43 29.81 185.09 40.67 C 172.75 51.53 160.93 66.22 153.29 79.77 C 145.64 93.33 140.69 109.40 139.21 122.00 C 137.73 134.60 141.90 147.20 144.42 155.37 C 146.94 163.54 150.25 166.32 154.33 171.01 C 158.41 175.71 160.33 179.27 168.93 183.53 C 177.53 187.79 191.26 194.48 205.95 196.56 C 220.63 198.65 255.30 194.82 257.04 196.04 C 258.78 197.26 228.28 202.38 216.37 203.86 C 204.47 205.34 195.26 205.60 185.61 204.90 C 175.97 204.21 166.84 202.73 158.50 199.69 C 150.16 196.65 141.90 191.78 135.56 186.66 C 129.22 181.53 124.61 176.40 120.44 168.93 C 116.27 161.46 111.75 152.07 110.53 141.82 C 109.32 131.56 110.27 117.40 113.14 107.41 C 116.01 97.41 130.87 86.38 127.74 81.86 C 124.61 77.34 103.67 79.68 94.37 80.29 C 85.07 80.90 80.99 81.51 71.95 85.51 C 62.91 89.50 48.14 98.19 40.15 104.28 C 32.15 110.36 28.33 116.18 23.98 122.00 C 19.64 127.83 16.95 132.52 14.08 139.21 C 11.21 145.90 8.26 154.68 6.78 162.15 C 5.30 169.62 4.26 175.10 5.21 184.05 C 6.17 193.00 8.60 206.21 12.51 215.85 C 16.42 225.50 21.81 234.19 28.68 241.92 C 35.54 249.66 43.27 257.04 53.70 262.26 C 64.13 267.47 78.21 271.82 91.24 273.21 C 104.28 274.60 117.05 273.29 131.91 270.60 C 146.77 267.90 165.28 262.52 180.40 257.04 C 195.52 251.57 204.56 247.48 222.63 237.75 C 240.71 228.02 272.16 207.34 288.85 198.65 C 305.53 189.96 310.40 187.79 322.74 185.61 C 335.08 183.44 353.15 184.40 362.88 185.61 C 372.62 186.83 375.31 189.52 381.13 192.91 C 386.95 196.30 401.55 202.82 397.82 205.95 C 394.08 209.08 376.01 203.51 358.71 211.68 C 341.42 219.85 310.14 244.88 294.06 254.96 C 277.99 265.04 273.90 266.86 262.26 272.16 C 250.61 277.46 235.67 283.29 224.20 286.76 C 212.73 290.24 195.69 291.80 193.43 293.02 C 191.17 294.23 200.47 295.02 210.64 294.06 C 220.81 293.11 241.58 290.85 254.44 287.28 C 267.30 283.72 259.74 275.12 287.80 272.68 C 315.87 270.25 395.12 273.81 422.84 272.68 C 450.56 271.55 445.00 269.38 454.13 265.91 C 463.25 262.43 470.55 258.00 477.59 251.83 C 484.63 245.66 491.67 237.40 496.36 228.89 C 501.05 220.37 504.27 210.21 505.74 200.73 C 507.22 191.26 507.83 182.66 505.22 172.06 Z"/>
+    </svg>
+    <div class="side-body">
+      <h2 class="side-title"><span class="soft" data-i18n="onboarding.panelSoft">Ya casi está.</span><br><span data-i18n="onboarding.panelTitle">Prepara tu espacio en un minuto.</span></h2>
+      <ul class="features">
+        <li class="feature">
+          <span class="feature-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V5M8 9l4-4 4 4"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg></span>
+          <div><strong data-i18n="login.f1Title">Publica en segundos</strong><p data-i18n="login.f1Text">Sube tus documentos y genera un enlace listo para compartir.</p></div>
+        </li>
+        <li class="feature">
+          <span class="feature-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></span>
+          <div><strong data-i18n="login.f2Title">Todo por proyectos</strong><p data-i18n="login.f2Text">Reúne archivos, notas e informes en un mismo lugar y encuéntralo al instante.</p></div>
+        </li>
+        <li class="feature">
+          <span class="feature-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9.3 12l1.9 1.9L15 10"/></svg></span>
+          <div><strong data-i18n="login.f3Title">Control y seguridad</strong><p data-i18n="login.f3Text">Tú decides qué es privado y qué compartes; tus archivos siempre protegidos.</p></div>
+        </li>
+      </ul>
+    </div>
+  </aside>
+
+  <!-- Los tres pasos -->
+  <main class="main" id="main">
+    <div class="mobile-top">
+      <div class="brand">
+        <span class="brand-logo"><svg class="brand-cloud" viewBox="0 0 512 300" width="24" fill="currentColor" aria-hidden="true"><path d="M 505.22 172.06 C 502.62 161.46 496.62 146.51 490.10 137.12 C 483.58 127.74 475.07 121.14 466.12 115.75 C 457.17 110.36 447.52 106.45 436.40 104.80 C 425.28 103.15 408.33 112.53 399.38 105.84 C 390.43 99.15 387.56 74.30 382.70 64.65 C 377.83 55.01 375.83 53.96 370.18 47.97 C 364.53 41.97 358.28 34.85 348.81 28.68 C 339.33 22.51 325.78 14.86 313.35 10.95 C 300.93 7.04 288.59 4.61 274.25 5.21 C 259.91 5.82 242.18 8.69 227.32 14.60 C 212.46 20.51 197.43 29.81 185.09 40.67 C 172.75 51.53 160.93 66.22 153.29 79.77 C 145.64 93.33 140.69 109.40 139.21 122.00 C 137.73 134.60 141.90 147.20 144.42 155.37 C 146.94 163.54 150.25 166.32 154.33 171.01 C 158.41 175.71 160.33 179.27 168.93 183.53 C 177.53 187.79 191.26 194.48 205.95 196.56 C 220.63 198.65 255.30 194.82 257.04 196.04 C 258.78 197.26 228.28 202.38 216.37 203.86 C 204.47 205.34 195.26 205.60 185.61 204.90 C 175.97 204.21 166.84 202.73 158.50 199.69 C 150.16 196.65 141.90 191.78 135.56 186.66 C 129.22 181.53 124.61 176.40 120.44 168.93 C 116.27 161.46 111.75 152.07 110.53 141.82 C 109.32 131.56 110.27 117.40 113.14 107.41 C 116.01 97.41 130.87 86.38 127.74 81.86 C 124.61 77.34 103.67 79.68 94.37 80.29 C 85.07 80.90 80.99 81.51 71.95 85.51 C 62.91 89.50 48.14 98.19 40.15 104.28 C 32.15 110.36 28.33 116.18 23.98 122.00 C 19.64 127.83 16.95 132.52 14.08 139.21 C 11.21 145.90 8.26 154.68 6.78 162.15 C 5.30 169.62 4.26 175.10 5.21 184.05 C 6.17 193.00 8.60 206.21 12.51 215.85 C 16.42 225.50 21.81 234.19 28.68 241.92 C 35.54 249.66 43.27 257.04 53.70 262.26 C 64.13 267.47 78.21 271.82 91.24 273.21 C 104.28 274.60 117.05 273.29 131.91 270.60 C 146.77 267.90 165.28 262.52 180.40 257.04 C 195.52 251.57 204.56 247.48 222.63 237.75 C 240.71 228.02 272.16 207.34 288.85 198.65 C 305.53 189.96 310.40 187.79 322.74 185.61 C 335.08 183.44 353.15 184.40 362.88 185.61 C 372.62 186.83 375.31 189.52 381.13 192.91 C 386.95 196.30 401.55 202.82 397.82 205.95 C 394.08 209.08 376.01 203.51 358.71 211.68 C 341.42 219.85 310.14 244.88 294.06 254.96 C 277.99 265.04 273.90 266.86 262.26 272.16 C 250.61 277.46 235.67 283.29 224.20 286.76 C 212.73 290.24 195.69 291.80 193.43 293.02 C 191.17 294.23 200.47 295.02 210.64 294.06 C 220.81 293.11 241.58 290.85 254.44 287.28 C 267.30 283.72 259.74 275.12 287.80 272.68 C 315.87 270.25 395.12 273.81 422.84 272.68 C 450.56 271.55 445.00 269.38 454.13 265.91 C 463.25 262.43 470.55 258.00 477.59 251.83 C 484.63 245.66 491.67 237.40 496.36 228.89 C 501.05 220.37 504.27 210.21 505.74 200.73 C 507.22 191.26 507.83 182.66 505.22 172.06 Z"/></svg></span>
+        <span data-i18n="app.brand">NubiFlyGo</span>
+      </div>
+    </div>
+
+    <div class="wrap" id="wrap">
+      <!-- Avance: una sola barra de tres tramos (no se repite el dato en dos sitios) -->
+      <div class="ob-steps" id="ob-steps" role="progressbar" aria-valuemin="1" aria-valuemax="3" aria-valuenow="1">
+        <span></span><span></span><span></span>
+      </div>
+      <p class="ob-count" id="ob-count" aria-live="polite">Paso 1 de 3</p>
+
+      <!-- El contenido de cada paso lo pinta js/bienvenida.js -->
+      <div id="ob-step"></div>
+
+      <div class="ob-actions">
+        <button class="btn btn-ghost ob-back" type="button" id="ob-back" hidden data-i18n="onboarding.back">Atrás</button>
+        <button class="btn btn-primary" type="button" id="ob-next" data-i18n="onboarding.next">Continuar</button>
+      </div>
+
+      <!-- La bienvenida es obligatoria para entrar, pero nadie queda atrapado:
+           desde aquí puede cerrar sesión y volver al acceso. Va dentro de la
+           tarjeta porque la barra de arriba solo se ve en escritorio. -->
+      <p class="ob-out"><button type="button" id="ob-logout" data-i18n="onboarding.logout">Cerrar sesión</button></p>
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<!-- Idioma centralizado (compartido con la app) + los pasos de la bienvenida -->
+<script src="js/languages.js"></script>
+<script src="js/bienvenida.js"></script>
+</body>
+</html>

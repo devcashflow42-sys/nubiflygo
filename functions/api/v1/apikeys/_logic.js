@@ -8,7 +8,7 @@
    no puede ver, crear ni borrar claves (ver keyPolicy en api.js). */
 import { getDb } from '../../../_shared/db.js';
 import { json } from '../../../_shared/http.js';
-import { dataRoute, ensureUsageTable, ownsProject } from '../../../_shared/api.js';
+import { dataRoute, ensureUsageTable, ownsProject, GUEST_KEY_ERROR } from '../../../_shared/api.js';
 import { ensureSecurityColumns } from '../../../_shared/security.js';
 import { UUID_RE, body } from '../../../_shared/util.js';
 
@@ -26,7 +26,7 @@ export const handle = dataRoute(async ({ seg, request, env, method, user }) => {
       return json({ items, today });
     }
     if (method === 'POST') {
-      if (user.isGuest) return json({ error: 'Las API keys requieren una cuenta. Crea una cuenta gratis para generarlas.' }, 403);
+      if (user.isGuest) return json({ error: GUEST_KEY_ERROR }, 403);
       const b = await body(request);
       const name = String(b.name || 'Clave').slice(0, 80);
       // Permisos admitidos: 'all', 'write' (escritura restringida de la app) y 'read'.

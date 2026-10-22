@@ -146,9 +146,6 @@
 .ph-btn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 .ph-btn svg { width: 15px; height: 15px; }
 .ph-btn.is-icon { width: 38px; padding: 0; justify-content: center; }
-.ph-btn.ph-play { width: 48px; height: 48px; padding: 0; justify-content: center; background: #fff; color: #111; border: 0; box-shadow: 0 10px 24px -10px rgba(0, 0, 0, .6); }
-.ph-btn.ph-play svg { width: 18px; height: 18px; margin-left: 3px; }
-.ph-btn.ph-play:hover { background: #fff; transform: scale(1.04); }
 
 /* ─── Proyectos agrupados por categoría ─── */
 .pg-head { display: flex; align-items: center; gap: 8px; margin: 18px 0 10px; }
@@ -296,8 +293,7 @@
   .lib-dup-h .btn { order: 3; flex: 1 1 100%; justify-content: center; height: 40px; }
   .ph-btn { height: 42px; }
   .ph-btn span { display: none; }
-  .ph-btn:not(.ph-play) { width: 42px; padding: 0; justify-content: center; }
-  .ph-btn.ph-play { width: 52px; height: 52px; }
+  .ph-btn { width: 42px; padding: 0; justify-content: center; }
   .pub-act { width: 36px; height: 36px; }
   .lib-more, .lib-row-del, .ak-del, .ak-more { min-width: 40px; min-height: 40px; }
 }

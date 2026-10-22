@@ -109,6 +109,10 @@
         const u = data && data.user;
         if (!u) throw new Error('Respuesta sin usuario.');
         window.currentUser = u;
+        // Cuenta nueva a la que le falta la bienvenida: se la pedimos antes de
+        // entrar. Los invitados no la ven (su cuenta se borra al caducar).
+        // La pantalla hace la comprobación contraria, así que no hay bucle.
+        if (!u.is_guest && u.onboarded_at === null) { location.replace('/bienvenida'); }
         return u;
       });
     // Si falla, se recuerda el error (las vistas muestran el aviso en vez de

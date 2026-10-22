@@ -7,7 +7,9 @@
   // Convierte un proyecto del servidor al formato de la vista.
   function mapServerProject(p) {
     return {
-      id: p.id, name: p.name, description: p.description || '', color: p.color || PROJECT_COLORS[0],
+      id: p.id, name: p.name, description: p.description || '', color: safeColor(p.color),
+      // Icono elegido (null = «Auto»: se pone solo según el contenido).
+      icon: p.icon || null,
       visibility: 'private', members: [], documents: [], _loaded: false,
       contentCount: (Number(p.doc_count) || 0) + (Number(p.file_count) || 0),
       createdAt: p.created_at ? Date.parse(p.created_at) : Date.now(),
@@ -47,7 +49,8 @@
         if (!all) return;
         const it = all.it;
         p.description = it.description || '';
-        if (it.color) p.color = it.color;
+        if (it.color) p.color = safeColor(it.color);
+        p.icon = it.icon || null;
         p.visibility = it.visibility || 'private';
         if (it.created_at) p.createdAt = Date.parse(it.created_at);
         if (it.updated_at) p.updatedAt = Date.parse(it.updated_at);
@@ -269,13 +272,11 @@
     // Portada grande: mosaico de portadas, categoría automática y acciones.
     const items = p.documents || [];
     const cat = p._loaded ? projectCategory(items) : null;
-    const songs = items.filter(d => d.kind === 'file' && mediaKind(d.mime, d.title) === 'audio');
     const menuBtn = el('button', { type: 'button', class: 'ph-btn is-icon', 'aria-label': 'Opciones del proyecto', title: 'Opciones del proyecto', html: LIB_ICN.dots,
       onclick: (e) => popup(e, projectMenuItems(p, docCount)) });
-    const shuffle = () => { const q = songs.slice().sort(() => Math.random() - 0.5); playAudio(q[0], q); };
+    // Sin «Reproducir todo» ni aleatorio: el encabezado es el mismo para todos
+    // los proyectos. Las canciones se reproducen tocándolas en la lista.
     v.appendChild(projectHero(p, p._loaded ? items : [], [
-      songs.length ? heroBtn('Reproducir todo', LIB_ICN.play, () => playAudio(songs[0], songs), 'ph-play') : null,
-      songs.length > 1 ? heroBtn('Aleatorio', LIB_ICN.shuffle, shuffle) : null,
       heroBtn('Subir', LIB_ICN.upload, () => fileInput(p)),
       cat !== 'music' && cat !== 'photos' ? heroBtn('Nuevo documento', LIB_ICN.plus, () => openDocModal(p)) : null,
       heroBtn('Publicar', LIB_ICN.globe, () => { state.projectTab = 'pub'; render(); }),

@@ -55,7 +55,7 @@ app.use((req, res, next) => {
 });
 
 // Oculta el .html: redirige las direcciones con .html a su ruta limpia.
-const CLEAN = { '/main.html': '/', '/index.html': '/', '/login.html': '/login', '/home.html': '/main' };
+const CLEAN = { '/main.html': '/', '/index.html': '/', '/login.html': '/login', '/home.html': '/main', '/bienvenida.html': '/bienvenida' };
 app.get(Object.keys(CLEAN), (req, res) => res.redirect(301, CLEAN[req.path]));
 
 // API primero, para que no la capture el servidor de archivos. Antes pasa por
@@ -81,7 +81,7 @@ app.get(/^\/s\/[A-Za-z0-9]{22}\/?$/, async (req, res) => {
 });
 
 // Páginas con ruta limpia.
-const PAGES = { '/': 'main.html', '/login': 'login.html', '/main': 'home.html' };
+const PAGES = { '/': 'main.html', '/login': 'login.html', '/main': 'home.html', '/bienvenida': 'bienvenida.html' };
 for (const [route, file] of Object.entries(PAGES)) {
   app.get(route, (_req, res) => res.sendFile(path.join(PUBLIC, file)));
 }
