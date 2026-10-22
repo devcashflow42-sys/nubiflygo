@@ -92,7 +92,7 @@ app.use(express.static(PUBLIC, { extensions: [], index: false }));
 // Secciones de la app (SPA): sirven home.html para que la entrada directa y la
 // recarga abran la sección correcta (el front ajusta la vista según la URL).
 // Admite también el detalle /seccion/<id>.
-const APP_SECTIONS = new Set(['main', 'project', 'note', 'archive', 'report', 'apikeys', 'automation', 'settings', 'notifications']);
+const APP_SECTIONS = new Set(['main', 'project', 'note', 'archive', 'report', 'apikeys', 'automation', 'settings', 'notifications', 'trash']);
 app.get(/^\/([^/]+)(\/.*)?$/, (req, res, nextFn) => {
   const first = (req.path.split('/')[1] || '').toLowerCase();
   if (APP_SECTIONS.has(first)) return res.sendFile(path.join(PUBLIC, 'home.html'));

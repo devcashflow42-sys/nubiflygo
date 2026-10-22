@@ -745,7 +745,7 @@
   }
   async function deleteUploaded(t) {
     if (!t.item) return;
-    const ok = await confirmDialog('¿Eliminar archivo?', '"' + t.file.name + '" se eliminará para siempre.', 'Eliminar');
+    const ok = await confirmDialog('¿Eliminar archivo?', '"' + t.file.name + '" se irá a la papelera. Tienes 30 días para recuperarlo.', 'Eliminar');
     if (!ok) return;
     try { await apiDelete('/files/' + t.item.id); }
     catch (e) { if (e.status !== 404) { toast(e.message || 'No se pudo eliminar'); return; } }

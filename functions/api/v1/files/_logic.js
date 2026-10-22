@@ -23,7 +23,8 @@ import { storageLeft } from '../../../_shared/billing.js';
 import { fileHeaders } from '../../../_shared/security.js';
 import { UUID_RE, GUEST_LIMITS, body, pageParams, fmtBytes } from '../../../_shared/util.js';
 import { sha256hex, imageSize, categoryOf, extOf, buildFileItem, cleanMedia } from '../../../_shared/files-util.js';
-import { fileFilters, strictFilterError, FILE_SORTS, FILE_TYPE_SQL, FILE_TYPES, readSelection, deleteFilesWhere, logActivity, bulkResponse } from '../../../_shared/bulk.js';
+import { fileFilters, strictFilterError, FILE_SORTS, FILE_TYPE_SQL, FILE_TYPES, readSelection, logActivity, bulkResponse } from '../../../_shared/bulk.js';
+import { trashOne, trashFilesWhere } from '../../../_shared/trash.js';
 
 const THUMB_MAX = 400 * 1024;   // la portada la genera el navegador (≈ 20–60 KB)
 
@@ -38,7 +39,7 @@ export const handle = dataRoute(async ({ seg, request, env, method, user, scope 
   const db = getDb(env);
   // Clave de un proyecto: solo ve y toca los archivos de ese proyecto (capa 2).
   if (scope && UUID_RE.test(seg[1] || '')) {
-    const { rows: own } = await db.query('SELECT 1 FROM files WHERE id = $1 AND user_id = $2 AND project_id = $3', [seg[1], user.id, scope]);
+    const { rows: own } = await db.query('SELECT 1 FROM files WHERE id = $1 AND user_id = $2 AND project_id = $3 AND deleted_at IS NULL', [seg[1], user.id, scope]);
     if (!own[0]) return json({ error: 'Archivo no encontrado.' }, 404);
   }
 
@@ -64,11 +65,11 @@ export const handle = dataRoute(async ({ seg, request, env, method, user, scope 
     }
     const { rows } = await db.query(
       `SELECT id, user_id, project_id, name, original_name, size, mime, storage_key, meta, published, published_at, created_at, updated_at
-       FROM files WHERE user_id = $1${f.sql} ORDER BY ${order}${limitSql}`, params);
+       FROM files WHERE user_id = $1 AND deleted_at IS NULL${f.sql} ORDER BY ${order}${limitSql}`, params);
     // Totales del conjunto (con los mismos filtros): cantidad, espacio y por tipo.
     const { rows: st } = await db.query(
       `SELECT count(*)::int AS n, coalesce(sum(size), 0)::bigint AS bytes, (${FILE_TYPE_SQL}) AS type
-       FROM files WHERE user_id = $1${f.sql} GROUP BY 3`, [user.id, ...f.params]);
+       FROM files WHERE user_id = $1 AND deleted_at IS NULL${f.sql} GROUP BY 3`, [user.id, ...f.params]);
     const byType = Object.fromEntries(FILE_TYPES.map(t => [t, 0]));
     let total = 0, bytes = 0;
     st.forEach(r => { byType[r.type] = r.n; total += r.n; bytes += Number(r.bytes) || 0; });
@@ -106,10 +107,11 @@ export const handle = dataRoute(async ({ seg, request, env, method, user, scope 
     if (f.error) return json({ error: f.error }, 400);
     const where = (sel.ids ? ' AND id = ANY($2::uuid[])' : '') + f.sql;
     const params = (sel.ids ? [sel.ids] : []).concat(f.params);
-    const r = await deleteFilesWhere(db, env, user.id, where, params);
-    if (r.deleted) await logActivity(db, user.id, 'file', r.deleted === 1 ? 'Archivo eliminado' : r.deleted + ' archivos eliminados');
-    return json(Object.assign(bulkResponse(
-      r.deleted === 1 ? 'Se eliminó 1 archivo.' : 'Se eliminaron ' + r.deleted + ' archivos.', r.deleted, r.remaining, r.bytes), { ids: r.ids }));
+    // A la papelera: es un UPDATE, así que no hay tandas ni presupuesto de
+    // almacenamiento que repartir (eso llega al borrarlos de verdad).
+    const n = await trashFilesWhere(db, user.id, where, params);
+    if (n) await logActivity(db, user.id, 'file', n === 1 ? 'Archivo eliminado' : n + ' archivos eliminados');
+    return json(bulkResponse(n === 1 ? 'Se eliminó 1 archivo.' : 'Se eliminaron ' + n + ' archivos.', n, 0, 0));
   }
 
   // POST /files/upload
@@ -118,7 +120,7 @@ export const handle = dataRoute(async ({ seg, request, env, method, user, scope 
       return json({ error: 'Las subidas necesitan configurar el almacenamiento (AWS_ENDPOINT_URL_S3, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY) en Cloudflare.' }, 503);
     }
     if (user.isGuest) {
-      const { rows: c } = await db.query('SELECT count(*)::int AS n FROM files WHERE user_id = $1', [user.id]);
+      const { rows: c } = await db.query('SELECT count(*)::int AS n FROM files WHERE user_id = $1 AND deleted_at IS NULL', [user.id]);
       if (((c[0] && c[0].n) || 0) >= GUEST_LIMITS.files) {
         return json({ error: 'Como invitado puedes subir hasta ' + GUEST_LIMITS.files + ' archivos. Crea una cuenta gratis para más.' }, 403);
       }
@@ -147,7 +149,7 @@ export const handle = dataRoute(async ({ seg, request, env, method, user, scope 
     if (/^[a-z0-9]{8,64}$/i.test(uploadId)) {
       const { rows: dup } = await db.query(
         `SELECT id, user_id, project_id, name, original_name, size, mime, storage_key, meta, published, published_at, created_at, updated_at
-         FROM files WHERE user_id = $1 AND meta->>'upload_id' = $2 LIMIT 1`, [user.id, uploadId]);
+         FROM files WHERE user_id = $1 AND deleted_at IS NULL AND meta->>'upload_id' = $2 LIMIT 1`, [user.id, uploadId]);
       if (dup[0]) return json({ success: true, status: 200, message: 'Archivo ya subido.', data: { item: buildFileItem(dup[0], env) }, error: null }, 200);
     }
     const buf = await file.arrayBuffer();
@@ -189,7 +191,7 @@ export const handle = dataRoute(async ({ seg, request, env, method, user, scope 
   if (seg.length === 2 && method === 'GET') {
     if (!UUID_RE.test(seg[1])) return json({ error: 'Id no válido.' }, 400);
     const { rows } = await db.query(
-      'SELECT id, user_id, project_id, name, original_name, size, mime, storage_key, meta, created_at, updated_at FROM files WHERE id = $1 AND user_id = $2',
+      'SELECT id, user_id, project_id, name, original_name, size, mime, storage_key, meta, created_at, updated_at FROM files WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL',
       [seg[1], user.id]);
     if (!rows[0]) return json({ error: 'Archivo no encontrado.' }, 404);
     return json({ success: true, status: 200, message: '', data: { item: buildFileItem(rows[0], env) }, error: null });
@@ -198,7 +200,7 @@ export const handle = dataRoute(async ({ seg, request, env, method, user, scope 
   // GET /files/:id/download
   if (seg.length === 3 && seg[2] === 'download' && method === 'GET') {
     if (!UUID_RE.test(seg[1])) return json({ error: 'Id no válido.' }, 400);
-    const { rows } = await db.query('SELECT name, mime, storage_key FROM files WHERE id = $1 AND user_id = $2', [seg[1], user.id]);
+    const { rows } = await db.query('SELECT name, mime, storage_key FROM files WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL', [seg[1], user.id]);
     const f = rows[0];
     if (!f) return json({ error: 'Archivo no encontrado.' }, 404);
     // Range: permite adelantar/atrasar canciones y videos sin descargar todo.
@@ -220,7 +222,7 @@ export const handle = dataRoute(async ({ seg, request, env, method, user, scope 
   // GET /files/:id/thumb  (portada del archivo)
   if (seg.length === 3 && seg[2] === 'thumb' && method === 'GET') {
     if (!UUID_RE.test(seg[1])) return json({ error: 'Id no válido.' }, 400);
-    const { rows } = await db.query(`SELECT meta->>'thumb_key' AS k, meta->>'thumb_mime' AS m FROM files WHERE id = $1 AND user_id = $2`, [seg[1], user.id]);
+    const { rows } = await db.query(`SELECT meta->>'thumb_key' AS k, meta->>'thumb_mime' AS m FROM files WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL`, [seg[1], user.id]);
     if (!rows[0] || !rows[0].k) return json({ error: 'Sin portada.' }, 404);
     const res = await getObject(env, rows[0].k);
     const m = /^image\/(jpeg|png|webp)$/.test(rows[0].m || '') ? rows[0].m : 'image/jpeg';
@@ -242,11 +244,10 @@ export const handle = dataRoute(async ({ seg, request, env, method, user, scope 
   // DELETE /files/:id
   if (seg.length === 2 && method === 'DELETE') {
     if (!UUID_RE.test(seg[1])) return json({ error: 'Id no válido.' }, 400);
-    const { rows } = await db.query(`DELETE FROM files WHERE id = $1 AND user_id = $2 RETURNING storage_key, meta->>'thumb_key' AS thumb_key`, [seg[1], user.id]);
-    if (!rows[0]) return json({ error: 'Archivo no encontrado.' }, 404);
-    try { await deleteObject(env, rows[0].storage_key); } catch {}
-    if (rows[0].thumb_key) { try { await deleteObject(env, rows[0].thumb_key); } catch {} }
-    return json({ ok: true });
+    // A la papelera: el objeto del almacenamiento se suelta solo al borrarlo
+    // de verdad (a los 30 días o desde la papelera), para poder restaurarlo.
+    if (!(await trashOne(db, 'files', user.id, seg[1]))) return json({ error: 'Archivo no encontrado.' }, 404);
+    return json({ ok: true, trashed: true });
   }
 
   return json({ error: 'Ruta de archivos no encontrada.' }, 404);

@@ -6,6 +6,7 @@
 import { Router } from 'express';
 import crypto from 'node:crypto';
 import { query } from '../db.js';
+import { trashOne } from '../trash.js';
 import { requireAuth } from '../auth.js';
 import { ownsProject, ensureSecurity } from '../security.js';
 
@@ -21,7 +22,7 @@ function genSecret() {
 apikeys.get('/', async (req, res, next) => {
   try {
     const { rows } = await query(
-      'SELECT id, name, value, permission, project_id, created_at, last_used FROM api_keys WHERE user_id = $1 ORDER BY created_at DESC',
+      'SELECT id, name, value, permission, project_id, created_at, last_used FROM api_keys WHERE user_id = $1 AND deleted_at IS NULL ORDER BY created_at DESC',
       [req.user.id]);
     res.json({ items: rows });
   } catch (e) { next(e); }
@@ -45,7 +46,7 @@ apikeys.post('/', async (req, res, next) => {
     await ensureSecurity();
     const projectId = b.project_id && UUID_RE.test(b.project_id) ? b.project_id : null;
     if (projectId && !(await ownsProject(req.user.id, projectId))) return res.status(404).json({ error: 'Proyecto no encontrado.' });
-    const { rows: cnt } = await query('SELECT count(*)::int AS n FROM api_keys WHERE user_id = $1', [req.user.id]);
+    const { rows: cnt } = await query('SELECT count(*)::int AS n FROM api_keys WHERE user_id = $1 AND deleted_at IS NULL', [req.user.id]);
     if (((cnt[0] && cnt[0].n) || 0) >= 50) return res.status(403).json({ error: 'Llegaste al máximo de 50 claves. Borra alguna que ya no uses.' });
     const { rows } = await query(
       `INSERT INTO api_keys (user_id, project_id, name, value, permission, expires_at)
@@ -60,9 +61,9 @@ apikeys.post('/', async (req, res, next) => {
 apikeys.delete('/:id', async (req, res, next) => {
   try {
     if (!UUID_RE.test(req.params.id)) return res.status(400).json({ error: 'Id no válido.' });
-    const { rowCount } = await query(
-      'DELETE FROM api_keys WHERE id = $1 AND user_id = $2', [req.params.id, req.user.id]);
-    if (!rowCount) return res.status(404).json({ error: 'No encontrada.' });
-    res.json({ ok: true });
+    // A la papelera. (En Node las API keys no autentican, pero la papelera y
+    // los contadores tienen que decir lo mismo que en Cloudflare.)
+    if (!(await trashOne('api_keys', req.user.id, req.params.id))) return res.status(404).json({ error: 'No encontrada.' });
+    res.json({ ok: true, trashed: true });
   } catch (e) { next(e); }
 });

@@ -298,3 +298,24 @@ CREATE TABLE IF NOT EXISTS app_control_audit (
 );
 CREATE INDEX IF NOT EXISTS idx_app_control_audit_time ON app_control_audit(platform, created_at DESC);
 INSERT INTO app_control (platform) VALUES ('android') ON CONFLICT (platform) DO NOTHING;
+
+-- ─────────────────────────── Papelera ───────────────────────────
+-- Borrado suave: al borrar algo se marca deleted_at y se guarda 30 días. Lo que
+-- se fue a la papelera junto a su proyecto lleva trashed_with_project, para que
+-- al restaurar el proyecto vuelva lo mismo que se fue con él.
+-- TODA lectura de estas tablas debe llevar «deleted_at IS NULL».
+ALTER TABLE projects  ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;
+ALTER TABLE files     ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;
+ALTER TABLE notes     ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;
+ALTER TABLE api_keys  ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;
+ALTER TABLE files     ADD COLUMN IF NOT EXISTS trashed_with_project BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS trashed_with_project BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE notes     ADD COLUMN IF NOT EXISTS trashed_with_project BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE api_keys  ADD COLUMN IF NOT EXISTS trashed_with_project BOOLEAN NOT NULL DEFAULT false;
+-- Índices parciales: solo indexan lo borrado, que es la minoría.
+CREATE INDEX IF NOT EXISTS idx_projects_trash  ON projects(user_id, deleted_at)  WHERE deleted_at IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_files_trash     ON files(user_id, deleted_at)     WHERE deleted_at IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_documents_trash ON documents(user_id, deleted_at) WHERE deleted_at IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_notes_trash     ON notes(user_id, deleted_at)     WHERE deleted_at IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_apikeys_trash   ON api_keys(user_id, deleted_at)  WHERE deleted_at IS NOT NULL;

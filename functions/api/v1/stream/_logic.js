@@ -18,11 +18,11 @@ const LIFE_MS = 25000;
 
 // Una sola consulta: "cantidad.última-modificación" por colección.
 const SIG_SQL = `SELECT
-  (SELECT count(*) || '.' || coalesce(extract(epoch FROM max(updated_at))::text, '') FROM projects  WHERE user_id = $1) AS projects,
-  (SELECT count(*) || '.' || coalesce(extract(epoch FROM max(updated_at))::text, '') FROM notes     WHERE user_id = $1) AS notes,
-  (SELECT count(*) || '.' || coalesce(extract(epoch FROM max(updated_at))::text, '') FROM documents WHERE user_id = $1) AS documents,
-  (SELECT count(*) || '.' || coalesce(extract(epoch FROM max(updated_at))::text, '') FROM files     WHERE user_id = $1) AS files,
-  (SELECT count(*) || '.' || coalesce(extract(epoch FROM max(greatest(created_at, coalesce(last_used, created_at))))::text, '') FROM api_keys WHERE user_id = $1) AS apikeys,
+  (SELECT count(*) || '.' || coalesce(extract(epoch FROM max(updated_at))::text, '') FROM projects  WHERE user_id = $1 AND deleted_at IS NULL) AS projects,
+  (SELECT count(*) || '.' || coalesce(extract(epoch FROM max(updated_at))::text, '') FROM notes     WHERE user_id = $1 AND deleted_at IS NULL) AS notes,
+  (SELECT count(*) || '.' || coalesce(extract(epoch FROM max(updated_at))::text, '') FROM documents WHERE user_id = $1 AND deleted_at IS NULL) AS documents,
+  (SELECT count(*) || '.' || coalesce(extract(epoch FROM max(updated_at))::text, '') FROM files     WHERE user_id = $1 AND deleted_at IS NULL) AS files,
+  (SELECT count(*) || '.' || coalesce(extract(epoch FROM max(greatest(created_at, coalesce(last_used, created_at))))::text, '') FROM api_keys WHERE user_id = $1 AND deleted_at IS NULL) AS apikeys,
   (SELECT count(*) || '.' || coalesce(extract(epoch FROM max(created_at))::text, '') FROM activity  WHERE user_id = $1) AS activity,
   (SELECT count(*) || '.' || count(read_at) || '.' || coalesce(extract(epoch FROM max(created_at))::text, '') FROM notifications WHERE user_id = $1 AND deleted_at IS NULL) AS notifications`;
 

@@ -104,6 +104,7 @@ la petición llega con una API key, y entonces tampoco se felicita.
 | `GET /files` · `POST /files/upload` · `GET /files/:id/download` · `DELETE /files/:id` | Archivos (lista con todos los datos) | cookie o key |
 | `DELETE /files` · `POST /files/delete` | Borrar varios o todos los archivos | cookie o key |
 | `GET /files/:id/thumb` | Portada del archivo (banner: miniatura de imagen/video o carátula de la canción) | cookie o key |
+| `GET /trash` · `POST /trash/restore` · `DELETE /trash/:kind/:id` · `DELETE /trash` | Papelera: ver, restaurar, borrar de verdad y vaciar | **solo cookie** |
 | `GET /stream` | Tiempo real (Server-Sent Events): evento `change` cuando cambian proyectos, archivos, notas, documentos o API keys | cookie o key |
 
 `POST /files/upload` acepta, además de `file` y `project_id`, dos campos opcionales:
@@ -284,6 +285,36 @@ Con `?include=items`, cada proyecto incluye también todos sus elementos (`items
 |---|---|
 | `icon` | `folder`, `music`, `photo`, `video`, `doc`, `code`, `design`, `work`, `study`, `travel`, `home`, `money`, `star`, `heart`, `rocket`, `idea`, `chart` o `shop`. `null` o `""` = automático: el icono se pone solo según el contenido. Otro valor → 400. |
 | `color` | Solo hexadecimal, `#abc` o `#aabbcc` (la app usa `#2b5fff`, `#8b5cf6`, `#ef4444`, `#f59e0b`, `#10b981`, `#06b6d4`, `#ec4899` y `#f97316`). Otro valor → 400. Con `PATCH`, `null` también da 400; con `POST` se ignora y queda el color por defecto. |
+
+
+## Papelera
+
+Borrar **no borra**: el elemento se marca y se guarda **30 días** en la papelera.
+Vale para proyectos, archivos, documentos, notas y API keys.
+
+- `DELETE /projects/:id`, `DELETE /files/:id`, `DELETE /notes/:id`,
+  `DELETE /documents/:id` y `DELETE /apikeys/:id` responden `{"ok": true,
+  "trashed": true}`: el elemento deja de salir en las listas y en los
+  contadores, pero se puede recuperar.
+- Al borrar un **proyecto** se va con todo su contenido. Al restaurarlo vuelve
+  lo mismo que se fue con él; lo que ya estaba en la papelera antes se queda
+  donde el usuario lo dejó, con su propia cuenta atrás.
+- Una **API key** en la papelera **deja de autenticar al instante** (responde
+  401). Si se restaura, vuelve a valer.
+- Lo que está en la papelera **ya no ocupa espacio del plan**: el hueco se
+  libera al borrar. El archivo solo se suelta del almacenamiento al borrarlo de
+  verdad.
+- A los 30 días se elimina solo. La limpieza corre al abrir `GET /trash`.
+
+| Petición | Qué hace |
+|---|---|
+| `GET /trash` | `{items, bytes, days}`. Cada elemento: `kind` (`project`, `file`, `document`, `note`, `apikey`), `id`, `title`, `size`, `items` (solo proyectos), `parent` (de dónde venía), `deleted_at` y `days_left`. |
+| `POST /trash/restore` | Cuerpo `{kind, id}`. Lo devuelve a su sitio. **409** si su proyecto también está en la papelera: hay que restaurar antes el proyecto. |
+| `DELETE /trash/:kind/:id` | Lo borra de verdad (y suelta su archivo del almacenamiento). No se puede deshacer. |
+| `DELETE /trash` | Vacía la papelera entera. |
+
+**La papelera no se puede usar con API key** (403): restaurar o borrar para
+siempre se hace desde la app con tu sesión.
 
 ### `GET /projects/:id` y `GET /projects/:id/items`
 

@@ -62,6 +62,7 @@ const STRINGS = {
       files: 'Archivos',
       reports: 'Informes',
       apiKeys: 'API keys',
+      trash: 'Papelera',
       automation: 'Automatización'
     },
     dashboard: {

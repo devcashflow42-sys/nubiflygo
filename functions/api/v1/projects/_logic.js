@@ -29,7 +29,8 @@ import { json } from '../../../_shared/http.js';
 import { dataRoute, handleCrud } from '../../../_shared/api.js';
 import { UUID_RE, CRUD, pageParams, fmtBytes, toISO, body } from '../../../_shared/util.js';
 import { buildFileItem } from '../../../_shared/files-util.js';
-import { fileFilters, wantsAll, readSelection, deleteFilesWhere, logActivity, bulkResponse, docItem } from '../../../_shared/bulk.js';
+import { fileFilters, wantsAll, readSelection, logActivity, bulkResponse, docItem } from '../../../_shared/bulk.js';
+import { trashProject, trashFilesWhere } from '../../../_shared/trash.js';
 
 const FILE_COLS = 'id, user_id, project_id, name, original_name, size, mime, storage_key, meta, published, published_at, created_at, updated_at';
 const DOC_COLS = 'id, project_id, title, left(content, 240) AS excerpt, published, published_at, created_at, updated_at';
@@ -69,7 +70,7 @@ export const handle = dataRoute(async ({ seg, request, env, method, user }) => {
 
   // Todo lo de un proyecto exige que sea del usuario.
   const { rows: prows } = await db.query(
-    'SELECT id, user_id, name, description, color, icon, created_at, updated_at FROM projects WHERE id = $1 AND user_id = $2',
+    'SELECT id, user_id, name, description, color, icon, created_at, updated_at FROM projects WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL',
     [id, user.id]);
   const project = prows[0];
 
@@ -101,15 +102,11 @@ export const handle = dataRoute(async ({ seg, request, env, method, user }) => {
   /* ─── Borrar el proyecto (con todo su contenido, por tandas) ─── */
   if (!sub && method === 'DELETE') {
     if (!project) return json({ ok: true, already_deleted: true });
-    const f = await deleteFilesWhere(db, env, user.id, ' AND project_id = $2', [id]);
-    if (f.remaining) {
-      return json({ ok: false, pending: true, deleted: { files: f.deleted }, remaining: f.remaining,
-        message: 'Borrando el contenido del proyecto… quedan ' + f.remaining + ' archivos: repite la petición.' }, 202);
-    }
-    await db.query('DELETE FROM documents WHERE project_id = $1 AND user_id = $2', [id, user.id]);
-    await db.query('DELETE FROM projects WHERE id = $1 AND user_id = $2', [id, user.id]);
+    // A la papelera, con todo su contenido. Es un UPDATE, así que ya no hace
+    // falta ir por tandas: los archivos se sueltan al borrarlo de verdad.
+    await trashProject(db, user.id, id);
     await logActivity(db, user.id, 'project', 'Proyecto eliminado: ' + project.name);
-    return json({ ok: true });
+    return json({ ok: true, trashed: true });
   }
 
   if (sub) return json({ error: 'Ruta de proyectos no encontrada.' }, 404);
@@ -123,21 +120,21 @@ export const handle = dataRoute(async ({ seg, request, env, method, user }) => {
 async function projectList(db, env, userId, qs) {
   const { rows } = await db.query(
     `SELECT p.id, p.name, p.description, p.color, p.icon, p.created_at, p.updated_at,
-       (SELECT count(*) FROM documents d WHERE d.project_id = p.id AND d.user_id = $1)::int AS doc_count,
-       (SELECT count(*) FROM files f WHERE f.project_id = p.id AND f.user_id = $1)::int AS file_count,
-       (SELECT coalesce(sum(size), 0) FROM files f WHERE f.project_id = p.id AND f.user_id = $1)::bigint AS bytes,
-       ((SELECT count(*) FROM documents d WHERE d.project_id = p.id AND d.user_id = $1 AND d.published)
-        + (SELECT count(*) FROM files f WHERE f.project_id = p.id AND f.user_id = $1 AND f.published))::int AS published_count,
-       (SELECT count(*) FROM api_keys k WHERE k.project_id = p.id AND k.user_id = $1)::int AS api_keys
-     FROM projects p WHERE p.user_id = $1 ORDER BY p.created_at DESC`, [userId]);
+       (SELECT count(*) FROM documents d WHERE d.project_id = p.id AND d.user_id = $1 AND d.deleted_at IS NULL)::int AS doc_count,
+       (SELECT count(*) FROM files f WHERE f.project_id = p.id AND f.user_id = $1 AND f.deleted_at IS NULL)::int AS file_count,
+       (SELECT coalesce(sum(size), 0) FROM files f WHERE f.project_id = p.id AND f.user_id = $1 AND f.deleted_at IS NULL)::bigint AS bytes,
+       ((SELECT count(*) FROM documents d WHERE d.project_id = p.id AND d.user_id = $1 AND d.deleted_at IS NULL AND d.published)
+        + (SELECT count(*) FROM files f WHERE f.project_id = p.id AND f.user_id = $1 AND f.deleted_at IS NULL AND f.published))::int AS published_count,
+       (SELECT count(*) FROM api_keys k WHERE k.project_id = p.id AND k.user_id = $1 AND k.deleted_at IS NULL)::int AS api_keys
+     FROM projects p WHERE p.user_id = $1 AND p.deleted_at IS NULL ORDER BY p.created_at DESC`, [userId]);
   const withItems = String(qs.get('include') || '').split(',').includes('items');
   let byProject = null;
   if (withItems && rows.length) {
     byProject = new Map(rows.map(r => [r.id, []]));
     const { rows: docs } = await db.query(
-      `SELECT ${DOC_COLS} FROM documents WHERE user_id = $1 AND project_id IS NOT NULL ORDER BY created_at DESC`, [userId]);
+      `SELECT ${DOC_COLS} FROM documents WHERE user_id = $1 AND project_id IS NOT NULL AND deleted_at IS NULL ORDER BY created_at DESC`, [userId]);
     const { rows: files } = await db.query(
-      `SELECT ${FILE_COLS} FROM files WHERE user_id = $1 AND project_id IS NOT NULL ORDER BY created_at DESC`, [userId]);
+      `SELECT ${FILE_COLS} FROM files WHERE user_id = $1 AND project_id IS NOT NULL AND deleted_at IS NULL ORDER BY created_at DESC`, [userId]);
     docs.forEach(d => { const l = byProject.get(d.project_id); if (l) l.push(docItem(d)); });
     files.forEach(f => { const l = byProject.get(f.project_id); if (l) l.push(fileListItem(f, env)); });
     byProject.forEach(l => l.sort(byNewest));
@@ -166,12 +163,12 @@ async function projectDetail(db, env, project, userId, request) {
   const id = project.id;
   const { rows: srows } = await db.query(
     `SELECT
-       (SELECT count(*) FROM documents WHERE project_id = $1 AND user_id = $2) AS documents,
-       (SELECT count(*) FROM files     WHERE project_id = $1 AND user_id = $2) AS files,
-       (SELECT coalesce(sum(size),0) FROM files WHERE project_id = $1 AND user_id = $2) AS bytes,
-       (SELECT count(*) FROM api_keys WHERE project_id = $1 AND user_id = $2) AS api_keys,
-       (SELECT count(*) FROM documents WHERE project_id = $1 AND user_id = $2 AND published) AS pub_docs,
-       (SELECT count(*) FROM files     WHERE project_id = $1 AND user_id = $2 AND published) AS pub_files`,
+       (SELECT count(*) FROM documents WHERE project_id = $1 AND user_id = $2 AND deleted_at IS NULL) AS documents,
+       (SELECT count(*) FROM files     WHERE project_id = $1 AND user_id = $2 AND deleted_at IS NULL) AS files,
+       (SELECT coalesce(sum(size),0) FROM files WHERE project_id = $1 AND user_id = $2 AND deleted_at IS NULL) AS bytes,
+       (SELECT count(*) FROM api_keys WHERE project_id = $1 AND user_id = $2 AND deleted_at IS NULL) AS api_keys,
+       (SELECT count(*) FROM documents WHERE project_id = $1 AND user_id = $2 AND deleted_at IS NULL AND published) AS pub_docs,
+       (SELECT count(*) FROM files     WHERE project_id = $1 AND user_id = $2 AND deleted_at IS NULL AND published) AS pub_files`,
     [id, userId]);
   const st = srows[0] || {};
   const docsPg = await documentsPage(db, id, userId, request);
@@ -215,7 +212,7 @@ async function documentsPage(db, projectId, userId, request) {
   const { limit, page, offset } = pageParams(request);
   const { rows } = await db.query(
     `SELECT ${DOC_COLS}, count(*) OVER() AS __total
-     FROM documents WHERE project_id = $1 AND user_id = $2
+     FROM documents WHERE project_id = $1 AND user_id = $2 AND deleted_at IS NULL
      ORDER BY created_at DESC, id` + (all ? '' : ' LIMIT $3 OFFSET $4'),
     all ? [projectId, userId] : [projectId, userId, limit, offset]);
   const total = rows[0] ? Number(rows[0].__total) : (all || offset === 0 ? 0 : await countIn(db, 'documents', projectId, userId));
@@ -231,7 +228,7 @@ async function filesPage(db, projectId, userId, request, env) {
   const { limit, page, offset } = pageParams(request);
   const { rows } = await db.query(
     `SELECT ${FILE_COLS}, count(*) OVER() AS __total
-     FROM files WHERE project_id = $1 AND user_id = $2
+     FROM files WHERE project_id = $1 AND user_id = $2 AND deleted_at IS NULL
      ORDER BY created_at DESC, id` + (all ? '' : ' LIMIT $3 OFFSET $4'),
     all ? [projectId, userId] : [projectId, userId, limit, offset]);
   const total = rows[0] ? Number(rows[0].__total) : (all || offset === 0 ? 0 : await countIn(db, 'files', projectId, userId));
@@ -262,14 +259,14 @@ async function projectItems(db, env, projectId, userId, request) {
     if (pub === 'true' || pub === '1') where += ' AND published';
     else if (pub === 'false' || pub === '0') where += ' AND NOT published';
     const { rows } = await db.query(
-      `SELECT ${DOC_COLS} FROM documents WHERE project_id = $1 AND user_id = $2${where} ORDER BY created_at DESC`, params);
+      `SELECT ${DOC_COLS} FROM documents WHERE project_id = $1 AND user_id = $2 AND deleted_at IS NULL${where} ORDER BY created_at DESC`, params);
     docs = rows.map(docItem);
   }
   if (kind !== 'document') {
     const f = fileFilters({ q: qs.get('q'), published: qs.get('published'), type: qs.get('type') }, 3);
     if (f.error) return { error: f.error };
     const { rows } = await db.query(
-      `SELECT ${FILE_COLS} FROM files WHERE project_id = $1 AND user_id = $2${f.sql} ORDER BY created_at DESC`,
+      `SELECT ${FILE_COLS} FROM files WHERE project_id = $1 AND user_id = $2 AND deleted_at IS NULL${f.sql} ORDER BY created_at DESC`,
       [projectId, userId, ...f.params]);
     files = rows.map(r => fileListItem(r, env));
   }
@@ -301,11 +298,13 @@ async function deleteProjectItems(db, env, userId, project, sel, kind) {
   const params = [userId, project.id].concat(sel.ids ? [sel.ids] : []);
   let docs = 0;
   if (kind !== 'file') {
-    const { rows } = await db.query(`DELETE FROM documents WHERE user_id = $1 AND project_id = $2${idsSql} RETURNING id`, params);
+    const { rows } = await db.query(
+      `UPDATE documents SET deleted_at = now(), trashed_with_project = false
+       WHERE user_id = $1 AND project_id = $2 AND deleted_at IS NULL${idsSql} RETURNING id`, params);
     docs = rows.length;
   }
   let f = { deleted: 0, bytes: 0, remaining: 0, ids: [] };
-  if (kind !== 'document') f = await deleteFilesWhere(db, env, userId, ' AND project_id = $2' + idsSql, params.slice(1));
+  if (kind !== 'document') f.deleted = await trashFilesWhere(db, userId, ' AND project_id = $2' + idsSql, params.slice(1));
   if (docs || f.deleted) {
     try { await db.query('UPDATE projects SET updated_at = now() WHERE id = $1 AND user_id = $2', [project.id, userId]); } catch {}
     await logActivity(db, userId, 'project', 'Elementos eliminados de «' + project.name + '»: ' + (docs + f.deleted));
@@ -318,19 +317,19 @@ async function deleteProjectItems(db, env, userId, project, sel, kind) {
 
 // Borra varios proyectos (todos o por ids) con TODO su contenido.
 async function deleteProjects(db, env, userId, sel) {
-  const scope = sel.ids ? ' AND project_id = ANY($2::uuid[])' : ' AND project_id IN (SELECT id FROM projects WHERE user_id = $1)';
-  const params = sel.ids ? [sel.ids] : [];
-  // 1) Archivos (con su binario), por tandas.
-  const f = await deleteFilesWhere(db, env, userId, scope, params);
-  if (f.remaining) {
-    return bulkResponse('Borrando el contenido de los proyectos: ' + f.deleted + ' archivos eliminados.',
-      { projects: 0, documents: 0, files: f.deleted }, f.remaining, f.bytes);
+  // Todo a la papelera (UPDATE): sin tandas ni presupuesto de almacenamiento.
+  const ids = sel.ids
+    ? (await db.query('SELECT id FROM projects WHERE user_id = $1 AND id = ANY($2::uuid[]) AND deleted_at IS NULL', [userId, sel.ids])).rows
+    : (await db.query('SELECT id FROM projects WHERE user_id = $1 AND deleted_at IS NULL', [userId])).rows;
+  let docs = 0, files = 0;
+  for (const r of ids) {
+    const n = await db.query(
+      `SELECT (SELECT count(*)::int FROM documents WHERE project_id = $1 AND user_id = $2 AND deleted_at IS NULL) AS d,
+              (SELECT count(*)::int FROM files WHERE project_id = $1 AND user_id = $2 AND deleted_at IS NULL) AS f`, [r.id, userId]);
+    docs += n.rows[0].d; files += n.rows[0].f;
+    await trashProject(db, userId, r.id);
   }
-  // 2) Documentos y proyectos.
-  const { rows: d } = await db.query(`DELETE FROM documents WHERE user_id = $1${scope} RETURNING id`, [userId, ...params]);
-  const { rows: p } = await db.query(
-    `DELETE FROM projects WHERE user_id = $1${sel.ids ? ' AND id = ANY($2::uuid[])' : ''} RETURNING id`, [userId, ...params]);
-  if (p.length) await logActivity(db, userId, 'project', p.length === 1 ? 'Proyecto eliminado' : p.length + ' proyectos eliminados');
-  return bulkResponse(p.length === 1 ? 'Se eliminó 1 proyecto.' : 'Se eliminaron ' + p.length + ' proyectos.',
-    { projects: p.length, documents: d.length, files: f.deleted }, 0, f.bytes);
+  if (ids.length) await logActivity(db, userId, 'project', ids.length === 1 ? 'Proyecto eliminado' : ids.length + ' proyectos eliminados');
+  return bulkResponse(ids.length === 1 ? 'Se eliminó 1 proyecto.' : 'Se eliminaron ' + ids.length + ' proyectos.',
+    { projects: ids.length, documents: docs, files: files }, 0, 0);
 }

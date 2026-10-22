@@ -39,6 +39,9 @@
   }
   .guest-keys-ico svg { width: 28px; height: 28px; }
   .guest-keys .empty-actions .btn { text-decoration: none; }
+  /* En el teléfono el .btn de 36px se queda corto para el dedo, y aquí es la
+     única salida que tiene el invitado. */
+  @media (max-width: 640px) { .guest-keys .empty-actions .btn { height: 44px; padding: 0 18px; } }
 
   /* ─── Dashboard / stat tiles ─── */
   .tiles {
@@ -507,3 +510,62 @@
 .list-row .lr-thumb-ico { display: inline-flex; }
 .list-row .lr-thumb-ico svg { width: 20px; height: 20px; }
 .list-row .lr-thumb-doc, .list-row .lr-thumb-other, .list-row .lr-thumb-pdf, .list-row .lr-thumb-archive { background: var(--surface-sunken); color: var(--fg-muted); }
+
+  /* ───────── Tarjeta de proyecto con su contenido dentro ─────────
+     Cada fila lleva a un sitio, así que la tarjeta entera ya no es un botón. */
+  .project-grid.pg-rich { grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); align-items: start; }
+  .pc-rich { padding: 46px 0 0; cursor: default; }
+  .pc-rich .pc-head { display: flex; align-items: center; gap: 12px; padding: 0 16px 14px; cursor: pointer; }
+  .pc-rich .pc-head .pc-txt { min-width: 0; }
+  .pc-list { border-top: 1px solid var(--border); }
+  .pc-item {
+    display: flex; align-items: center; gap: 10px;
+    width: 100%; padding: 8px 8px 8px 14px;
+    border: 0; background: none; font: inherit; color: inherit;
+    text-align: left; cursor: pointer;
+  }
+  .pc-item + .pc-item { border-top: 1px solid color-mix(in srgb, var(--border) 55%, transparent); }
+  .pc-item:hover { background: var(--surface-sunken); }
+  .pc-item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .pc-ico { width: 34px; height: 34px; border-radius: 9px; flex: none; display: grid; place-items: center; color: #fff; }
+  .pc-ico svg { width: 17px; height: 17px; }
+  /* Carpeta de tipo: su color en suave, como la leyenda de almacenamiento. */
+  .pc-ico.is-folder { background: color-mix(in srgb, var(--k) 18%, var(--surface)); color: var(--k); }
+  .pc-ico.is-file { background: var(--k); }
+  .pc-ico.is-file svg { filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, .3)); }
+  .pc-txt2 { min-width: 0; flex: 1; }
+  .pc-nm { font-size: 13px; font-weight: 500; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pc-sub { font-size: 11.5px; color: var(--fg-muted); margin-top: 1px; }
+  .pc-more {
+    width: 28px; height: 28px; flex: none; border-radius: 7px;
+    color: var(--fg-faint); cursor: pointer;
+    display: grid; place-items: center; opacity: 0; transition: opacity .12s;
+  }
+  .pc-more svg { width: 15px; height: 15px; }
+  .pc-item:hover .pc-more, .pc-more:focus-visible { opacity: 1; }
+  .pc-more:hover { background: var(--surface); color: var(--fg); }
+  .pc-add {
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+    width: 100%; min-height: 46px; padding: 11px;
+    border: 0; border-top: 1px solid var(--border); border-radius: 0 0 13px 13px;
+    background: none; font: inherit; font-size: 12.5px; font-weight: 500;
+    color: var(--fg-muted); cursor: pointer;
+  }
+  .pc-add:hover { background: var(--surface-sunken); color: var(--fg); }
+  .pc-add svg { width: 15px; height: 15px; }
+  .pc-empty { padding: 16px; font-size: 12.5px; color: var(--fg-faint); text-align: center; }
+  /* En Android: zona de toque de 44px para el «⋯» y menos franja desperdiciada. */
+  @media (hover: none) {
+    .pc-more { opacity: 1; width: 36px; height: 36px; position: relative; }
+    .pc-more::after { content: ''; position: absolute; inset: -5px; }
+    .pc-item { padding-top: 10px; padding-bottom: 10px; }
+  }
+  @media (max-width: 720px) {
+    .pc-rich { padding-top: 38px; }
+    .pc-rich::before { height: 30px; }
+    .pc-rich .pc-head { padding-bottom: 12px; }
+    /* Renombrar y Eliminar medían 28px: poco para el dedo, y una de las dos
+       borra el proyecto entero. */
+    .pc-rich .card-action { width: 36px; height: 36px; position: relative; }
+    .pc-rich .card-action::after { content: ''; position: absolute; inset: -4px; }
+  }

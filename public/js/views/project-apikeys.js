@@ -95,7 +95,7 @@
   }
 
   async function projectRevokeKey(p, k) {
-    const ok = await confirmDialog('¿Revocar esta clave?', `"${k.name}" dejará de funcionar inmediatamente. Esta acción no se puede deshacer.`, 'Revocar');
+    const ok = await confirmDialog('¿Revocar esta clave?', `"${k.name}" dejará de funcionar inmediatamente. Se guarda 30 días en la papelera por si quieres volver a activarla.`, 'Revocar');
     if (!ok) return;
     try {
       await apiDelete('/apikeys/' + k.id);

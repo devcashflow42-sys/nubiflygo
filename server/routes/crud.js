@@ -25,7 +25,7 @@ export function crudRouter(table, columns, { touchUpdatedAt = true } = {}) {
   r.get('/', async (req, res, next) => {
     try {
       const { rows } = await query(
-        `SELECT ${selectCols} FROM ${table} WHERE user_id = $1 ORDER BY created_at DESC`, [req.user.id]);
+        `SELECT ${selectCols} FROM ${table} WHERE user_id = $1 AND deleted_at IS NULL ORDER BY created_at DESC`, [req.user.id]);
       res.json({ items: rows });
     } catch (e) { next(e); }
   });
@@ -50,7 +50,7 @@ export function crudRouter(table, columns, { touchUpdatedAt = true } = {}) {
     try {
       if (!UUID_RE.test(req.params.id)) return res.status(400).json({ error: 'Id no válido.' });
       const { rows } = await query(
-        `SELECT ${selectCols} FROM ${table} WHERE id = $1 AND user_id = $2`, [req.params.id, req.user.id]);
+        `SELECT ${selectCols} FROM ${table} WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL`, [req.params.id, req.user.id]);
       if (!rows[0]) return res.status(404).json({ error: 'No encontrado.' });
       res.json({ item: rows[0] });
     } catch (e) { next(e); }
@@ -69,21 +69,23 @@ export function crudRouter(table, columns, { touchUpdatedAt = true } = {}) {
       const sets = sent.map((c, i) => `${c} = $${i + 3}`);
       if (touchUpdatedAt) sets.push('updated_at = now()');
       const { rows } = await query(
-        `UPDATE ${table} SET ${sets.join(', ')} WHERE id = $1 AND user_id = $2 RETURNING ${selectCols}`,
+        `UPDATE ${table} SET ${sets.join(', ')} WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL RETURNING ${selectCols}`,
         [req.params.id, req.user.id, ...vals]);
       if (!rows[0]) return res.status(404).json({ error: 'No encontrado.' });
       res.json({ item: rows[0] });
     } catch (e) { next(e); }
   });
 
-  // Borrar
+  // Borrar: a la papelera, no fuera (se guarda 30 días y se puede restaurar).
+  // Copia de handleCrud en functions/_shared/api.js (misma lógica).
   r.delete('/:id', async (req, res, next) => {
     try {
       if (!UUID_RE.test(req.params.id)) return res.status(400).json({ error: 'Id no válido.' });
       const { rowCount } = await query(
-        `DELETE FROM ${table} WHERE id = $1 AND user_id = $2`, [req.params.id, req.user.id]);
+        `UPDATE ${table} SET deleted_at = now(), trashed_with_project = false
+         WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL`, [req.params.id, req.user.id]);
       if (!rowCount) return res.status(404).json({ error: 'No encontrado.' });
-      res.json({ ok: true });
+      res.json({ ok: true, trashed: true });
     } catch (e) { next(e); }
   });
 

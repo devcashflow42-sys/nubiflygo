@@ -11,6 +11,7 @@ import { json, getUser } from './http.js';
 import { deleteObject } from './storage.js';
 import { preflight, segmentsOf, body, UUID_RE, GUEST_LIMITS, CRUD_MAX, PROJECT_ICON_IDS, COLOR_RE } from './util.js';
 import { serverError, secLog, ensureSecurityColumns } from './security.js';
+import { ensureTrashColumns } from './trash.js';
 import { notifySafe, hourKey } from './notify.js';
 
 /* ---------------- Administrador ----------------
@@ -56,12 +57,14 @@ export async function authenticate(request, env) {
     if (!/^sk_[a-f0-9]{8,60}$/i.test(key)) return null;
     const db = getDb(env);
     await ensureSecurityColumns(db);
+    await ensureTrashColumns(db);
     const { rows } = await db.query(
       `UPDATE api_keys ak SET last_used = now(),
          rl_count = CASE WHEN ak.rl_window = date_trunc('minute', now()) THEN ak.rl_count + 1 ELSE 1 END,
          rl_window = date_trunc('minute', now())
        FROM users u
        WHERE ak.value = $1 AND u.id = ak.user_id AND (ak.expires_at IS NULL OR ak.expires_at > now())
+         AND ak.deleted_at IS NULL
        RETURNING ak.id, ak.permission, ak.project_id, ak.rl_count, u.id AS user_id, u.email, u.is_guest,
          (60 - extract(second FROM now()))::int AS retry`, [key]);
     const k = rows[0];
@@ -111,6 +114,9 @@ export function keyPolicy(auth, seg, method) {
   if (auth.isGuest) return { status: 403, error: GUEST_KEY_ERROR };
   const svc = seg[0] || '';
   if (svc === 'apikeys' || svc === 'admin') return { status: 403, error: 'Las API keys no pueden administrar claves ni entrar a la administración. Usa la app con tu sesión.' };
+  // La papelera es de la cuenta: restaurar o borrar para siempre se hace desde
+  // la app, nunca desde una integración.
+  if (svc === 'trash') return { status: 403, error: 'La papelera solo se usa desde la app con tu sesión.' };
   if (svc === 'account' && !(method === 'GET' && (seg[1] === 'profile' || seg[1] === 'avatar'))) {
     return { status: 403, error: 'Con una API key solo puedes leer el perfil. Los cambios de cuenta se hacen en la app.' };
   }
@@ -131,7 +137,7 @@ export async function ownsProject(db, userId, projectId, scope) {
   if (!projectId) return true;
   if (!UUID_RE.test(String(projectId))) return false;
   if (scope && String(projectId).toLowerCase() !== String(scope).toLowerCase()) return false;
-  const { rows } = await db.query('SELECT 1 FROM projects WHERE id = $1 AND user_id = $2', [projectId, userId]);
+  const { rows } = await db.query('SELECT 1 FROM projects WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL', [projectId, userId]);
   return !!rows[0];
 }
 
@@ -262,6 +268,9 @@ export function dataRoute(logicFn) {
     try {
       const auth = await authenticate(request, env);
       if (!auth) return json({ error: 'No autenticado.' }, 401);
+      // Las columnas de la papelera se crean solas una vez por instancia; de
+      // aquí para abajo TODA lectura filtra por deleted_at.
+      await ensureTrashColumns(getDb(env));
       const seg = segmentsOf(request);
       return await runAndRecord(env, auth, async () => {
         const denied = gate(request, auth, seg);
@@ -307,7 +316,7 @@ export async function handleCrud(table, columns, id, request, env, method, user,
   if (!id) {
     if (method === 'GET') {
       const { rows } = await db.query(
-        `SELECT ${cols} FROM ${table} WHERE user_id = $1${scoped ? scopeSql + '2' : ''} ORDER BY created_at DESC`,
+        `SELECT ${cols} FROM ${table} WHERE user_id = $1 AND deleted_at IS NULL${scoped ? scopeSql + '2' : ''} ORDER BY created_at DESC`,
         scoped ? [user.id, scope] : [user.id]);
       return json({ items: rows });
     }
@@ -315,7 +324,7 @@ export async function handleCrud(table, columns, id, request, env, method, user,
       // Límite para invitados (proyectos/notas).
       if (user.isGuest && (table === 'projects' || table === 'notes')) {
         const cap = GUEST_LIMITS[table];
-        const { rows: c } = await db.query(`SELECT count(*)::int AS n FROM ${table} WHERE user_id = $1`, [user.id]);
+        const { rows: c } = await db.query(`SELECT count(*)::int AS n FROM ${table} WHERE user_id = $1 AND deleted_at IS NULL`, [user.id]);
         if (((c[0] && c[0].n) || 0) >= cap) {
           return json({ error: 'Como invitado puedes crear hasta ' + cap + ' ' + (table === 'projects' ? 'proyectos' : 'notas') + '. Crea una cuenta gratis para tener más.' }, 403);
         }
@@ -341,7 +350,7 @@ export async function handleCrud(table, columns, id, request, env, method, user,
 
   if (!UUID_RE.test(id)) return json({ error: 'Id no válido.' }, 400);
   if (method === 'GET') {
-    const { rows } = await db.query(`SELECT ${cols} FROM ${table} WHERE id = $1 AND user_id = $2${scoped ? scopeSql + '3' : ''}`,
+    const { rows } = await db.query(`SELECT ${cols} FROM ${table} WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL${scoped ? scopeSql + '3' : ''}`,
       scoped ? [id, user.id, scope] : [id, user.id]);
     return rows[0] ? json({ item: rows[0] }) : json({ error: 'No encontrado.' }, 404);
   }
@@ -360,14 +369,17 @@ export async function handleCrud(table, columns, id, request, env, method, user,
     const params = [id, user.id, ...vals];
     if (scoped) params.push(scope);
     const { rows } = await db.query(
-      `UPDATE ${table} SET ${sets.join(', ')} WHERE id = $1 AND user_id = $2${scoped ? scopeSql + params.length : ''} RETURNING ${cols}`,
+      `UPDATE ${table} SET ${sets.join(', ')} WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL${scoped ? scopeSql + params.length : ''} RETURNING ${cols}`,
       params);
     return rows[0] ? json({ item: rows[0] }) : json({ error: 'No encontrado.' }, 404);
   }
   if (method === 'DELETE') {
-    const { rowCount } = await db.query(`DELETE FROM ${table} WHERE id = $1 AND user_id = $2${scoped ? scopeSql + '3' : ''}`,
+    // A la papelera, no fuera: se guarda 30 días y se puede restaurar.
+    const { rowCount } = await db.query(
+      `UPDATE ${table} SET deleted_at = now(), trashed_with_project = false
+       WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL${scoped ? scopeSql + '3' : ''}`,
       scoped ? [id, user.id, scope] : [id, user.id]);
-    return rowCount ? json({ ok: true }) : json({ error: 'No encontrado.' }, 404);
+    return rowCount ? json({ ok: true, trashed: true }) : json({ error: 'No encontrado.' }, 404);
   }
   return json({ error: 'Método no permitido.' }, 405);
 }

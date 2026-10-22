@@ -197,11 +197,11 @@ export function isAdminEmail(email) {
 }
 
 // ¿El proyecto es del usuario?
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export async function ownsProject(userId, projectId) {
   if (!projectId) return true;
   if (!UUID_RE.test(String(projectId))) return false;
-  const { rows } = await query('SELECT 1 FROM projects WHERE id = $1 AND user_id = $2', [projectId, userId]);
+  const { rows } = await query('SELECT 1 FROM projects WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL', [projectId, userId]);
   return !!rows[0];
 }
 

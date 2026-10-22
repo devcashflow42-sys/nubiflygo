@@ -237,7 +237,7 @@
   }
 
   async function deleteNote(n) {
-    const ok = await confirmDialog('¿Eliminar nota?', `"${n.title || 'Sin título'}" se eliminará para siempre. Esta acción no se puede deshacer.`, 'Eliminar');
+    const ok = await confirmDialog('¿Eliminar nota?', `"${n.title || 'Sin título'}" se irá a la papelera. Tienes 30 días para recuperarla.`, 'Eliminar');
     if (!ok) return;
     try {
       await apiDelete('/notes/' + n.id);
@@ -246,6 +246,7 @@
       if (e.status !== 404) { toast(e.message || 'No se pudo eliminar la nota'); return; }
     }
     store.notes = store.notes.filter(x => x.id !== n.id);
+    if (typeof loadTrash === 'function') loadTrash();
     toast('Nota eliminada');
     if (state.noteId === n.id) state.noteId = null;
     render();

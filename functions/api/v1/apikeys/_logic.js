@@ -7,6 +7,7 @@
    Seguridad: este servicio solo responde a la app con tu sesión; una API key
    no puede ver, crear ni borrar claves (ver keyPolicy en api.js). */
 import { getDb } from '../../../_shared/db.js';
+import { trashOne } from '../../../_shared/trash.js';
 import { json } from '../../../_shared/http.js';
 import { dataRoute, ensureUsageTable, ownsProject, GUEST_KEY_ERROR } from '../../../_shared/api.js';
 import { ensureSecurityColumns } from '../../../_shared/security.js';
@@ -20,7 +21,7 @@ export const handle = dataRoute(async ({ seg, request, env, method, user }) => {
   if (!id) {
     if (method === 'GET') {
       const { rows } = await db.query(
-        'SELECT id, name, value, permission, project_id, created_at, last_used, expires_at FROM api_keys WHERE user_id = $1 ORDER BY created_at DESC', [user.id]);
+        'SELECT id, name, value, permission, project_id, created_at, last_used, expires_at FROM api_keys WHERE user_id = $1 AND deleted_at IS NULL ORDER BY created_at DESC', [user.id]);
       const { today, byKey } = await usageOf(db, user.id);
       const items = rows.map(k => ({ ...k, usage: summarize(byKey.get(k.id) || [], today) }));
       return json({ items, today });
@@ -37,7 +38,7 @@ export const handle = dataRoute(async ({ seg, request, env, method, user }) => {
       if (days !== null && ![7, 30, 60, 90, 180, 365, 730].includes(days)) return json({ error: 'Vencimiento no válido.' }, 400);
       const projectId = b.project_id && UUID_RE.test(b.project_id) ? b.project_id : null;
       if (projectId && !(await ownsProject(db, user.id, projectId))) return json({ error: 'Proyecto no encontrado.' }, 404);
-      const { rows: cnt } = await db.query('SELECT count(*)::int AS n FROM api_keys WHERE user_id = $1', [user.id]);
+      const { rows: cnt } = await db.query('SELECT count(*)::int AS n FROM api_keys WHERE user_id = $1 AND deleted_at IS NULL', [user.id]);
       if (((cnt[0] && cnt[0].n) || 0) >= 50) return json({ error: 'Llegaste al máximo de 50 claves. Borra alguna que ya no uses.' }, 403);
       const value = 'sk_' + [...crypto.getRandomValues(new Uint8Array(24))].map(x => x.toString(16).padStart(2, '0')).join('').slice(0, 40);
       const { rows } = await db.query(
@@ -53,15 +54,17 @@ export const handle = dataRoute(async ({ seg, request, env, method, user }) => {
 
   if (!UUID_RE.test(id)) return json({ error: 'Id no válido.' }, 400);
   if (seg[2] === 'usage' && method === 'DELETE') {
-    const own = await db.query('SELECT 1 FROM api_keys WHERE id = $1 AND user_id = $2', [id, user.id]);
+    const own = await db.query('SELECT 1 FROM api_keys WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL', [id, user.id]);
     if (!own.rows.length) return json({ error: 'No encontrada.' }, 404);
     await ensureUsageTable(db);
     await db.query('DELETE FROM api_key_usage WHERE key_id = $1', [id]);
     return json({ ok: true });
   }
   if (method === 'DELETE' && !seg[2]) {
-    const { rowCount } = await db.query('DELETE FROM api_keys WHERE id = $1 AND user_id = $2', [id, user.id]);
-    return rowCount ? json({ ok: true }) : json({ error: 'No encontrada.' }, 404);
+    // A la papelera. Desde ya no autentica (authenticate filtra deleted_at),
+    // así que nadie puede usarla mientras está ahí.
+    if (!(await trashOne(db, 'api_keys', user.id, id))) return json({ error: 'No encontrada.' }, 404);
+    return json({ ok: true, trashed: true });
   }
   return json({ error: 'Método no permitido.' }, 405);
 });

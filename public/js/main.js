@@ -17,7 +17,7 @@
      vas hacia una sección más abajo del menú, de arriba si subes). Solo
      cuando cambia la sección: redibujar por datos nuevos o por la búsqueda no
      anima. Con «reducir movimiento» no se anima nada. */
-  const ROUTE_ORDER = ['dashboard', 'projects', 'project-form', 'notes', 'files', 'apikeys', 'notifications', 'settings'];
+  const ROUTE_ORDER = ['dashboard', 'projects', 'project-form', 'notes', 'files', 'apikeys', 'trash', 'notifications', 'settings'];
   let lastViewKey = null;
   function viewKey() {
     return state.route + ':' + (state.projectId || '') + ':' + (state.noteId || '');
@@ -79,6 +79,7 @@
       notes: viewNotes,
       files: viewFiles,
       apikeys: viewApiKeys,
+      trash: viewTrash,
       settings: viewSettings,
       notifications: viewNotifications
     };

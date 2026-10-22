@@ -64,30 +64,41 @@
     const prevCap = el('span', { class: 'pf-prev-cap' });
     const icons = el('div', { class: 'pf-icons', role: 'group', 'aria-labelledby': 'pf-ident' });
     const swatches = el('div', { class: 'color-picker pf-colors', role: 'group', 'aria-label': 'Color del proyecto' });
-    // Icono que se ve con «Auto»: el de su categoría si ya tiene contenido, o el
-    // genérico de un proyecto nuevo (el mismo que enseña su encabezado).
-    function autoIcon() {
-      const items = existing ? projectItems(existing) : [];
-      const cat = CAT[projectCategory(items)];
-      return cat ? cat.icon : KIND_ICON_LIB('mixed');
+    // El proyecto tal como quedaría con lo elegido ahora mismo. Para uno nuevo
+    // se usa un id que no casa con nada, para que no se cuelen los archivos
+    // sueltos (projectItems filtra store.files por project_id).
+    function previewProject() {
+      const base = existing ? Object.assign({}, existing) : { id: '\u0000nuevo', documents: [], _loaded: true };
+      base.color = color;
+      base.icon = icon;
+      return base;
     }
     function paintPreview() {
+      // La previa es la MISMA miniatura de la tarjeta: en «Auto» enseña la
+      // portada o el color de la categoría, que es lo que se verá de verdad.
       const chosen = PROJECT_ICONS.find(i => i.id === icon) || null;
-      prevTile.style.background = color;
-      prevTile.innerHTML = chosen ? chosen.svg : autoIcon();
+      prevTile.innerHTML = '';
+      prevTile.appendChild(projectThumb(previewProject()));
       prevName.textContent = (titleInp.value || '').trim() || 'Tu proyecto';
       const ci = PROJECT_COLORS.indexOf(color);
-      prevCap.textContent = (chosen ? chosen.label : 'Auto · según lo que subas') + (ci > -1 ? ' · ' + PROJECT_COLOR_NAMES[ci] : '');
+      prevCap.textContent = (chosen ? chosen.label : 'Auto') + (ci > -1 ? ' · ' + PROJECT_COLOR_NAMES[ci] : '');
     }
+    // Los botones se crean una sola vez: al elegir con Enter o Espacio, volver a
+    // crearlos mandaba el foco al <body>. Después solo cambia aria-pressed.
     function renderIcons() {
       icons.innerHTML = '';
       const opt = (id, label, svg, extra) => el('button', {
         type: 'button', class: 'pf-icon' + (extra || ''), title: label, 'aria-label': label,
         'aria-pressed': String(icon === id), html: svg,
-        onclick: () => { icon = id; renderIcons(); paintPreview(); }
+        onclick: () => { icon = id; syncIcons(); paintPreview(); }
       });
-      icons.appendChild(opt(null, 'Auto (según lo que subas)', LIB_ICN.spark, ' is-auto'));
+      icons.appendChild(opt(null, 'Auto (según lo que subas)', LIB_ICN.spark + '<span>Auto</span>', ' is-auto'));
       PROJECT_ICONS.forEach(i => icons.appendChild(opt(i.id, i.label, i.svg)));
+    }
+    function syncIcons() {
+      Array.prototype.forEach.call(icons.children, (b, k) => {
+        b.setAttribute('aria-pressed', String((k === 0 ? null : PROJECT_ICONS[k - 1].id) === icon));
+      });
     }
     function renderPicker() {
       swatches.innerHTML = '';
@@ -96,8 +107,13 @@
           type: 'button', class: 'color-swatch',
           'aria-pressed': String(c === color), 'aria-label': PROJECT_COLOR_NAMES[k], title: PROJECT_COLOR_NAMES[k],
           style: { background: c },
-          onclick: () => { color = c; renderPicker(); paintPreview(); }
+          onclick: () => { color = c; syncPicker(); paintPreview(); }
         }));
+      });
+    }
+    function syncPicker() {
+      Array.prototype.forEach.call(swatches.children, (b, k) => {
+        b.setAttribute('aria-pressed', String(PROJECT_COLORS[k] === color));
       });
     }
     identSec.appendChild(el('div', { class: 'pf-ident' }, [

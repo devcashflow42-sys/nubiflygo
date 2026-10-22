@@ -493,7 +493,7 @@
   }
 
   async function revokeKey(k) {
-    const ok = await confirmDialog('¿Revocar esta clave?', `"${k.name}" dejará de funcionar inmediatamente. Esta acción no se puede deshacer.`, 'Revocar');
+    const ok = await confirmDialog('¿Revocar esta clave?', `"${k.name}" dejará de funcionar inmediatamente. Se guarda 30 días en la papelera por si quieres volver a activarla.`, 'Revocar');
     if (!ok) return;
     try {
       await apiDelete('/apikeys/' + k.id);
@@ -501,6 +501,7 @@
       if (e.status !== 404) { toast(e.message || 'No se pudo revocar la clave'); return; }
     }
     store.apiKeys = store.apiKeys.filter(x => x.id !== k.id);
+    if (typeof loadTrash === 'function') loadTrash();
     toast('Clave revocada');
     render();
   }

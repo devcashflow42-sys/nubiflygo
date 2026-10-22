@@ -189,7 +189,7 @@
     const one = list.length === 1;
     const size = formatBytes(list.reduce((n, f) => n + (Number(f.size) || 0), 0));
     const ok = await confirmDialog(one ? '¿Eliminar archivo?' : '¿Eliminar ' + list.length + ' archivos?',
-      (one ? '"' + list[0].title + '"' : 'Las copias') + ' se eliminarán para siempre y liberarás ' + size + '.', 'Eliminar');
+      (one ? '"' + list[0].title + '"' : 'Las copias') + ' se irán a la papelera y liberarás ' + size + '. Tienes 30 días para recuperarlas.', 'Eliminar');
     if (!ok) return;
     if (window.nowPlayingId && list.some(f => f.id === window.nowPlayingId) && typeof window.closePlayer === 'function') window.closePlayer();
     const ids = list.map(f => f.id);
@@ -197,6 +197,7 @@
     catch (e) { toast(e.message || 'No se pudo eliminar'); return; }
     store.files = (store.files || []).filter(f => !ids.includes(f.id));
     (store.projects || []).forEach(p => { if (p.documents) p.documents = p.documents.filter(d => !ids.includes(d.id)); });
+    if (typeof loadTrash === 'function') loadTrash();
     toast(one ? 'Archivo eliminado' : list.length + ' archivos eliminados');
     render();
   }
@@ -209,12 +210,13 @@
 
   // Elimina un archivo del servidor (con confirmación) y lo quita de la lista.
   async function deleteFile(f) {
-    const ok = await confirmDialog('¿Eliminar archivo?', `"${f.title}" se eliminará para siempre.`, 'Eliminar');
+    const ok = await confirmDialog('¿Eliminar archivo?', `"${f.title}" se irá a la papelera. Tienes 30 días para recuperarlo.`, 'Eliminar');
     if (!ok) return;
     try {
       await apiDelete('/files/' + f.id);
     } catch (e) { if (e.status !== 404) { toast(e.message || 'No se pudo eliminar'); return; } }
     store.files = (store.files || []).filter(x => x.id !== f.id);
+    if (typeof loadTrash === 'function') loadTrash();
     toast('Archivo eliminado'); render();
   }
 
@@ -225,7 +227,7 @@
     if (!n) return;
     const size = formatBytes(mine.reduce((s, f) => s + (Number(f.size) || 0), 0));
     const ok = await confirmDialog('¿Borrar todos los archivos?',
-      `Se eliminarán para siempre ${n === 1 ? 'el archivo' : 'los ' + n + ' archivos'} (${size}) de Archivos. Los archivos de tus proyectos no se tocan. No se puede deshacer.`, 'Borrar todo');
+      `${n === 1 ? 'El archivo' : 'Los ' + n + ' archivos'} (${size}) de Archivos se irán a la papelera; tienes 30 días para recuperarlos. Los archivos de tus proyectos no se tocan.`, 'Borrar todo');
     if (!ok) return;
     // Si suena una canción de Archivos, se cierra el reproductor (su archivo ya no existirá).
     if (window.nowPlayingId && mine.some(f => f.id === window.nowPlayingId) && typeof window.closePlayer === 'function') window.closePlayer();

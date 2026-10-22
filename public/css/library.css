@@ -125,8 +125,13 @@
 }
 .ph-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .ph-cover.is-solid { display: grid; place-items: center; grid-template-columns: 1fr; grid-template-rows: 1fr; }
+/* El cuadro es del mismo color con el que arranca el degradado del fondo, así
+   que sin este filo se perdería contra él. */
+.ph-cover.is-solid { box-shadow: 0 18px 40px -16px rgba(0, 0, 0, .6), inset 0 0 0 1px rgba(255, 255, 255, .22); }
 .ph-cover.is-solid img { position: absolute; inset: 0; }
-.ph-cover-ico svg { width: 44px; height: 44px; opacity: .9; }
+/* El icono blanco sobre ámbar, cian, esmeralda o naranja no llega a 3:1; la
+   sombra lo despega sin ensuciar los colores oscuros. */
+.ph-cover-ico svg { width: 44px; height: 44px; opacity: .9; filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, .3)); }
 .ph-info { flex: 1; min-width: 0; }
 .ph-k { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase; font-weight: 700; opacity: .9; flex-wrap: wrap; }
 .ph-k-ico { display: inline-flex; } .ph-k-ico svg { width: 13px; height: 13px; }
@@ -175,7 +180,7 @@
 .pc-thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .pc-thumb.is-grid { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 1px; }
 .pc-thumb.is-grid img { position: static; }
-.pc-thumb-ico svg { width: 20px; height: 20px; }
+.pc-thumb-ico svg { width: 20px; height: 20px; filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, .3)); }
 .lib-clean { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
 .lib-cl { border: 1px solid var(--border); border-radius: 14px; padding: 14px; background: var(--surface-2); display: flex; gap: 12px; align-items: center; text-align: left; color: var(--fg); font: inherit; cursor: pointer; }
 .lib-cl:hover { border-color: var(--border-strong); }
@@ -293,7 +298,9 @@
   .lib-dup-h .btn { order: 3; flex: 1 1 100%; justify-content: center; height: 40px; }
   .ph-btn { height: 42px; }
   .ph-btn span { display: none; }
-  .ph-btn { width: 42px; padding: 0; justify-content: center; }
+  /* También .is-icon: su regla de 38px gana por especificidad y el botón «⋯»
+     salía ovalado (38×42) junto a los redondos. */
+  .ph-btn, .ph-btn.is-icon { width: 42px; padding: 0; justify-content: center; }
   .pub-act { width: 36px; height: 36px; }
   .lib-more, .lib-row-del, .ak-del, .ak-more { min-width: 40px; min-height: 40px; }
 }

@@ -19,6 +19,7 @@ import { Router } from 'express';
 import { query } from '../db.js';
 import { requireAuth } from '../auth.js';
 import { cleanValue } from '../security.js';
+import { trashProject, trashFilesWhere } from '../trash.js';
 import {
   UUID_RE, FILE_COLS, DOC_COLS, fileFilters, pageOf, wantsAll, readSelection,
   fileItem, docItem, deleteFilesWhere, logActivity, bulkResponse, fmtBytes, toISO
@@ -52,18 +53,18 @@ projects.get('/', wrap(async (req, res) => {
   const uid = req.user.id;
   const { rows } = await query(
     `SELECT p.id, p.name, p.description, p.color, p.icon, p.created_at, p.updated_at,
-       (SELECT count(*) FROM documents d WHERE d.project_id = p.id AND d.user_id = $1)::int AS doc_count,
-       (SELECT count(*) FROM files f WHERE f.project_id = p.id AND f.user_id = $1)::int AS file_count,
-       (SELECT coalesce(sum(size), 0) FROM files f WHERE f.project_id = p.id AND f.user_id = $1)::bigint AS bytes,
-       ((SELECT count(*) FROM documents d WHERE d.project_id = p.id AND d.user_id = $1 AND d.published)
-        + (SELECT count(*) FROM files f WHERE f.project_id = p.id AND f.user_id = $1 AND f.published))::int AS published_count,
-       (SELECT count(*) FROM api_keys k WHERE k.project_id = p.id AND k.user_id = $1)::int AS api_keys
-     FROM projects p WHERE p.user_id = $1 ORDER BY p.created_at DESC`, [uid]);
+       (SELECT count(*) FROM documents d WHERE d.project_id = p.id AND d.user_id = $1 AND d.deleted_at IS NULL)::int AS doc_count,
+       (SELECT count(*) FROM files f WHERE f.project_id = p.id AND f.user_id = $1 AND f.deleted_at IS NULL)::int AS file_count,
+       (SELECT coalesce(sum(size), 0) FROM files f WHERE f.project_id = p.id AND f.user_id = $1 AND f.deleted_at IS NULL)::bigint AS bytes,
+       ((SELECT count(*) FROM documents d WHERE d.project_id = p.id AND d.user_id = $1 AND d.deleted_at IS NULL AND d.published)
+        + (SELECT count(*) FROM files f WHERE f.project_id = p.id AND f.user_id = $1 AND f.deleted_at IS NULL AND f.published))::int AS published_count,
+       (SELECT count(*) FROM api_keys k WHERE k.project_id = p.id AND k.user_id = $1 AND k.deleted_at IS NULL)::int AS api_keys
+     FROM projects p WHERE p.user_id = $1 AND p.deleted_at IS NULL ORDER BY p.created_at DESC`, [uid]);
   let byProject = null;
   if (String(req.query.include || '').split(',').includes('items') && rows.length) {
     byProject = new Map(rows.map(r => [r.id, []]));
-    const { rows: docs } = await query(`SELECT ${DOC_COLS} FROM documents WHERE user_id = $1 AND project_id IS NOT NULL`, [uid]);
-    const { rows: fs } = await query(`SELECT ${FILE_COLS} FROM files WHERE user_id = $1 AND project_id IS NOT NULL`, [uid]);
+    const { rows: docs } = await query(`SELECT ${DOC_COLS} FROM documents WHERE user_id = $1 AND project_id IS NOT NULL AND deleted_at IS NULL`, [uid]);
+    const { rows: fs } = await query(`SELECT ${FILE_COLS} FROM files WHERE user_id = $1 AND project_id IS NOT NULL AND deleted_at IS NULL`, [uid]);
     docs.forEach(d => { const l = byProject.get(d.project_id); if (l) l.push(docItem(d)); });
     fs.forEach(f => { const l = byProject.get(f.project_id); if (l) l.push(fileListItem(f)); });
     byProject.forEach(l => l.sort(byNewest));
@@ -99,14 +100,20 @@ async function bulkDeleteProjects(req, res) {
   const uid = req.user.id;
   const sel = readSelection(req.body, req.query);
   if (sel.error) return res.status(400).json({ error: sel.error });
-  const scope = sel.ids ? ' AND project_id = ANY($2::uuid[])' : ' AND project_id IN (SELECT id FROM projects WHERE user_id = $1)';
-  const params = sel.ids ? [sel.ids] : [];
-  const f = await deleteFilesWhere(uid, scope, params);
-  const { rows: d } = await query(`DELETE FROM documents WHERE user_id = $1${scope} RETURNING id`, [uid, ...params]);
-  const { rows: p } = await query(`DELETE FROM projects WHERE user_id = $1${sel.ids ? ' AND id = ANY($2::uuid[])' : ''} RETURNING id`, [uid, ...params]);
-  if (p.length) await logActivity(uid, 'project', p.length === 1 ? 'Proyecto eliminado' : p.length + ' proyectos eliminados');
-  res.json(bulkResponse(p.length === 1 ? 'Se eliminó 1 proyecto.' : 'Se eliminaron ' + p.length + ' proyectos.',
-    { projects: p.length, documents: d.length, files: f.deleted }, 0, f.bytes));
+  const { rows: ids } = sel.ids
+    ? await query('SELECT id FROM projects WHERE user_id = $1 AND id = ANY($2::uuid[]) AND deleted_at IS NULL', [uid, sel.ids])
+    : await query('SELECT id FROM projects WHERE user_id = $1 AND deleted_at IS NULL', [uid]);
+  let docs = 0, files = 0;
+  for (const r of ids) {
+    const n = await query(
+      `SELECT (SELECT count(*)::int FROM documents WHERE project_id = $1 AND user_id = $2 AND deleted_at IS NULL) AS d,
+              (SELECT count(*)::int FROM files WHERE project_id = $1 AND user_id = $2 AND deleted_at IS NULL) AS f`, [r.id, uid]);
+    docs += n.rows[0].d; files += n.rows[0].f;
+    await trashProject(uid, r.id);
+  }
+  if (ids.length) await logActivity(uid, 'project', ids.length === 1 ? 'Proyecto eliminado' : ids.length + ' proyectos eliminados');
+  res.json(bulkResponse(ids.length === 1 ? 'Se eliminó 1 proyecto.' : 'Se eliminaron ' + ids.length + ' proyectos.',
+    { projects: ids.length, documents: docs, files: files }, 0, 0));
 }
 projects.delete('/', wrap(bulkDeleteProjects));
 projects.post('/delete', wrap(bulkDeleteProjects));
@@ -115,7 +122,7 @@ projects.post('/delete', wrap(bulkDeleteProjects));
 // Carga el proyecto (solo si es del usuario) en req.project.
 projects.use('/:id', wrap(async (req, res, next) => {
   if (!UUID_RE.test(req.params.id)) return res.status(400).json({ error: 'Id no válido.' });
-  const { rows } = await query(`SELECT user_id, ${SELECT} FROM projects WHERE id = $1 AND user_id = $2`, [req.params.id, req.user.id]);
+  const { rows } = await query(`SELECT user_id, ${SELECT} FROM projects WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL`, [req.params.id, req.user.id]);
   req.project = rows[0] || null;
   next();
 }));
@@ -124,7 +131,7 @@ const notFound = (res) => res.status(404).json({ success: false, status: 404, me
 async function docsPage(pid, uid, q) {
   const all = wantsAll(q), pg = pageOf(q);
   const { rows } = await query(
-    `SELECT ${DOC_COLS}, count(*) OVER() AS __total FROM documents WHERE project_id = $1 AND user_id = $2 ORDER BY created_at DESC, id` +
+    `SELECT ${DOC_COLS}, count(*) OVER() AS __total FROM documents WHERE project_id = $1 AND user_id = $2 AND deleted_at IS NULL ORDER BY created_at DESC, id` +
     (all ? '' : ' LIMIT $3 OFFSET $4'), all ? [pid, uid] : [pid, uid, pg.limit, pg.offset]);
   const total = rows[0] ? Number(rows[0].__total) : (all || pg.offset === 0 ? 0 : await countIn('documents', pid, uid));
   const items = rows.map(docItem);
@@ -133,7 +140,7 @@ async function docsPage(pid, uid, q) {
 async function filesPage(pid, uid, q) {
   const all = wantsAll(q), pg = pageOf(q);
   const { rows } = await query(
-    `SELECT ${FILE_COLS}, count(*) OVER() AS __total FROM files WHERE project_id = $1 AND user_id = $2 ORDER BY created_at DESC, id` +
+    `SELECT ${FILE_COLS}, count(*) OVER() AS __total FROM files WHERE project_id = $1 AND user_id = $2 AND deleted_at IS NULL ORDER BY created_at DESC, id` +
     (all ? '' : ' LIMIT $3 OFFSET $4'), all ? [pid, uid] : [pid, uid, pg.limit, pg.offset]);
   const total = rows[0] ? Number(rows[0].__total) : (all || pg.offset === 0 ? 0 : await countIn('files', pid, uid));
   const items = rows.map(fileListItem);
@@ -148,12 +155,12 @@ projects.get('/:id', wrap(async (req, res) => {
   const p = req.project; if (!p) return notFound(res);
   const uid = req.user.id;
   const { rows: s } = await query(
-    `SELECT (SELECT count(*) FROM documents WHERE project_id = $1 AND user_id = $2)::int AS documents,
-            (SELECT count(*) FROM files WHERE project_id = $1 AND user_id = $2)::int AS files,
-            (SELECT coalesce(sum(size),0) FROM files WHERE project_id = $1 AND user_id = $2)::bigint AS bytes,
-            (SELECT count(*) FROM api_keys WHERE project_id = $1 AND user_id = $2)::int AS api_keys,
-            (SELECT count(*) FROM documents WHERE project_id = $1 AND user_id = $2 AND published)::int AS pub_docs,
-            (SELECT count(*) FROM files WHERE project_id = $1 AND user_id = $2 AND published)::int AS pub_files`, [p.id, uid]);
+    `SELECT (SELECT count(*) FROM documents WHERE project_id = $1 AND user_id = $2 AND deleted_at IS NULL)::int AS documents,
+            (SELECT count(*) FROM files WHERE project_id = $1 AND user_id = $2 AND deleted_at IS NULL)::int AS files,
+            (SELECT coalesce(sum(size),0) FROM files WHERE project_id = $1 AND user_id = $2 AND deleted_at IS NULL)::bigint AS bytes,
+            (SELECT count(*) FROM api_keys WHERE project_id = $1 AND user_id = $2 AND deleted_at IS NULL)::int AS api_keys,
+            (SELECT count(*) FROM documents WHERE project_id = $1 AND user_id = $2 AND deleted_at IS NULL AND published)::int AS pub_docs,
+            (SELECT count(*) FROM files WHERE project_id = $1 AND user_id = $2 AND deleted_at IS NULL AND published)::int AS pub_files`, [p.id, uid]);
   const st = s[0] || {};
   const docs = await docsPage(p.id, uid, req.query), fls = await filesPage(p.id, uid, req.query);
   const bytes = Number(st.bytes) || 0;
@@ -182,12 +189,12 @@ projects.get('/:id/items', wrap(async (req, res) => {
     if (s) { params.push('%' + s.replace(/[\\%_]/g, m => '\\' + m) + '%'); where += ' AND (title ILIKE $3 OR content ILIKE $3)'; }
     if (q.published === 'true' || q.published === '1') where += ' AND published';
     else if (q.published === 'false' || q.published === '0') where += ' AND NOT published';
-    docs = (await query(`SELECT ${DOC_COLS} FROM documents WHERE project_id = $1 AND user_id = $2${where} ORDER BY created_at DESC`, params)).rows.map(docItem);
+    docs = (await query(`SELECT ${DOC_COLS} FROM documents WHERE project_id = $1 AND user_id = $2 AND deleted_at IS NULL${where} ORDER BY created_at DESC`, params)).rows.map(docItem);
   }
   if (kind !== 'document') {
     const f = fileFilters({ q: q.q, published: q.published, type: q.type }, 3);
     if (f.error) return res.status(400).json({ error: f.error });
-    fls = (await query(`SELECT ${FILE_COLS} FROM files WHERE project_id = $1 AND user_id = $2${f.sql} ORDER BY created_at DESC`, [p.id, uid, ...f.params])).rows.map(fileListItem);
+    fls = (await query(`SELECT ${FILE_COLS} FROM files WHERE project_id = $1 AND user_id = $2 AND deleted_at IS NULL${f.sql} ORDER BY created_at DESC`, [p.id, uid, ...f.params])).rows.map(fileListItem);
   }
   const all = docs.concat(fls).sort(byNewest);
   const pg = pageOf(q);
@@ -207,9 +214,11 @@ async function emptyProject(req, res, sel, kind, strict) {
   const idsSql = sel.ids ? ' AND id = ANY($3::uuid[])' : '';
   const params = [uid, p.id].concat(sel.ids ? [sel.ids] : []);
   let docs = 0;
-  if (kind !== 'file') docs = (await query(`DELETE FROM documents WHERE user_id = $1 AND project_id = $2${idsSql} RETURNING id`, params)).rows.length;
+  if (kind !== 'file') docs = (await query(
+    `UPDATE documents SET deleted_at = now(), trashed_with_project = false
+     WHERE user_id = $1 AND project_id = $2 AND deleted_at IS NULL${idsSql} RETURNING id`, params)).rows.length;
   let f = { deleted: 0, bytes: 0, ids: [] };
-  if (kind !== 'document') f = await deleteFilesWhere(uid, ' AND project_id = $2' + idsSql, params.slice(1));
+  if (kind !== 'document') f.deleted = await trashFilesWhere(uid, ' AND project_id = $2' + idsSql, params.slice(1));
   if (docs || f.deleted) {
     await query('UPDATE projects SET updated_at = now() WHERE id = $1 AND user_id = $2', [p.id, uid]).catch(() => {});
     await logActivity(uid, 'project', 'Elementos eliminados de «' + p.name + '»: ' + (docs + f.deleted));
@@ -248,11 +257,10 @@ projects.patch('/:id', wrap(async (req, res) => {
 projects.delete('/:id', wrap(async (req, res) => {
   const p = req.project;
   if (!p) return res.json({ ok: true, already_deleted: true });
-  await deleteFilesWhere(req.user.id, ' AND project_id = $2', [p.id]);
-  await query('DELETE FROM documents WHERE project_id = $1 AND user_id = $2', [p.id, req.user.id]);
-  await query('DELETE FROM projects WHERE id = $1 AND user_id = $2', [p.id, req.user.id]);
+  // A la papelera, con todo su contenido (copia de functions/…/projects).
+  await trashProject(req.user.id, p.id);
   await logActivity(req.user.id, 'project', 'Proyecto eliminado: ' + p.name);
-  res.json({ ok: true });
+  res.json({ ok: true, trashed: true });
 }));
 
 projects.use('/:id', (_req, res) => res.status(404).json({ error: 'Ruta de proyectos no encontrada.' }));

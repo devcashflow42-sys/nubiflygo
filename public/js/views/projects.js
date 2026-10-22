@@ -12,6 +12,8 @@
       icon: p.icon || null,
       visibility: 'private', members: [], documents: [], _loaded: false,
       contentCount: (Number(p.doc_count) || 0) + (Number(p.file_count) || 0),
+      // Los documentos no viajan en la lista; de ellos solo se sabe cuántos son.
+      docCount: Number(p.doc_count) || 0,
       createdAt: p.created_at ? Date.parse(p.created_at) : Date.now(),
       updatedAt: p.updated_at ? Date.parse(p.updated_at) : Date.now()
     };
@@ -109,6 +111,26 @@
       ]));
       return;
     }
+    // Banner de la sección: dice de un vistazo cuánto hay y deja crear uno.
+    const nP = store.projects.length;
+    const nArch = (store.files || []).filter(f => f.project_id).length;
+    v.appendChild(el('div', { class: 'sec-hero' }, [
+      el('span', { class: 'sec-hero-ico', html: PC_ICN.folder }),
+      el('div', { class: 'sec-hero-info' }, [
+        el('h2', {}, 'Proyectos'),
+        (function () {
+          const t = el('p');
+          t.innerHTML = nP + (nP === 1 ? ' proyecto' : ' proyectos') + ' · ' + nArch + (nArch === 1 ? ' archivo' : ' archivos')
+            + '<span class="sec-hero-extra"><br>Reúne aquí tus archivos, documentos y notas por tema.</span>';
+          return t;
+        })()
+      ]),
+      el('div', { class: 'sec-hero-acts' }, [
+        el('button', { class: 'ph-btn', onclick: () => openProjectModal() }, [
+          el('span', { html: PC_ICN.plus }), el('span', {}, 'Nuevo proyecto')
+        ])
+      ])
+    ]));
     v.appendChild(el('div', { class: 'board-tools', style: { paddingTop: '14px' } }, [
       searchInput('Buscar proyectos…')
     ]));
@@ -121,28 +143,22 @@
     } else if (filtered.length === 0) {
       body.appendChild(emptyBlock('Sin resultados', 'Ningún proyecto coincide con tu búsqueda.', null));
     } else {
-      // Agrupados por categoría automática (según lo que tiene cada proyecto).
+      // Un solo grupo: cada tarjeta ya enseña lo que guarda, así que agruparlas
+      // por categoría solo partía la lista.
       if (typeof loadFiles === 'function') loadFiles();
-      const groups = new Map();
-      ['music', 'photos', 'videos', 'docs', 'mixed', null].forEach(c => groups.set(c, []));
-      filtered.forEach(p => groups.get(projectCategory(projectItems(p))).push(p));
       const add = el('button', { class: 'add-project', onclick: () => openProjectModal() }, [
         el('span', { html: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>' }),
         'Nuevo proyecto'
       ]);
-      const shown = [...groups.entries()].filter(([, ps]) => ps.length);
-      shown.forEach(([c, ps], i) => {
-        const meta = c ? CAT[c] : null;
-        body.appendChild(el('div', { class: 'pg-head' }, [
-          el('span', { class: 'pg-ico', style: { background: meta ? meta.color : 'var(--fg-faint)' }, html: meta ? meta.icon : KIND_ICON_LIB('mixed') }),
-          el('strong', {}, meta ? meta.label : 'Sin archivos todavía'),
-          el('span', {}, '· ' + ps.length)
-        ]));
-        const grid = el('div', { class: 'project-grid' });
-        ps.forEach(p => grid.appendChild(projectCard(p)));
-        if (i === shown.length - 1) grid.appendChild(add);
-        body.appendChild(grid);
-      });
+      body.appendChild(el('div', { class: 'pg-head' }, [
+        el('span', { class: 'pg-ico', style: { background: 'var(--fg-faint)' }, html: PC_ICN.folder }),
+        el('strong', {}, 'Mis proyectos'),
+        el('span', {}, '· ' + filtered.length)
+      ]));
+      const grid = el('div', { class: 'project-grid pg-rich' });
+      filtered.forEach(p => grid.appendChild(projectCard(p)));
+      grid.appendChild(add);
+      body.appendChild(grid);
     }
     v.appendChild(body);
   }
@@ -154,17 +170,127 @@
     return p._loaded ? (p.documents?.length || 0) : (p.contentCount != null ? p.contentCount : (p.documents?.length || 0));
   }
 
+  /* ───────── Lo que guarda el proyecto, dentro de su tarjeta ─────────
+     Las carpetas se arman solas por tipo con los archivos que la página ya
+     tiene (store.files; no hace falta pedir nada). Los documentos no viajan en
+     la lista, así que de ellos solo se sabe cuántos son: por eso su carpeta no
+     lleva fecha. */
+  const PC_ICN = {
+    folder: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/></svg>',
+    more: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg>',
+    plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>'
+  };
+  const PC_KIND = [
+    { id: 'image', label: 'Imágenes', color: '#2f7de1' },
+    { id: 'video', label: 'Videos', color: '#8b5cf6' },
+    { id: 'audio', label: 'Música', color: '#35b98f' },
+    { id: 'doc', label: 'Documentos', color: '#e0a21b' },
+    { id: 'other', label: 'Otros', color: '#6b6a63' }
+  ];
+  const PC_MAX_ROWS = 5;
+
+  function pcKind(f) {
+    const k = window.mediaKind ? window.mediaKind(f.mime || f.type || '', f.title) : 'other';
+    return k === 'pdf' ? 'doc' : (PC_KIND.some(x => x.id === k) ? k : 'other');
+  }
+  function pcSize(n) {
+    if (!n) return '0 B';
+    const u = ['B', 'KB', 'MB', 'GB', 'TB'];
+    let i = 0, v = Number(n);
+    while (v >= 1024 && i < u.length - 1) { v /= 1024; i++; }
+    return (v >= 10 || i === 0 ? Math.round(v) : v.toFixed(1)) + ' ' + u[i];
+  }
+
+  // Filas de la tarjeta: primero las carpetas (de más a menos), y con el hueco
+  // que quede, los archivos más recientes.
+  function projectRows(p) {
+    const files = projectItems(p).filter(f => f.kind !== 'document');
+    const by = new Map();
+    files.forEach(f => {
+      const k = pcKind(f);
+      const g = by.get(k) || { n: 0, at: 0 };
+      g.n++; g.at = Math.max(g.at, Number(f.updatedAt || f.createdAt) || 0);
+      by.set(k, g);
+    });
+    // Los documentos de la app van en la MISMA carpeta que los PDF y demás
+    // archivos de texto: para quien usa la app son lo mismo, y con dos carpetas
+    // llamadas «Documentos» no se entendía nada.
+    const nDocs = p.docCount != null ? p.docCount : 0;
+    if (nDocs) {
+      const g = by.get('doc') || { n: 0, at: 0 };
+      g.n += nDocs;
+      by.set('doc', g);
+    }
+    const rows = [];
+    PC_KIND.forEach(k => {
+      const g = by.get(k.id);
+      if (!g || !g.n) return;
+      rows.push({ folder: true, kind: k.id, color: k.color, name: k.label, n: g.n,
+        sub: g.n + (g.n === 1 ? ' elemento' : ' elementos') + (g.at ? ' · ' + timeAgo(g.at) : '') });
+    });
+    rows.sort((a, b) => b.n - a.n);
+    const hueco = PC_MAX_ROWS - rows.length;
+    if (hueco > 0) {
+      files.slice().sort((a, b) => (Number(b.updatedAt || b.createdAt) || 0) - (Number(a.updatedAt || a.createdAt) || 0))
+        .slice(0, hueco)
+        .forEach(f => {
+          const k = PC_KIND.find(x => x.id === pcKind(f)) || PC_KIND[4];
+          rows.push({ file: f, kind: k.id, color: k.color, name: f.title,
+            sub: pcSize(f.size) + ' · ' + timeAgo(Number(f.updatedAt || f.createdAt) || Date.now()) });
+        });
+    }
+    return rows.slice(0, PC_MAX_ROWS);
+  }
+
+  function projectRow(p, r) {
+    const ico = el('span', { class: 'pc-ico ' + (r.folder ? 'is-folder' : 'is-file'), html: KIND_ICON_LIB(r.kind === 'doc' && r.folder ? 'doc' : r.kind) });
+    ico.style.setProperty('--k', r.color);
+    const abrir = () => go('projects', { projectId: p.id });
+    return el('button', { class: 'pc-item', type: 'button', onclick: abrir }, [
+      ico,
+      el('div', { class: 'pc-txt2' }, [
+        el('div', { class: 'pc-nm', title: r.name }, r.name),
+        el('div', { class: 'pc-sub' }, r.sub)
+      ]),
+      el('span', {
+        class: 'pc-more', role: 'button', tabindex: '0',
+        title: 'Más opciones', 'aria-label': 'Más opciones de ' + r.name,
+        html: PC_ICN.more,
+        onclick: (e) => { e.stopPropagation(); pcMenu(p, r); }
+      })
+    ]);
+  }
+
+  function pcMenu(p, r) {
+    const opciones = [ { label: 'Abrir proyecto', icon: PC_ICN.folder, onClick: () => go('projects', { projectId: p.id }) } ];
+    if (r.file) {
+      opciones.push({
+        label: 'Eliminar archivo', icon: ICON_DELETE, danger: true,
+        onClick: async () => {
+          const ok = await confirmDialog('¿Eliminar archivo?', `"${r.file.title}" se irá a la papelera. Tienes 30 días para recuperarlo.`, 'Eliminar');
+          if (!ok) return;
+          try { await apiDelete('/files/' + r.file.id); }
+          catch (e) { if (e.status !== 404) { toast(e.message || 'No se pudo eliminar'); return; } }
+          store.files = (store.files || []).filter(x => x.id !== r.file.id);
+          if (typeof loadTrash === 'function') loadTrash();
+          toast('Archivo eliminado'); render();
+        }
+      });
+    }
+    sheet(r.name, opciones);
+  }
+
   function projectCard(p) {
     const docCount = projectItemCount(p);
     const memCount = p.members?.length || 0;
-    const metaBits = [ docCount + (docCount === 1 ? ' doc' : ' docs') ];
+    const metaBits = [ docCount + (docCount === 1 ? ' elemento' : ' elementos') ];
     if (memCount) metaBits.push(memCount + (memCount === 1 ? ' miembro' : ' miembros'));
-    metaBits.push(timeAgo(p.updatedAt));
+    metaBits.push('actualizado ' + timeAgo(p.updatedAt));
+    const rows = projectRows(p);
 
     return el('div', {
-      class: 'project-card',
-      style: { '--c': safeColor(p.color) },
-      onclick: () => go('projects', { projectId: p.id })
+      class: 'project-card pc-rich',
+      style: { '--c': safeColor(p.color) }
     }, [
       el('div', { class: 'card-actions' }, [
         el('button', {
@@ -182,18 +308,24 @@
           html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>'
         })
       ]),
-      el('div', { class: 'pc-row' }, [
+      el('div', { class: 'pc-head', onclick: () => go('projects', { projectId: p.id }) }, [
         projectThumb(p),
         el('div', { class: 'pc-txt' }, [
           el('div', { class: 'project-name' }, p.name),
           el('div', { class: 'project-meta' }, metaBits.map((t, i) => el('span', {}, (i > 0 ? '· ' : '') + t)))
         ])
+      ]),
+      rows.length
+        ? el('div', { class: 'pc-list' }, rows.map(r => projectRow(p, r)))
+        : el('div', { class: 'pc-list' }, [ el('div', { class: 'pc-empty' }, 'Todavía no has subido nada aquí.') ]),
+      el('button', { class: 'pc-add', type: 'button', onclick: () => go('projects', { projectId: p.id }) }, [
+        el('span', { html: PC_ICN.plus }), el('span', {}, 'Agregar archivo')
       ])
     ]);
   }
 
   async function confirmDeleteProject(p) {
-    const ok = await confirmDialog('¿Eliminar proyecto?', `"${p.name}" y todos sus documentos se eliminarán para siempre.`, 'Eliminar');
+    const ok = await confirmDialog('¿Eliminar proyecto?', `"${p.name}" se irá a la papelera con todo su contenido. Tienes 30 días para recuperarlo.`, 'Eliminar');
     if (!ok) return;
     stopPlayerIfIn(p);
     try {
@@ -205,6 +337,7 @@
     }
     forgetProjectFiles(p);
     store.projects = store.projects.filter(x => x.id !== p.id);
+    if (typeof loadTrash === 'function') loadTrash();
     toast('Proyecto eliminado');
     if (state.projectId === p.id) state.projectId = null;
     render();
@@ -214,7 +347,7 @@
   async function emptyProject(p) {
     const n = (p.documents || []).length;
     const ok = await confirmDialog('¿Vaciar el proyecto?',
-      `Se eliminarán para siempre ${n === 1 ? 'su único elemento' : 'sus ' + n + ' documentos y archivos'} de "${p.name}". El proyecto se conserva.`, 'Vaciar');
+      `${n === 1 ? 'Su único elemento' : 'Sus ' + n + ' documentos y archivos'} de "${p.name}" se irán a la papelera; tienes 30 días para recuperarlos. El proyecto se conserva.`, 'Vaciar');
     if (!ok) return;
     stopPlayerIfIn(p);
     toast('Vaciando «' + p.name + '»…');
@@ -602,7 +735,7 @@
 
     body.appendChild(el('div', { class: 'danger-zone' }, [
       el('h4', {}, 'Zona de peligro'),
-      el('p', {}, 'Al eliminar este proyecto se perderán todos sus documentos y miembros. Esta acción no se puede deshacer.'),
+      el('p', {}, 'El proyecto se irá a la papelera con todos sus documentos. Tienes 30 días para recuperarlo antes de que se borre solo.'),
       el('button', { class: 'btn btn-danger', onclick: () => confirmDeleteProject(p) }, [
         el('span', { html: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;vertical-align:-2px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/></svg>Eliminar proyecto'
         })

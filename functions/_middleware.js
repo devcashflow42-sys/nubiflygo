@@ -35,7 +35,7 @@ const CLEAN = { '/main.html': '/', '/index.html': '/', '/login.html': '/login', 
 // Secciones de la app (SPA): todas sirven home.html para que la entrada directa
 // y la recarga abran la sección correcta. El front (nav.js) ajusta la vista
 // según la URL. Admite también el detalle /project/<id> y /note/<id>.
-const APP_SECTIONS = new Set(['main', 'project', 'note', 'archive', 'report', 'apikeys', 'automation', 'settings', 'notifications']);
+const APP_SECTIONS = new Set(['main', 'project', 'note', 'archive', 'report', 'apikeys', 'automation', 'settings', 'notifications', 'trash']);
 
 // Toda respuesta pasa por la transición de la cookie de sesión (ver http.js).
 export async function onRequest(ctx) {

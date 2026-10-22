@@ -14,7 +14,8 @@
     v.innerHTML = '';
     v.appendChild(pageToolbar({
       menu: () => openMobile(),
-      title: t('nav.dashboard')
+      title: t('nav.dashboard'),
+      notifBell: false
     }));
     v.appendChild(el('div', { class: 'board-head' }, [
       // Saludo con el nombre real de la cuenta (esqueleto mientras llega el perfil).

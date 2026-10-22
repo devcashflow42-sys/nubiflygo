@@ -11,6 +11,8 @@ import { config, checkConfig } from './config.js';
 import { account } from './routes/account.js';
 import { files } from './routes/files.js';
 import { apikeys } from './routes/apikeys.js';
+import { trash } from './routes/trash.js';
+import { ensureTrashColumns } from './trash.js';
 import { crudRouter } from './routes/crud.js';
 import { projects } from './routes/projects.js';
 import { notifications } from './routes/notifications.js';
@@ -32,6 +34,10 @@ api.get('/health', async (req, res) => {
   res.status(db ? 200 : 503).json({ service: 'nubiflygo', status, version: 'v1', db, storage: config.storageProvider, missingConfig: checkConfig() });
 });
 
+// Las columnas de la papelera se crean solas una vez; de aquí para abajo TODA
+// lectura filtra por deleted_at.
+api.use((_req, _res, next) => { ensureTrashColumns().then(() => next(), next); });
+
 // App Android: bloqueo en el servidor (suspensión, mantenimiento, versión mínima),
 // estado público y administración.
 api.use(androidGate);
@@ -49,6 +55,9 @@ api.use('/documents', crudRouter('documents', ['title', 'content', 'project_id']
 // Archivos y claves API (lógica propia)
 api.use('/files', files);
 api.use('/apikeys', apikeys);
+
+// Papelera: lo borrado se guarda 30 días y se puede restaurar
+api.use('/trash', trash);
 
 // Notificaciones (seguridad, suscripción, abuso, novedades)
 api.use('/notifications', notifications);

@@ -11,10 +11,18 @@
    pantalla lo anuncien. No es un control, así que no lleva recuadro. */
 #ob-step h1:focus { outline: none; }
 
+/* La tarjeta va centrada y los tres pasos miden distinto (de 239 a 495 px), así
+   que la barra de avance, el título y «Continuar» saltaban de sitio al pasar de
+   uno a otro. Con una altura mínima el marco se queda quieto; el hueco de abajo
+   también deja sitio al aviso de error sin empujar nada. */
+#ob-step { min-height: 31rem; }
+@media (max-width: 420px) { #ob-step { min-height: 34rem; } }
+
 /* ---------- Salida (cerrar sesión) ---------- */
 .ob-out { text-align: center; margin-top: 18px; }
 .ob-out button {
-  background: none; border: 0; padding: 4px 8px; font: inherit; font-size: .84rem;
+  /* 44px de alto: con 4px de relleno quedaba en 28 y costaba acertar. */
+  background: none; border: 0; padding: 12px 16px; min-height: 44px; font: inherit; font-size: .84rem;
   font-weight: 500; color: var(--muted); transition: color .15s;
   animation: rise .55s cubic-bezier(.22,.61,.36,1) both; animation-delay: .4s;
 }
@@ -32,6 +40,9 @@
 /* ---------- Tarjetas de gustos ---------- */
 .ob-kinds { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 22px; }
 @media (min-width: 420px) { .ob-kinds { grid-template-columns: repeat(3, 1fr); } }
+/* Son cinco: el último se quedaba solo en la última fila (2 columnas). */
+.ob-kinds > :last-child:nth-child(odd) { grid-column: 1 / -1; }
+@media (min-width: 420px) { .ob-kinds > :last-child:nth-child(odd) { grid-column: auto; } }
 .ob-kind {
   position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
   padding: 14px 12px; min-height: 104px; text-align: left;

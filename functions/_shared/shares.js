@@ -47,7 +47,7 @@ export function previewKind(mime, name) {
 
 const SHARE_SELECT = `SELECT s.token, s.user_id, s.file_id, s.expires_at, s.views, s.downloads, s.created_at,
     f.name, f.size, f.mime, f.storage_key, f.meta, u.name AS owner_name
-  FROM shares s JOIN files f ON f.id = s.file_id JOIN users u ON u.id = s.user_id`;
+  FROM shares s JOIN files f ON f.id = s.file_id AND f.deleted_at IS NULL JOIN users u ON u.id = s.user_id`;
 
 // Datos que ve el dueño en la app.
 export function ownerView(r, origin) {
@@ -113,7 +113,7 @@ export function publicView(r) {
 /* El dueño crea un enlace. Si el archivo ya tiene uno vigente, lo devuelve. */
 export async function createShare(db, userId, fileId, days) {
   await ensureShares(db);
-  const own = await db.query('SELECT id FROM files WHERE id = $1 AND user_id = $2', [fileId, userId]);
+  const own = await db.query('SELECT id FROM files WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL', [fileId, userId]);
   if (!own.rows[0]) return null;
   const existing = await db.query(
     `${SHARE_SELECT} WHERE s.file_id = $1 AND s.user_id = $2 AND (s.expires_at IS NULL OR s.expires_at > now())

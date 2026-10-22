@@ -19,7 +19,8 @@ import { fileHeaders, safeKeyName, ownsProject, isAdminEmail } from '../security
 import { storageLeft } from '../billing.js';
 
 const db = { query };
-import { fileFilters, strictFilterError, FILE_SORTS, FILE_TYPE_SQL, FILE_TYPES, FILE_COLS, pageOf, readSelection, fileItem, deleteFilesWhere, logActivity, bulkResponse, fmtBytes } from '../lists.js';
+import { fileFilters, strictFilterError, FILE_SORTS, FILE_TYPE_SQL, FILE_TYPES, FILE_COLS, pageOf, readSelection, fileItem, logActivity, bulkResponse, fmtBytes } from '../lists.js';
+import { trashOne, trashFilesWhere } from '../trash.js';
 
 export const files = Router();
 files.use(requireAuth);
@@ -51,10 +52,10 @@ files.get('/', async (req, res, next) => {
     const params = [req.user.id, ...f.params];
     let limitSql = '';
     if (pg.paged) { params.push(pg.limit, pg.offset); limitSql = ` LIMIT $${params.length - 1} OFFSET $${params.length}`; }
-    const { rows } = await query(`SELECT ${FILE_COLS} FROM files WHERE user_id = $1${f.sql} ORDER BY ${order}${limitSql}`, params);
+    const { rows } = await query(`SELECT ${FILE_COLS} FROM files WHERE user_id = $1 AND deleted_at IS NULL${f.sql} ORDER BY ${order}${limitSql}`, params);
     const { rows: st } = await query(
       `SELECT count(*)::int AS n, coalesce(sum(size), 0)::bigint AS bytes, (${FILE_TYPE_SQL}) AS type
-       FROM files WHERE user_id = $1${f.sql} GROUP BY 3`, [req.user.id, ...f.params]);
+       FROM files WHERE user_id = $1 AND deleted_at IS NULL${f.sql} GROUP BY 3`, [req.user.id, ...f.params]);
     const byType = Object.fromEntries(FILE_TYPES.map(t => [t, 0]));
     let total = 0, bytes = 0;
     st.forEach(r => { byType[r.type] = r.n; total += r.n; bytes += Number(r.bytes) || 0; });
@@ -81,7 +82,7 @@ async function bulkDelete(req, res, next) {
     const f = fileFilters(Object.assign({}, req.query, bf || {}), sel.ids ? 3 : 2);
     if (f.error) return res.status(400).json({ error: f.error });
     const where = (sel.ids ? ' AND id = ANY($2::uuid[])' : '') + f.sql;
-    const r = await deleteFilesWhere(req.user.id, where, (sel.ids ? [sel.ids] : []).concat(f.params));
+    const r = { deleted: await trashFilesWhere(req.user.id, where, (sel.ids ? [sel.ids] : []).concat(f.params)), bytes: 0, remaining: 0, ids: [] };
     if (r.deleted) await logActivity(req.user.id, 'file', r.deleted === 1 ? 'Archivo eliminado' : r.deleted + ' archivos eliminados');
     res.json(Object.assign(bulkResponse(r.deleted === 1 ? 'Se eliminó 1 archivo.' : 'Se eliminaron ' + r.deleted + ' archivos.', r.deleted, 0, r.bytes), { ids: r.ids }));
   } catch (e) { next(e); }
@@ -108,7 +109,7 @@ files.post('/upload', uploadFields, async (req, res, next) => {
     // Subida idempotente (igual que en functions/): la misma upload_id no se duplica.
     const uploadId = String(req.body.upload_id || '').slice(0, 64);
     if (/^[a-z0-9]{8,64}$/i.test(uploadId)) {
-      const { rows: dup } = await query(`SELECT ${FILE_COLS} FROM files WHERE user_id = $1 AND meta->>'upload_id' = $2 LIMIT 1`, [req.user.id, uploadId]);
+      const { rows: dup } = await query(`SELECT ${FILE_COLS} FROM files WHERE user_id = $1 AND deleted_at IS NULL AND meta->>'upload_id' = $2 LIMIT 1`, [req.user.id, uploadId]);
       if (dup[0]) return res.status(200).json({ item: fileItem(dup[0]) });
     }
     const key = `users/${req.user.id}/${crypto.randomUUID()}-${safeKeyName(name)}`;
@@ -140,7 +141,7 @@ files.get('/:id/download', async (req, res, next) => {
   try {
     if (!UUID_RE.test(req.params.id)) return res.status(400).json({ error: 'Id no válido.' });
     const { rows } = await query(
-      'SELECT name, mime, storage_key FROM files WHERE id = $1 AND user_id = $2', [req.params.id, req.user.id]);
+      'SELECT name, mime, storage_key FROM files WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL', [req.params.id, req.user.id]);
     const f = rows[0];
     if (!f) return res.status(404).json({ error: 'Archivo no encontrado.' });
     const obj = await getObject(f.storage_key);
@@ -170,7 +171,7 @@ files.patch('/:id', async (req, res, next) => {
 files.get('/:id/thumb', async (req, res, next) => {
   try {
     if (!UUID_RE.test(req.params.id)) return res.status(400).json({ error: 'Id no válido.' });
-    const { rows } = await query(`SELECT meta->>'thumb_key' AS k, meta->>'thumb_mime' AS m FROM files WHERE id = $1 AND user_id = $2`, [req.params.id, req.user.id]);
+    const { rows } = await query(`SELECT meta->>'thumb_key' AS k, meta->>'thumb_mime' AS m FROM files WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL`, [req.params.id, req.user.id]);
     if (!rows[0] || !rows[0].k) return res.status(404).json({ error: 'Sin portada.' });
     const obj = await getObject(rows[0].k);
     res.set({ 'Content-Type': /^image\/(jpeg|png|webp)$/.test(rows[0].m || '') ? rows[0].m : 'image/jpeg', 'X-Content-Type-Options': 'nosniff', 'Cache-Control': 'private, max-age=86400' });
@@ -178,15 +179,11 @@ files.get('/:id/thumb', async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-// DELETE /files/:id — borra metadatos y binario
+// DELETE /files/:id — a la papelera (el binario se suelta al borrarlo de verdad)
 files.delete('/:id', async (req, res, next) => {
   try {
     if (!UUID_RE.test(req.params.id)) return res.status(400).json({ error: 'Id no válido.' });
-    const { rows } = await query(
-      `DELETE FROM files WHERE id = $1 AND user_id = $2 RETURNING storage_key, meta->>'thumb_key' AS thumb_key`, [req.params.id, req.user.id]);
-    if (!rows[0]) return res.status(404).json({ error: 'Archivo no encontrado.' });
-    await deleteObject(rows[0].storage_key).catch(() => {});
-    if (rows[0].thumb_key) await deleteObject(rows[0].thumb_key).catch(() => {});
-    res.json({ ok: true });
+    if (!(await trashOne('files', req.user.id, req.params.id))) return res.status(404).json({ error: 'Archivo no encontrado.' });
+    res.json({ ok: true, trashed: true });
   } catch (e) { next(e); }
 });

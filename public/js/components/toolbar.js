@@ -34,9 +34,11 @@
     bar.appendChild(title);
     // Extras (badges)
     if (cfg.extras) cfg.extras.forEach(e => bar.appendChild(e));
-    // Actions on the right (+ la campana de notificaciones en todas las vistas)
+    // Acciones de la derecha. La campana va en todas las secciones menos en
+    // Inicio, que pasa notifBell: false: allí es un resumen y el menú lateral ya
+    // enseña «Notificaciones» con su contador justo al lado.
     const acts = (cfg.actions || []).slice();
-    if (typeof notifBellButton === 'function') acts.push(notifBellButton());
+    if (cfg.notifBell !== false && typeof notifBellButton === 'function') acts.push(notifBellButton());
     if (acts.length) {
       bar.appendChild(el('div', { class: 'tb-actions' }, acts));
     }

@@ -58,7 +58,7 @@
   // Elimina un documento o archivo del proyecto (en el servidor y de la vista).
   async function deleteProjectDoc(project, d) {
     const isFile = d.kind === 'file';
-    const ok = await confirmDialog(isFile ? '¿Eliminar archivo?' : '¿Eliminar documento?', `"${d.title}" se eliminará para siempre.`, 'Eliminar');
+    const ok = await confirmDialog(isFile ? '¿Eliminar archivo?' : '¿Eliminar documento?', `"${d.title}" se irá a la papelera. Tienes 30 días para recuperarlo.`, 'Eliminar');
     if (!ok) return;
     if (d._server) {
       try {
@@ -67,6 +67,7 @@
     }
     project.documents = (project.documents || []).filter(x => x.id !== d.id);
     project.updatedAt = Date.now();
+    if (typeof loadTrash === 'function') loadTrash();
     logActivity('doc', (isFile ? 'Archivo' : 'Documento') + ' eliminado');
     toast(isFile ? 'Archivo eliminado' : 'Documento eliminado'); render();
   }

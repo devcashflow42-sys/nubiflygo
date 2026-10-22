@@ -319,9 +319,12 @@
       cover,
       el('div', { class: 'ph-info' }, [
         el('span', { class: 'ph-k' }, [
-          el('span', { class: 'ph-k-ico', html: meta.icon }),
+          // Con icono elegido manda ese icono y desaparece el «auto»: el aviso
+          // es de la categoría, pero leído junto a un icono puesto a mano decía
+          // justo lo contrario de lo que pasa.
+          el('span', { class: 'ph-k-ico', html: chosen ? chosen.svg : meta.icon }),
           'Proyecto · ' + (cat ? meta.label : 'Nuevo'),
-          cat ? el('span', { class: 'ph-auto', title: 'La categoría se pone sola según lo que tiene el proyecto', html: LIB_ICN.spark + ' auto' }) : null
+          (cat && !chosen) ? el('span', { class: 'ph-auto', title: 'La categoría se pone sola según lo que tiene el proyecto', html: LIB_ICN.spark + ' auto' }) : null
         ].filter(Boolean)),
         el('h2', {}, p.name),
         el('p', { class: 'ph-sum' }, summary.filter(Boolean).join(' · ')),
