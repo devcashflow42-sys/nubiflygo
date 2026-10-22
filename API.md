@@ -27,6 +27,9 @@ Dos formas:
 Cada clave pertenece a un usuario y solo ve/crea datos de ese usuario.
 
 ### Permisos de la API key
+- **Las API keys necesitan una cuenta.** Una cuenta de invitado no puede
+  crearlas (**403** al crear) y, si tuviera alguna de antes, toda petición con
+  ella responde **403**. Hay que crear una cuenta gratis.
 - `read` → solo peticiones **GET** (si intenta escribir devuelve **403**).
 - `write` o `all` → lectura y escritura. Cualquier otro valor al crearla → **400**.
 - **Clave de proyecto** (creada desde un proyecto): solo puede usar ese
@@ -89,7 +92,8 @@ Claves inválidas, vencidas o ausentes → **401**.
 | `onboarded_at` | Cuándo completó la bienvenida. Se marca enviando `onboarded: true` y **no se puede deshacer** desde el cliente. Mientras esté vacío, la app lleva a `/bienvenida`. |
 
 El día de su cumpleaños, el primer `GET /account/profile` crea una notificación
-de felicitación (una sola al año).
+de felicitación (una sola al año). `birthday` es privado: **no se devuelve** si
+la petición llega con una API key, y entonces tampoco se felicita.
 | `GET/POST /projects` · `GET/PATCH/DELETE /projects/:id` | Proyectos (lista con información completa) | cookie o key |
 | `GET /projects/:id/items` | Todos los elementos del proyecto (documentos + archivos) | cookie o key |
 | `DELETE /projects/:id/items` · `POST /projects/:id/items/delete` | Vaciar el proyecto (todo o por ids) | cookie o key |
@@ -279,7 +283,7 @@ Con `?include=items`, cada proyecto incluye también todos sus elementos (`items
 | Campo | Valores |
 |---|---|
 | `icon` | `folder`, `music`, `photo`, `video`, `doc`, `code`, `design`, `work`, `study`, `travel`, `home`, `money`, `star`, `heart`, `rocket`, `idea`, `chart` o `shop`. `null` o `""` = automático: el icono se pone solo según el contenido. Otro valor → 400. |
-| `color` | Solo hexadecimal, `#abc` o `#aabbcc` (la app usa `#2b5fff`, `#8b5cf6`, `#ef4444`, `#f59e0b`, `#10b981`, `#06b6d4`, `#ec4899` y `#f97316`). Otro valor, o `null` → 400. |
+| `color` | Solo hexadecimal, `#abc` o `#aabbcc` (la app usa `#2b5fff`, `#8b5cf6`, `#ef4444`, `#f59e0b`, `#10b981`, `#06b6d4`, `#ec4899` y `#f97316`). Otro valor → 400. Con `PATCH`, `null` también da 400; con `POST` se ignora y queda el color por defecto. |
 
 ### `GET /projects/:id` y `GET /projects/:id/items`
 

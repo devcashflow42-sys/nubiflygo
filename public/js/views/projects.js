@@ -163,7 +163,7 @@
 
     return el('div', {
       class: 'project-card',
-      style: { '--c': p.color || PROJECT_COLORS[0] },
+      style: { '--c': safeColor(p.color) },
       onclick: () => go('projects', { projectId: p.id })
     }, [
       el('div', { class: 'card-actions' }, [
@@ -261,7 +261,7 @@
 
     v.appendChild(pageToolbar({
       back: () => go('projects', { projectId: null }),
-      dotColor: p.color || PROJECT_COLORS[0],
+      dotColor: safeColor(p.color),
       crumbs: [
         { label: 'Proyectos', onClick: () => go('projects', { projectId: null }) },
         { label: p.name, here: true }

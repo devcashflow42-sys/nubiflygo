@@ -136,7 +136,7 @@
         class: (state.route === 'projects' && state.projectId === p.id) ? 'active' : '',
         onclick: () => go('projects', { projectId: p.id })
       }, [
-        el('span', { class: 'proj-dot', style: { '--c': p.color } }),
+        el('span', { class: 'proj-dot', style: { '--c': safeColor(p.color) } }),
         el('span', { class: 'label' }, p.name),
         delBtn(() => confirmDeleteProject(p))
       ]));
