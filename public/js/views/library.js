@@ -84,6 +84,13 @@
       // y se pintaba esa palabra encima de la etiqueta.
     }[k] || S('<path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/>');
   }
+  function phBytes(n) {
+    const u = ['B', 'KB', 'MB', 'GB', 'TB'];
+    let i = 0, v = Number(n) || 0;
+    while (v >= 1024 && i < u.length - 1) { v /= 1024; i++; }
+    return (v >= 10 || i === 0 ? Math.round(v) : v.toFixed(1)) + ' ' + u[i];
+  }
+
   // La categoría gana si 60 % o más del contenido es de ese tipo.
   function projectCategory(items) {
     if (!items || !items.length) return null;
@@ -315,6 +322,12 @@
       items.forEach(f => { const k = libKind(f); if (k === 'pdf' || k === 'archive' || k === 'other') c.doc++; else c[k] = (c[k] || 0) + 1; });
       summary = [ c.image && c.image + (c.image === 1 ? ' foto' : ' fotos'), c.video && c.video + (c.video === 1 ? ' video' : ' videos'), c.audio && c.audio + (c.audio === 1 ? ' canción' : ' canciones'), c.doc && c.doc + (c.doc === 1 ? ' documento' : ' documentos') ];
       if (!items.length) summary = [ 'Vacío · sube archivos o crea un documento' ];
+    }
+    // Lo que ocupa, igual que lo dice el banner de la sección. Vale para los
+    // dos casos, el de música y el resto.
+    if (items.length) {
+      const bytes = items.reduce((t, f) => t + (Number(f.size && typeof f.size === 'object' ? f.size.bytes : f.size) || 0), 0);
+      if (bytes) summary.push(phBytes(bytes));
     }
     // Con icono elegido el fondo va con su color; si no, el de la categoría.
     const c = safeColor(p.color);

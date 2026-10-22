@@ -232,6 +232,9 @@
         sub: g.n + (g.n === 1 ? ' elemento' : ' elementos') + (g.at ? ' · ' + timeAgo(g.at) : '') });
     });
     rows.sort((a, b) => b.n - a.n);
+    // Con una sola carpeta que lo abarca todo, repetía el nombre y el conteo
+    // de la cabecera del proyecto: mejor enseñar los archivos directamente.
+    if (rows.length === 1 && rows[0].n === files.length + nDocs) rows.length = 0;
     const hueco = PC_MAX_ROWS - rows.length;
     if (hueco > 0) {
       files.slice().sort((a, b) => (Number(b.updatedAt || b.createdAt) || 0) - (Number(a.updatedAt || a.createdAt) || 0))

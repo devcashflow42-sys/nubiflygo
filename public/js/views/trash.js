@@ -54,6 +54,10 @@
   }
 
   let trashLoaded = false, trashLoading = false;
+  // Lo que el usuario tiene elegido, por «tipo:id» (los ids no se repiten
+  // entre tipos, pero así el conjunto se lee solo).
+  let elegidos = new Set();
+  const keyOf = (it) => it.kind + ':' + it.id;
   async function loadTrash() {
     trashLoading = true;
     try {
@@ -66,6 +70,7 @@
       if (e && e.status !== 401) toast(e.message || 'No se pudo abrir la papelera');
     }
     trashLoaded = true; trashLoading = false;
+    elegidos = new Set();
     renderNav();
     if (state.route === 'trash') render();
   }
@@ -121,10 +126,37 @@
     } else if (!shown.length) {
       body.appendChild(emptyBlock('Sin resultados', 'Nada en la papelera coincide con tu búsqueda.', null));
     } else {
-      body.appendChild(el('div', { class: 'lib-sec' }, [
-        el('h3', {}, shown.length + (shown.length === 1 ? ' elemento' : ' elementos')),
-        el('span', { class: 'lib-note', style: { margin: '0' } }, 'Más recientes primero')
-      ]));
+      // Solo se pueden elegir los que se ven (si hay búsqueda, los filtrados).
+      const visibles = shown.map(keyOf);
+      elegidos = new Set([...elegidos].filter(k => visibles.includes(k)));
+      const todos = elegidos.size > 0 && elegidos.size === shown.length;
+      const marcarTodo = el('label', { class: 'tr-all' }, [
+        el('input', {
+          type: 'checkbox', checked: todos ? '' : null,
+          'aria-label': todos ? 'Quitar la selección' : 'Elegir los ' + shown.length,
+          onchange: (e) => {
+            elegidos = e.target.checked ? new Set(visibles) : new Set();
+            render();
+          }
+        }),
+        el('span', {}, elegidos.size
+          ? elegidos.size + (elegidos.size === 1 ? ' elegido' : ' elegidos')
+          : shown.length + (shown.length === 1 ? ' elemento' : ' elementos'))
+      ]);
+      const cab = el('div', { class: 'tr-head' + (elegidos.size ? ' is-sel' : '') }, [
+        marcarTodo,
+        elegidos.size
+          ? el('div', { class: 'tr-head-acts' }, [
+              el('button', { class: 'tr-btn is-restore', onclick: () => restoreMany() }, [
+                el('span', { html: TR_ICN.undo }), el('span', {}, 'Restaurar')
+              ]),
+              el('button', { class: 'tr-btn is-del', onclick: () => deleteMany() }, [
+                el('span', { html: TR_ICN.trash }), el('span', {}, 'Eliminar')
+              ])
+            ])
+          : el('span', { class: 'lib-note', style: { margin: '0' } }, 'Más recientes primero')
+      ]);
+      body.appendChild(cab);
       const list = el('div', { class: 'tr-list' });
       shown.forEach(it => list.appendChild(trashRow(it)));
       body.appendChild(list);
@@ -137,7 +169,16 @@
     const ico = el('span', { class: 'tr-ico', html: look.icon });
     ico.style.setProperty('--k', look.color);
     const left = it.days_left;
-    return el('div', { class: 'tr-row' }, [
+    const k = keyOf(it);
+    const marca = elegidos.has(k);
+    return el('div', { class: 'tr-row' + (marca ? ' is-on' : '') + (elegidos.size ? ' is-picking' : '') }, [
+      el('label', { class: 'tr-pick' }, [
+        el('input', {
+          type: 'checkbox', checked: marca ? '' : null,
+          'aria-label': 'Elegir ' + (it.title || 'este elemento'),
+          onchange: (e) => { if (e.target.checked) elegidos.add(k); else elegidos.delete(k); render(); }
+        })
+      ]),
       ico,
       el('div', { class: 'tr-main' }, [
         el('div', { class: 'tr-nm', title: it.title }, it.title || '(sin nombre)'),
@@ -149,7 +190,7 @@
       ]),
       el('div', { class: 'tr-left' + (left <= 7 ? ' soon' : '') },
         left <= 0 ? 'Se va hoy' : left === 1 ? 'Queda 1 día' : 'Quedan ' + left + ' días'),
-      el('div', { class: 'tr-acts' }, [
+      elegidos.size ? null : el('div', { class: 'tr-acts' }, [
         el('button', { class: 'tr-btn is-restore', onclick: () => restoreItem(it) }, [
           el('span', { html: TR_ICN.undo }), el('span', {}, 'Restaurar')
         ]),
@@ -157,7 +198,7 @@
           el('span', { html: TR_ICN.trash }), el('span', {}, 'Eliminar')
         ])
       ])
-    ]);
+    ].filter(Boolean));
   }
 
   async function restoreItem(it) {
@@ -187,11 +228,72 @@
     await refreshAfterTrash();
   }
 
+  // Lista corta y legible de lo elegido, para el diálogo.
+  function resumen(lista) {
+    const n = lista.length;
+    if (n === 1) return '"' + (lista[0].title || 'Este elemento') + '"';
+    const nombres = lista.slice(0, 3).map(x => '"' + (x.title || 'sin nombre') + '"').join(', ');
+    return n <= 3 ? nombres : nombres + ' y ' + (n - 3) + (n - 3 === 1 ? ' más' : ' más');
+  }
+  const elegidosList = () => (store.trash || []).filter(x => elegidos.has(keyOf(x)));
+
+  async function restoreMany() {
+    const lista = elegidosList();
+    if (!lista.length) return;
+    let bien = 0, padre = 0, mal = 0;
+    for (const it of lista) {
+      try { await apiPost('/trash/restore', { kind: it.kind, id: it.id }); bien++; }
+      catch (e) { if (e.status === 409) padre++; else mal++; }
+    }
+    await refreshAfterTrash();
+    if (bien) toast(bien === 1 ? 'Volvió a su sitio' : bien + ' elementos volvieron a su sitio');
+    if (padre) toast(padre === 1
+      ? 'Uno no volvió: su proyecto sigue en la papelera. Restaura antes el proyecto.'
+      : padre + ' no volvieron: su proyecto sigue en la papelera. Restaura antes el proyecto.');
+    else if (mal) toast('No se pudieron restaurar ' + mal);
+  }
+
+  async function deleteMany() {
+    const lista = elegidosList();
+    if (!lista.length) return;
+    const n = lista.length;
+    const hayProyecto = lista.some(x => x.kind === 'project');
+    const ok = await confirmDialog(
+      n === 1 ? '¿Eliminar para siempre?' : '¿Eliminar ' + n + ' elementos para siempre?',
+      'Se borrará ' + resumen(lista) + (hayProyecto ? ', con todo lo que guarda ese proyecto' : '') +
+      '. Esto no se puede deshacer y no podrás recuperarlo.',
+      n === 1 ? 'Eliminar' : 'Eliminar ' + n);
+    if (!ok) return;
+    let bien = 0, mal = 0;
+    for (const it of lista) {
+      try { await apiBulk('DELETE', '/trash/' + it.kind + '/' + it.id); bien++; }
+      catch (e) { mal++; }
+    }
+    await refreshAfterTrash();
+    toast(mal ? 'Se eliminaron ' + bien + '; ' + mal + ' no se pudieron'
+      : bien === 1 ? 'Eliminado para siempre' : bien + ' elementos eliminados para siempre');
+  }
+
   async function emptyTrash() {
-    const n = (store.trash || []).length;
+    const items = store.trash || [];
+    const n = items.length;
+    const porTipo = [];
+    [['project', 'proyecto', 'proyectos'], ['file', 'archivo', 'archivos'],
+     ['document', 'documento', 'documentos'], ['note', 'nota', 'notas'],
+     ['apikey', 'API key', 'API keys']].forEach(([k, uno, varios]) => {
+      const c = items.filter(x => x.kind === k).length;
+      if (c) porTipo.push(c + ' ' + (c === 1 ? uno : varios));
+    });
+    const ocupa = Number(store.trashBytes) || 0;
+    const detalle = porTipo.length > 1
+      ? porTipo.slice(0, -1).join(', ') + ' y ' + porTipo[porTipo.length - 1]
+      : (porTipo[0] || (n + ' elementos'));
     const ok = await confirmDialog('¿Vaciar la papelera?',
-      (n === 1 ? 'Se borrará 1 elemento' : 'Se borrarán ' + n + ' elementos') +
-      ' definitivamente. Esto no se puede deshacer.', 'Vaciar');
+      'Se borrarán para siempre ' + detalle +
+      (items.some(x => x.kind === 'project') ? ', con todo lo que guardan los proyectos' : '') + '.' +
+      (ocupa ? ' Liberarás ' + fmtSize(ocupa) + ' de tu plan.' : '') +
+      ' Esto no se puede deshacer.',
+      'Vaciar papelera');
     if (!ok) return;
     try {
       await apiBulk('DELETE', '/trash');

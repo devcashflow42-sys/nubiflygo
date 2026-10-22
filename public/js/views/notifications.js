@@ -53,11 +53,16 @@
     const c = document.getElementById('count-notifs');
     if (c) { c.textContent = txt; c.hidden = n === 0; }
     document.querySelectorAll('.bell-badge').forEach(b => { b.textContent = txt; b.hidden = n === 0; });
+    // La campana solo se enseña si hay algo sin leer: si no, el menú lateral
+    // ya tiene «Notificaciones» y la barra se queda limpia.
+    document.querySelectorAll('.bell-btn').forEach(b => { b.hidden = n === 0 && state.route !== 'notifications'; });
   }
 
   // Campana de la barra superior (visible también en móvil).
   function notifBellButton() {
     const b = el('button', {
+      // Nace escondida; updateNotifBadge la enseña solo si hay sin leer.
+      hidden: (notifState.unread > 0 || state.route === 'notifications') ? null : '',
       class: 'icon-btn bell-btn' + (state.route === 'notifications' ? ' on' : ''),
       title: 'Notificaciones', 'aria-label': 'Notificaciones',
       onclick: () => { state.projectId = null; state.noteId = null; go('notifications'); }
