@@ -8,7 +8,10 @@
 import { CORS } from './http.js';
 
 // Validaciones y constantes.
-export const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+// Lineal (sin retroceso cuadrático): cada etiqueta del dominio excluye el punto,
+// así un correo largo lleno de puntos no dispara un ReDoS. Equivale al anterior
+// para correos válidos (exige al menos un punto en el dominio).
+export const EMAIL_RE = /^[^@\s]+@[^@\s.]+(\.[^@\s.]+)+$/;
 export const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 // Idiomas soportados por la interfaz (el idioma se detecta del navegador).
 export const LANGS = ['es', 'en', 'pt', 'fr', 'de', 'it', 'zh', 'ja'];

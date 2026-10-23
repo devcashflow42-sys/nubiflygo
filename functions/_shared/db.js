@@ -28,13 +28,18 @@ export function toTagged(text, params = []) {
 export function getDb(env) {
   // Gancho solo para pruebas locales (nunca se define en producción).
   if (globalThis.__NUBIFLYGO_DB__) return globalThis.__NUBIFLYGO_DB__;
-  const sql = neon(env.DATABASE_URL);
+  // fullResults: el driver devuelve { rows, rowCount, … } como node-postgres,
+  // para que rowCount sean las filas AFECTADAS (UPDATE/DELETE sin RETURNING) y
+  // no las devueltas. Sin esto, en Neon rowCount era siempre 0: rompía el envío
+  // de proyectos a la papelera y el borrado de API keys al vincular Google.
+  const sql = neon(env.DATABASE_URL, { fullResults: true });
   return {
     async query(text, params = []) {
       const { strings, values } = toTagged(text, params);
-      const rows = await sql(strings, ...values);
-      const arr = Array.isArray(rows) ? rows : (rows?.rows || []);
-      return { rows: arr, rowCount: arr.length };
+      const res = await sql(strings, ...values);
+      const arr = Array.isArray(res) ? res : (res?.rows || []);
+      const rowCount = res && typeof res.rowCount === 'number' ? res.rowCount : arr.length;
+      return { rows: arr, rowCount };
     }
   };
 }

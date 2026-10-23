@@ -19,7 +19,8 @@ export const notifications = Router();
 const db = { query };
 const COLS = 'id, type, title, body, link, read_at, created_at';
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+// Lineal (sin retroceso cuadrático). Copia de functions/_shared/util.js.
+const EMAIL_RE = /^[^@\s]+@[^@\s.]+(\.[^@\s.]+)+$/;
 const unreadOf = async (uid) =>
   (await query('SELECT count(*)::int AS n FROM notifications WHERE user_id = $1 AND read_at IS NULL AND deleted_at IS NULL', [uid])).rows[0].n;
 

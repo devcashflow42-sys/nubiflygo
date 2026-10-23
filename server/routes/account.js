@@ -15,7 +15,10 @@ export const account = Router();
 // Hash bcrypt de relleno (comparación de igual costo cuando el correo no existe).
 const DUMMY_HASH = '$2a$10$CwTycUXWue0Thq9StjUM0uJ8.dPzbtfq8wfp0X8vhn1vF6mMyH4b6';
 
-const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+// Lineal (sin retroceso cuadrático): cada etiqueta del dominio excluye el punto,
+// así un correo largo lleno de puntos no dispara un ReDoS. Copia de
+// functions/_shared/util.js (misma lógica).
+const EMAIL_RE = /^[^@\s]+@[^@\s.]+(\.[^@\s.]+)+$/;
 // Límites de intentos (capa 3), igual que en Cloudflare. Ventanas en segundos.
 const LIMITS = {
   loginIp:   { n: 30, win: 900 },
@@ -32,7 +35,7 @@ function validCredentials(body, needName) {
   const password = String(body.password || '');
   if (needName && name.length < 2) return { error: 'El nombre es obligatorio.' };
   if (name.length > 80) return { error: 'El nombre es demasiado largo (máx. 80 caracteres).' };
-  if (!EMAIL_RE.test(email) || email.length > 254) return { error: 'El correo no es válido.' };
+  if (email.length > 254 || !EMAIL_RE.test(email)) return { error: 'El correo no es válido.' };
   if (password.length < 8) return { error: 'La contraseña debe tener al menos 8 caracteres.' };
   if (password.length > 200) return { error: 'La contraseña es demasiado larga (máx. 200 caracteres).' };
   return { name, email, password };

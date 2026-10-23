@@ -232,7 +232,7 @@ export const handle = accountRoute(async ({ seg, request, env, method, auth }) =
     if (!rl.ok) { secLog('rate_limited', request, { what: 'register' }); return tooMany(rl.retryAfter, 'Demasiados registros desde esta conexión. Inténtalo más tarde.'); }
     if (name.length < 2) return json({ error: 'El nombre es obligatorio.' }, 400);
     if (name.length > 80) return json({ error: 'El nombre es demasiado largo (máx. 80 caracteres).' }, 400);
-    if (!EMAIL_RE.test(email) || email.length > 254) return json({ error: 'El correo no es válido.' }, 400);
+    if (email.length > 254 || !EMAIL_RE.test(email)) return json({ error: 'El correo no es válido.' }, 400);
     // El correo de administración no se puede registrar con contraseña (sin
     // verificar el correo, cualquiera podría reclamarlo): entra con Google.
     if (isAdminEmail(email, env)) return json({ error: 'Este correo debe entrar con Google.' }, 403);
@@ -257,7 +257,7 @@ export const handle = accountRoute(async ({ seg, request, env, method, auth }) =
     const ip = clientIp(request);
     const rl = await rateLimit(db, 'login-ip:' + ip, LIMITS.loginIp.n, LIMITS.loginIp.win);
     if (!rl.ok) { secLog('rate_limited', request, { what: 'login' }); return tooMany(rl.retryAfter); }
-    if (!EMAIL_RE.test(email) || email.length > 254 || password.length < 1 || password.length > 200) return json({ error: 'Correo o contraseña incorrectos.' }, 401);
+    if (email.length > 254 || !EMAIL_RE.test(email) || password.length < 1 || password.length > 200) return json({ error: 'Correo o contraseña incorrectos.' }, 401);
     // Se cuenta ANTES de comprobar (atómico: peticiones en paralelo no se cuelan).
     // El bloqueo fuerte es por cuenta + conexión: un extraño no puede bloquear tu
     // cuenta desde otra conexión; el tope por cuenta frena ataques repartidos.
