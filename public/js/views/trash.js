@@ -156,9 +156,28 @@
     v.appendChild(body);
   }
 
+  // Miniatura de un archivo en la papelera (?trashed=1 solo sirve al dueño):
+  // la imagen para una foto, la carátula para una canción. Si no hay, el icono.
+  function trashThumb(it) {
+    if (it.kind !== 'file') return null;
+    const m = it.mime || '';
+    if (/^image\//.test(m) && !/svg|heic|heif/.test(m)) return '/api/v1/files/' + it.id + '/download?inline=1&trashed=1';
+    // Carátula solo si el archivo la tiene (lo dice el servidor): así no se
+    // pide una portada que no existe y la consola queda limpia.
+    return it.has_thumb ? '/api/v1/files/' + it.id + '/thumb?trashed=1' : null;
+  }
   function trashRow(it) {
     const look = trashLook(it);
-    const ico = el('span', { class: 'tr-ico', html: look.icon });
+    const ico = el('span', { class: 'tr-ico' });
+    const thumb = trashThumb(it);
+    if (thumb) {
+      const img = el('img', { src: thumb, alt: '', loading: 'lazy', decoding: 'async' });
+      img.addEventListener('error', () => { ico.classList.remove('is-img'); ico.innerHTML = look.icon; });
+      ico.classList.add('is-img');
+      ico.appendChild(img);
+    } else {
+      ico.innerHTML = look.icon;
+    }
     ico.style.setProperty('--k', look.color);
     const left = it.days_left;
     const k = keyOf(it);

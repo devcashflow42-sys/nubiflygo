@@ -230,7 +230,18 @@
   }
 
   function projectRow(p, r) {
-    const ico = el('span', { class: 'pc-ico ' + (r.folder ? 'is-folder' : 'is-file'), html: KIND_ICON_LIB(r.kind === 'doc' && r.folder ? 'doc' : r.kind) });
+    // Si el archivo tiene miniatura (foto, o carátula de la canción) se enseña
+    // la imagen de verdad; si no, el icono de su tipo.
+    const thumb = r.file ? libThumb(r.file) : null;
+    const ico = el('span', { class: 'pc-ico ' + (r.folder ? 'is-folder' : 'is-file') + (thumb ? ' is-img' : '') });
+    if (thumb) {
+      const img = el('img', { src: thumb, alt: '', loading: 'lazy', decoding: 'async' });
+      // Si la miniatura falla, se vuelve al icono del tipo.
+      img.addEventListener('error', () => { ico.classList.remove('is-img'); ico.innerHTML = KIND_ICON_LIB(r.kind); });
+      ico.appendChild(img);
+    } else {
+      ico.innerHTML = KIND_ICON_LIB(r.kind === 'doc' && r.folder ? 'doc' : r.kind);
+    }
     ico.style.setProperty('--k', r.color);
     return el('div', { class: 'pc-item' }, [
       el('button', { class: 'pc-open', type: 'button', onclick: () => go('projects', { projectId: p.id }) }, [

@@ -121,23 +121,23 @@ export const TRASH_SQL = `
          (SELECT coalesce(sum(f.size), 0) FROM files f WHERE f.project_id = p.id AND f.trashed_with_project)::bigint AS size,
          ((SELECT count(*) FROM files f WHERE f.project_id = p.id AND f.trashed_with_project)
         + (SELECT count(*) FROM documents d WHERE d.project_id = p.id AND d.trashed_with_project))::int AS items,
-         NULL::text AS parent
+         NULL::text AS parent, false AS thumb
   FROM projects p WHERE p.user_id = $1 AND p.deleted_at IS NOT NULL
   UNION ALL
   SELECT 'file', f.id, f.name, f.mime, f.deleted_at, f.size::bigint, NULL::int,
-         (SELECT p.name FROM projects p WHERE p.id = f.project_id)
+         (SELECT p.name FROM projects p WHERE p.id = f.project_id), (f.meta->>'thumb_key' IS NOT NULL)
   FROM files f WHERE f.user_id = $1 AND f.deleted_at IS NOT NULL AND NOT f.trashed_with_project
   UNION ALL
   SELECT 'document', d.id, d.title, NULL::text, d.deleted_at, NULL::bigint, NULL::int,
-         (SELECT p.name FROM projects p WHERE p.id = d.project_id)
+         (SELECT p.name FROM projects p WHERE p.id = d.project_id), false
   FROM documents d WHERE d.user_id = $1 AND d.deleted_at IS NOT NULL AND NOT d.trashed_with_project
   UNION ALL
   SELECT 'note', n.id, n.title, NULL::text, n.deleted_at, NULL::bigint, NULL::int,
-         (SELECT p.name FROM projects p WHERE p.id = n.project_id)
+         (SELECT p.name FROM projects p WHERE p.id = n.project_id), false
   FROM notes n WHERE n.user_id = $1 AND n.deleted_at IS NOT NULL AND NOT n.trashed_with_project
   UNION ALL
   SELECT 'apikey', k.id, k.name, NULL::text, k.deleted_at, NULL::bigint, NULL::int,
-         (SELECT p.name FROM projects p WHERE p.id = k.project_id)
+         (SELECT p.name FROM projects p WHERE p.id = k.project_id), false
   FROM api_keys k WHERE k.user_id = $1 AND k.deleted_at IS NOT NULL AND NOT k.trashed_with_project
   ORDER BY deleted_at DESC`;
 
@@ -151,7 +151,7 @@ export function shapeTrash(r) {
     kind: r.kind, id: r.id, title: r.title || '', mime: r.mime || null,
     size: r.size == null ? null : Number(r.size),
     items: r.items == null ? null : Number(r.items),
-    parent: r.parent || null, deleted_at: r.deleted_at,
+    parent: r.parent || null, has_thumb: !!r.thumb, deleted_at: r.deleted_at,
     days_left: Math.max(0, left)
   };
 }

@@ -204,7 +204,11 @@ export const handle = dataRoute(async ({ seg, request, env, method, user, scope 
   // GET /files/:id/download
   if (seg.length === 3 && seg[2] === 'download' && method === 'GET') {
     if (!UUID_RE.test(seg[1])) return json({ error: 'Id no válido.' }, 400);
-    const { rows } = await db.query('SELECT name, mime, storage_key FROM files WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL', [seg[1], user.id]);
+    // ?trashed=1 deja ver la miniatura de un archivo que está en la papelera,
+    // pero solo a su dueño (la consulta sigue atada a user_id): lo usa la lista
+    // de la papelera para enseñar la imagen de verdad.
+    const verTrash = new URL(request.url).searchParams.get('trashed') === '1';
+    const { rows } = await db.query('SELECT name, mime, storage_key FROM files WHERE id = $1 AND user_id = $2' + (verTrash ? '' : ' AND deleted_at IS NULL'), [seg[1], user.id]);
     const f = rows[0];
     if (!f) return json({ error: 'Archivo no encontrado.' }, 404);
     // Range: permite adelantar/atrasar canciones y videos sin descargar todo.
@@ -226,7 +230,9 @@ export const handle = dataRoute(async ({ seg, request, env, method, user, scope 
   // GET /files/:id/thumb  (portada del archivo)
   if (seg.length === 3 && seg[2] === 'thumb' && method === 'GET') {
     if (!UUID_RE.test(seg[1])) return json({ error: 'Id no válido.' }, 400);
-    const { rows } = await db.query(`SELECT meta->>'thumb_key' AS k, meta->>'thumb_mime' AS m FROM files WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL`, [seg[1], user.id]);
+    // ?trashed=1: portada de un archivo en la papelera, solo para su dueño.
+    const verTrash = new URL(request.url).searchParams.get('trashed') === '1';
+    const { rows } = await db.query(`SELECT meta->>'thumb_key' AS k, meta->>'thumb_mime' AS m FROM files WHERE id = $1 AND user_id = $2` + (verTrash ? '' : ' AND deleted_at IS NULL'), [seg[1], user.id]);
     if (!rows[0] || !rows[0].k) return json({ error: 'Sin portada.' }, 404);
     const res = await getObject(env, rows[0].k);
     const m = /^image\/(jpeg|png|webp)$/.test(rows[0].m || '') ? rows[0].m : 'image/jpeg';

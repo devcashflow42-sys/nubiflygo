@@ -141,8 +141,11 @@ files.post('/upload', uploadFields, async (req, res, next) => {
 files.get('/:id/download', async (req, res, next) => {
   try {
     if (!UUID_RE.test(req.params.id)) return res.status(400).json({ error: 'Id no válido.' });
+    // ?trashed=1: miniatura de un archivo en la papelera, solo para su dueño
+    // (sigue atado a user_id). Lo usa la lista de la papelera.
+    const verTrash = req.query.trashed === '1';
     const { rows } = await query(
-      'SELECT name, mime, storage_key FROM files WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL', [req.params.id, req.user.id]);
+      'SELECT name, mime, storage_key FROM files WHERE id = $1 AND user_id = $2' + (verTrash ? '' : ' AND deleted_at IS NULL'), [req.params.id, req.user.id]);
     const f = rows[0];
     if (!f) return res.status(404).json({ error: 'Archivo no encontrado.' });
     const obj = await getObject(f.storage_key);
@@ -172,7 +175,8 @@ files.patch('/:id', async (req, res, next) => {
 files.get('/:id/thumb', async (req, res, next) => {
   try {
     if (!UUID_RE.test(req.params.id)) return res.status(400).json({ error: 'Id no válido.' });
-    const { rows } = await query(`SELECT meta->>'thumb_key' AS k, meta->>'thumb_mime' AS m FROM files WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL`, [req.params.id, req.user.id]);
+    const verTrash = req.query.trashed === '1';
+    const { rows } = await query(`SELECT meta->>'thumb_key' AS k, meta->>'thumb_mime' AS m FROM files WHERE id = $1 AND user_id = $2` + (verTrash ? '' : ' AND deleted_at IS NULL'), [req.params.id, req.user.id]);
     if (!rows[0] || !rows[0].k) return res.status(404).json({ error: 'Sin portada.' });
     const obj = await getObject(rows[0].k);
     res.set({ 'Content-Type': /^image\/(jpeg|png|webp)$/.test(rows[0].m || '') ? rows[0].m : 'image/jpeg', 'X-Content-Type-Options': 'nosniff', 'Cache-Control': 'private, max-age=86400' });
