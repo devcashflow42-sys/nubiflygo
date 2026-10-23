@@ -129,11 +129,16 @@
   }
   function syncPager() {
     if (!P.w) return;
-    // La paginación ya no se mete en el reproductor: vive al final de la lista,
-    // en el flujo normal. Así no hay dos flotantes compitiendo. Si quedó alguna
-    // adoptada de una versión anterior, se devuelve a su sitio.
-    if (P.adopted) releasePager();
-    setHasPages(false);
+    const open = FloatingWidgetManager.isMounted('music') && !!P.track;
+    const nav = open ? document.querySelector('#view .pager:not(.is-adopted)') : null;
+    if (nav) {
+      if (P.adopted && P.adopted !== nav) releasePager();
+      const box = nav.querySelector('.pg-box');
+      if (box) { P.pages.replaceChildren(box); nav.classList.add('is-adopted'); P.adopted = nav; }
+    } else if (P.adopted && (!P.adopted.isConnected || !open)) {
+      releasePager();
+    }
+    setHasPages(!!P.adopted);
   }
   // Devuelve la cápsula de páginas a su barra flotante (si sigue en pantalla).
   function releasePager() {

@@ -301,8 +301,12 @@
    --dock-top-gap = distancia del borde inferior de la pantalla al borde
    superior de los widgets. */
 body { --dock-top-gap: calc(12px + env(safe-area-inset-bottom, 0px) + var(--fw-lift, 0px) + var(--dock-h, 64px)); }
-/* La paginación ya no flota: vive al final de la lista. Lo único que hace falta
-   es que el reproductor no tape esa última parte (padding-bottom más abajo). */
+/* Cuando suena una canción, la paginación vive DENTRO del reproductor (se
+   adopta en su segunda hoja). La barra suelta de la lista no debe verse: antes
+   se recolocaba flotando encima del dock y, en el instante antes de adoptarse,
+   parecían DOS paginaciones. Se oculta de inmediato; solo queda la del
+   reproductor (deslizas para verla). */
+body.has-dock .pager:not(.is-adopted) { display: none; }
 body.dock-bottom .toast-root { bottom: calc(var(--dock-top-gap) + 14px); }
 body.dock-bottom .upanel { bottom: calc(var(--dock-top-gap) + 12px); }
 /* Espacio al final de la lista (abajo) o bajo la barra de la sección (arriba)

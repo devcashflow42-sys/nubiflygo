@@ -423,12 +423,11 @@
   /* ─── Paginación (barra flotante) ───
      Queda pegada abajo mientras se recorre la lista (sticky), con fondo de
      vidrio esmerilado; no hace falta bajar hasta el final para cambiar de página. */
-  /* La paginación va DENTRO de la lista (al final), no flotando: así no tapa el
-     contenido ni compite con el reproductor. Cuando suena una canción, el único
-     flotante es el reproductor. */
   .pager {
+    position: sticky; z-index: 30;
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
     display: flex; justify-content: center;
-    margin: 22px 0 6px; pointer-events: none;
+    margin: 18px 0 4px; pointer-events: none;
   }
   /* Cápsula malva, mismo lenguaje visual que el reproductor flotante. */
   .pg-box {
