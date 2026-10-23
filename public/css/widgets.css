@@ -301,11 +301,8 @@
    --dock-top-gap = distancia del borde inferior de la pantalla al borde
    superior de los widgets. */
 body { --dock-top-gap: calc(12px + env(safe-area-inset-bottom, 0px) + var(--fw-lift, 0px) + var(--dock-h, 64px)); }
-.pager { transition: bottom .42s var(--fw-ease, ease); }
-/* La paginación acompaña siempre a los widgets: justo encima de ellos, a la
-   altura que el usuario los arrastre (o justo debajo si no cabe arriba). */
-body.has-dock .pager { bottom: calc(var(--dock-h, 64px) + var(--fw-lift, 0px) + 36px + env(safe-area-inset-bottom, 0px)); }
-body.has-dock.dock-high .pager { bottom: calc(12px + env(safe-area-inset-bottom, 0px) + var(--fw-lift, 0px) - 70px); }
+/* La paginación ya no flota: vive al final de la lista. Lo único que hace falta
+   es que el reproductor no tape esa última parte (padding-bottom más abajo). */
 body.dock-bottom .toast-root { bottom: calc(var(--dock-top-gap) + 14px); }
 body.dock-bottom .upanel { bottom: calc(var(--dock-top-gap) + 12px); }
 /* Espacio al final de la lista (abajo) o bajo la barra de la sección (arriba)
@@ -317,8 +314,6 @@ body.dock-top #view > .project-toolbar { margin-bottom: calc(var(--dock-h, 64px)
    "sticky" y "fixed" no miden igual el borde inferior y la paginación
    quedaba detrás del reproductor. */
 @media (max-width: 900px) {
-  body.has-dock .pager { position: fixed; left: 0; right: 0; margin: 0; bottom: calc(var(--dock-top-gap) + 24px); }
-  body.has-dock.dock-high .pager { bottom: calc(12px + env(safe-area-inset-bottom, 0px) + var(--fw-lift, 0px) - 70px); }
   body.dock-bottom .board-body { padding-bottom: calc(var(--dock-h, 64px) + var(--fw-lift, 0px) + 96px); }
 }
 
