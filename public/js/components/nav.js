@@ -124,7 +124,8 @@
     };
     count('#count-projects', typeof projectsLoaded === 'undefined' || projectsLoaded, store.projects.length);
     count('#count-notes', typeof notesLoaded === 'undefined' || notesLoaded, store.notes.length);
-    count('#count-keys', typeof apiKeysLoaded === 'undefined' || apiKeysLoaded, store.apiKeys.length);
+    // Solo las claves de la cuenta: las de cada proyecto viven en su proyecto.
+    count('#count-keys', typeof apiKeysLoaded === 'undefined' || apiKeysLoaded, store.apiKeys.filter(k => !k.project_id).length);
     count('#count-files', typeof filesLoaded === 'undefined' || filesLoaded, (store.files || []).filter(f => !f.project_id).length);
     const ct = $('#count-trash'); if (ct) ct.textContent = (store.trash || []).length;
 

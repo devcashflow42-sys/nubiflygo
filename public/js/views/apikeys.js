@@ -146,55 +146,18 @@
     }
 
     const body = el('div', { class: 'board-body' });
-    if (store.apiKeys.length === 0) {
+    // Solo las claves de la cuenta. Las que se crean dentro de un proyecto viven
+    // únicamente en su pestaña «API key» (no aparecen ni cuentan aquí).
+    const account = accountKeys();
+    if (account.length === 0) {
       body.appendChild(emptyBlock('Aún no hay claves', 'Genera tu primera API key para empezar a conectar servicios externos a tu espacio de trabajo.', 'Generar primera key', () => openKeyModal()));
     } else {
-      // Tarjetas resumen (todas las claves, datos reales del mes)
-      body.appendChild(usageTiles(store.apiKeys));
-      // Dos grupos: las claves de la cuenta (acceso a todo) y las que se crearon
-      // dentro de cada proyecto (solo ese proyecto). Antes salían mezcladas y no
-      // se sabía de qué proyecto era cada una.
-      const account = store.apiKeys.filter(k => !k.project_id);
-      const byProject = new Map();
-      store.apiKeys.filter(k => k.project_id).forEach(k => {
-        if (!byProject.has(k.project_id)) byProject.set(k.project_id, []);
-        byProject.get(k.project_id).push(k);
-      });
-
-      body.appendChild(el('div', { class: 'section-h' }, [
-        el('div', { class: 'key-sec-t' }, [ el('h3', {}, 'Claves de la cuenta'), el('span', { class: 'key-sec-sub' }, 'Acceso a todos tus proyectos y archivos') ]),
-        liveBadge()
-      ]));
-      if (account.length) {
-        const list = el('div', { class: 'key-list' });
-        account.forEach(k => list.appendChild(keyRow(k)));
-        body.appendChild(list);
-      } else {
-        body.appendChild(el('div', { class: 'key-empty' }, [
-          el('span', {}, 'Aún no tienes claves de la cuenta.'),
-          el('button', { class: 'btn btn-ghost btn-sm', type: 'button', onclick: () => openKeyModal() }, 'Generar clave')
-        ]));
-      }
-
-      if (byProject.size) {
-        body.appendChild(el('div', { class: 'section-h key-sec-proj' }, [
-          el('div', { class: 'key-sec-t' }, [ el('h3', {}, 'Claves de proyectos'), el('span', { class: 'key-sec-sub' }, 'Organizadas por proyecto') ])
-        ]));
-        byProject.forEach((keys, pid) => {
-          const p = (store.projects || []).find(x => x.id === pid);
-          const group = el('div', { class: 'key-group' }, [
-            el('div', { class: 'key-group-head' }, [
-              el('span', { class: 'key-group-dot', style: { background: p ? safeColor(p.color) : 'var(--fg-faint)' } }),
-              el('strong', { title: p ? p.name : '' }, p ? p.name : 'Proyecto'),
-              el('span', { class: 'key-group-n' }, keys.length === 1 ? '1 clave' : keys.length + ' claves'),
-              p ? el('button', { class: 'btn btn-ghost btn-sm key-group-open', type: 'button',
-                onclick: () => { go('projects', { projectId: pid }); state.projectTab = 'apikey'; render(); } }, 'Abrir proyecto') : null
-            ].filter(Boolean)),
-            el('div', { class: 'key-list' }, keys.map(k => keyRow(k, p)))
-          ]);
-          body.appendChild(group);
-        });
-      }
+      // Tarjetas resumen (claves de la cuenta, datos reales del mes)
+      body.appendChild(usageTiles(account));
+      body.appendChild(el('div', { class: 'section-h' }, [ el('h3', {}, 'Tus claves'), liveBadge() ]));
+      const list = el('div', { class: 'key-list' });
+      account.forEach(k => list.appendChild(keyRow(k)));
+      body.appendChild(list);
     }
     v.appendChild(body);
   }
@@ -369,10 +332,7 @@
       tile('Peticiones del mes', compactNum(total), today + ' hoy', A),
       tile('Éxitos', compactNum(ok), total ? (ok / total * 100).toFixed(1) + '% del total' : 'Sin peticiones aún', OK),
       tile('Fallas', compactNum(err), total ? (err / total * 100).toFixed(1) + '% del total' : 'Sin peticiones aún', ER),
-      tile('Claves activas', String(list.length), (function () {
-        const proj = list.filter(k => k.project_id).length, acc = list.length - proj;
-        return proj ? acc + ' de la cuenta · ' + proj + ' de proyectos' : 'Generadas';
-      })(), K)
+      tile('Claves activas', String(list.length), 'Generadas', K)
     ]) ]);
   }
 
@@ -400,8 +360,11 @@
     ];
   }
 
-  // p: proyecto de la clave (solo claves de proyecto) → insignia «Solo este proyecto».
-  function keyRow(k, p) {
+  // Claves generales de la cuenta (sin proyecto): las de la sección API keys,
+  // su contador del menú y la tarjeta del Inicio.
+  function accountKeys() { return (store.apiKeys || []).filter(k => !k.project_id); }
+
+  function keyRow(k) {
     ensureUsage(k);
     const masked = k.value.slice(0, 7) + '•'.repeat(20) + k.value.slice(-4);
     const badgeClass = '';
@@ -413,9 +376,8 @@
         el('div', { class: 'key-main' }, [
           el('div', { class: 'key-name' }, [
             document.createTextNode(k.name + ' '),
-            el('span', { class: 'key-badge ' + badgeClass }, badgeLabel),
-            k.project_id ? el('span', { class: 'key-badge is-scope', title: p ? 'Solo puede usar «' + p.name + '»' : 'Solo puede usar su proyecto' }, 'Solo proyecto') : null
-          ].filter(Boolean)),
+            el('span', { class: 'key-badge ' + badgeClass }, badgeLabel)
+          ]),
           el('div', { class: 'key-value' }, [ el('code', {}, k.revealed ? k.value : masked) ]),
           el('div', { class: 'key-meta' }, 'Creada ' + formatDate(k.createdAt) + (k.lastUsed ? (' · Último uso ' + timeAgo(k.lastUsed)) : ' · Nunca usada'))
         ]),
