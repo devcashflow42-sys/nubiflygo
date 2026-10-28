@@ -76,7 +76,13 @@
 /* Cargando */
 .notif-skel { cursor: default; }
 .notif-skel .notif-ico { background: var(--surface-sunken); }
-.sk-line { display: block; height: 10px; border-radius: 6px; background: var(--surface-sunken); margin: 6px 0 10px; animation: notifPulse 1.2s ease-in-out infinite; }
+/* Mismo brillo (shimmer) que el resto de los esqueletos de la app. */
+.sk-line {
+  display: block; height: 10px; border-radius: 6px; margin: 6px 0 10px;
+  background-color: var(--surface-sunken); background-size: 220% 100%;
+  background-image: linear-gradient(90deg, transparent 20%, color-mix(in srgb, var(--surface) 55%, transparent) 50%, transparent 80%);
+  animation: sk-sweep 1.25s ease-in-out infinite;
+}
 .sk-line.w60 { width: 60%; } .sk-line.w90 { width: 90%; }
 @keyframes notifPulse { 50% { opacity: .5; } }
 

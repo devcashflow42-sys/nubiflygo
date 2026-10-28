@@ -400,6 +400,36 @@
     .sk-banner { aspect-ratio: 1 / 1; }
     .sk-fields { grid-template-columns: 1fr; }
   }
+  /* Sobre fondos oscuros (portada del proyecto): gris claro translúcido. */
+  .sk.sk-on-dark { background: rgba(255, 255, 255, .16); }
+  .sk.sk-on-dark::after { background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .22), transparent); }
+  .sk-hero { background: linear-gradient(135deg, #3d4250, #23252d 60%, #17181d); }
+  .sk-hero .ph-cover { box-shadow: none; }
+  .sk-tabs { display: flex; gap: 8px; overflow: hidden; }
+  .sk-ph-tabs { padding: 14px 20px 0; }
+  .sk-rows { display: flex; flex-direction: column; gap: 14px; padding: 4px 0; }
+  .sk-colls { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+  .sk-coll { border: 1px solid var(--border); border-radius: 18px; overflow: hidden; background: var(--surface-2); }
+  .sk-coll-mosaic { aspect-ratio: 16 / 9; border-radius: 0; height: auto !important; }
+  .sk-coll-foot { padding: 12px 14px; }
+  @media (max-width: 640px) { .sk-colls { grid-template-columns: 1fr 1fr; gap: 10px; } .sk-ph-tabs { padding: 12px 14px 0; } }
+
+  /* Portadas e imágenes: brillo detrás mientras la imagen baja (skeleton.js
+     marca .is-loaded). La imagen no se oculta nunca: al llegar, la tapa. */
+  .fb-art:has(> img:not(.is-loaded)), .lib-cv:has(> img:not(.is-loaded)), .lib-av:has(> img:not(.is-loaded)),
+  .lib-song-cv:has(> img:not(.is-loaded)), .lib-focus-cv:has(> img:not(.is-loaded)), .lr-thumb:has(> img:not(.is-loaded)),
+  .lib-mosaic:has(img:not(.is-loaded)), .ph-cover:has(> img:not(.is-loaded)), .tr-ico:has(> img:not(.is-loaded)) {
+    background-image: linear-gradient(90deg, transparent 20%, var(--sk-shine, color-mix(in srgb, var(--surface) 55%, transparent)) 50%, transparent 80%);
+    background-color: var(--sk-base, var(--surface-sunken)); background-size: 220% 100%;
+    animation: sk-sweep 1.25s ease-in-out infinite;
+  }
+  /* Modo oscuro: base y brillo más visibles (variables para las portadas). */
+  :root[data-theme="dark"] { --sk-base: #2a2a30; --sk-shine: rgba(255, 255, 255, .09); }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --sk-base: #2a2a30; --sk-shine: rgba(255, 255, 255, .09); } }
+  @keyframes sk-sweep { from { background-position: 130% 0; } to { background-position: -30% 0; } }
+  @media (prefers-reduced-motion: reduce) {
+    .fb-art, .lib-cv, .lib-av, .lib-song-cv, .lib-focus-cv, .lr-thumb, .lib-mosaic, .ph-cover, .tr-ico { animation: none !important; }
+  }
 
   /* Usuario de la barra lateral mientras llega el perfil */
   .user-row.is-loading .avatar,
@@ -625,3 +655,37 @@
   /* Miniatura real del archivo dentro de su cuadrito, en la tarjeta del proyecto. */
   .pc-ico.is-img { background: var(--surface-sunken); overflow: hidden; }
   .pc-ico.is-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+  /* Iconos de las filas-esqueleto (papelera, notificaciones, proyectos): mismo brillo. */
+  .notif-skel .notif-ico, .tr-row.is-sk .tr-ico, .pc-item.is-sk .pc-ico {
+    background-color: var(--surface-sunken); background-size: 220% 100%;
+    background-image: linear-gradient(90deg, transparent 20%, color-mix(in srgb, var(--surface) 55%, transparent) 50%, transparent 80%);
+    animation: sk-sweep 1.25s ease-in-out infinite;
+  }
+  @media (prefers-reduced-motion: reduce) { .sk-line, .notif-skel .notif-ico, .tr-row.is-sk .tr-ico, .pc-item.is-sk .pc-ico { animation: none; } }
+
+  /* Contador del menú mientras su lista llega: píldora con brillo, sin número. */
+  .nav .count.is-loading {
+    color: transparent; min-width: 22px;
+    background-color: var(--surface-sunken); background-size: 220% 100%;
+    background-image: linear-gradient(90deg, transparent 20%, color-mix(in srgb, var(--surface) 55%, transparent) 50%, transparent 80%);
+    animation: sk-sweep 1.25s ease-in-out infinite;
+  }
+  @media (prefers-reduced-motion: reduce) { .nav .count.is-loading { animation: none; } }
+
+  /* Modo oscuro: el esqueleto un poco más claro y el brillo más visible
+     (sobre fondos casi negros el gris de siempre casi no se distinguía). */
+  :root[data-theme="dark"] .sk, :root[data-theme="dark"] .sk-line, :root[data-theme="dark"] .nav .count.is-loading,
+  :root[data-theme="dark"] .notif-skel .notif-ico, :root[data-theme="dark"] .tr-row.is-sk .tr-ico, :root[data-theme="dark"] .pc-item.is-sk .pc-ico { background-color: #2a2a30; }
+  :root[data-theme="dark"] .sk::after { background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .09), transparent); }
+  :root[data-theme="dark"] .sk-line, :root[data-theme="dark"] .nav .count.is-loading, :root[data-theme="dark"] .notif-skel .notif-ico,
+  :root[data-theme="dark"] .tr-row.is-sk .tr-ico, :root[data-theme="dark"] .pc-item.is-sk .pc-ico { background-image: linear-gradient(90deg, transparent 20%, rgba(255, 255, 255, .09) 50%, transparent 80%); }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .sk, :root:not([data-theme="light"]) .sk-line, :root:not([data-theme="light"]) .nav .count.is-loading,
+    :root:not([data-theme="light"]) .notif-skel .notif-ico, :root:not([data-theme="light"]) .tr-row.is-sk .tr-ico, :root:not([data-theme="light"]) .pc-item.is-sk .pc-ico { background-color: #2a2a30; }
+    :root:not([data-theme="light"]) .sk::after { background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .09), transparent); }
+    :root:not([data-theme="light"]) .sk-line, :root:not([data-theme="light"]) .nav .count.is-loading, :root:not([data-theme="light"]) .notif-skel .notif-ico,
+    :root:not([data-theme="light"]) .tr-row.is-sk .tr-ico, :root:not([data-theme="light"]) .pc-item.is-sk .pc-ico { background-image: linear-gradient(90deg, transparent 20%, rgba(255, 255, 255, .09) 50%, transparent 80%); }
+  }
+  /* Los esqueletos sobre la portada oscura del proyecto mantienen su gris claro. */
+  :root .sk.sk-on-dark { background-color: rgba(255, 255, 255, .16); }

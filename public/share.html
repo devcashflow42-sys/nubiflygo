@@ -41,7 +41,17 @@
 
 <main class="sh-main">
   <section class="sh-card" id="sh-card" aria-live="polite">
-    <div class="sh-loading"><span class="sh-spin" aria-hidden="true"></span> Cargando archivo…</div>
+    <!-- Esqueleto con brillo mientras llega el archivo (misma forma que la tarjeta). -->
+    <div class="sh-skel" role="status" aria-label="Cargando archivo…">
+      <div class="sh-sk sh-sk-preview"></div>
+      <div class="sh-skel-info">
+        <div class="sh-sk" style="width:62%;height:22px"></div>
+        <div class="sh-sk" style="width:38%;height:12px"></div>
+        <div class="sh-sk" style="width:100%;height:46px;border-radius:12px"></div>
+        <div class="sh-sk" style="width:100%;height:52px;border-radius:999px"></div>
+        <div class="sh-sk" style="width:100%;height:42px;border-radius:999px"></div>
+      </div>
+    </div>
   </section>
   <section class="sh-promo" id="sh-promo" hidden>
     <h2>Guarda y comparte tus archivos en la nube</h2>

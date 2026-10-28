@@ -307,7 +307,8 @@
   }
 
   /* ───────────── Portada grande del proyecto ───────────── */
-  function projectHero(p, items, actions) {
+  // loading: el contenido aún no llega (portada y resumen con esqueleto, sin «Nuevo» ni «Vacío»).
+  function projectHero(p, items, actions, loading) {
     const cat = projectCategory(items);
     const meta = CAT[cat] || CAT.mixed;
     // Icono elegido por el usuario: gana a las portadas y a la categoría
@@ -319,6 +320,7 @@
     else if (thumbs.length >= 4) thumbs.forEach(u => { const i = el('img', { src: u, alt: '', loading: 'lazy', decoding: 'async' }); i.addEventListener('error', () => { i.style.visibility = 'hidden'; }); cover.appendChild(i); });
     else if (thumbs.length) { const i = el('img', { src: thumbs[0], alt: '', decoding: 'async' }); i.addEventListener('error', () => i.remove()); cover.style.background = libGrad(p.name); cover.appendChild(i); }
     else { cover.style.background = meta.hero ? libGrad(p.name) : safeColor(p.color); cover.appendChild(el('span', { class: 'ph-cover-ico', html: meta.icon })); }
+    if (loading && !chosen) { cover.className = 'ph-cover sk sk-on-dark'; cover.innerHTML = ''; cover.style.background = ''; }
 
     let summary;
     if (cat === 'music') {
@@ -347,11 +349,11 @@
           // es de la categoría, pero leído junto a un icono puesto a mano decía
           // justo lo contrario de lo que pasa.
           el('span', { class: 'ph-k-ico', html: chosen ? chosen.svg : meta.icon }),
-          'Proyecto · ' + (cat ? meta.label : 'Nuevo'),
+          loading ? 'Proyecto' : 'Proyecto · ' + (cat ? meta.label : 'Nuevo'),
           (cat && !chosen) ? el('span', { class: 'ph-auto', title: 'La categoría se pone sola según lo que tiene el proyecto', html: LIB_ICN.spark + ' auto' }) : null
         ].filter(Boolean)),
         el('h2', {}, p.name),
-        el('p', { class: 'ph-sum' }, summary.filter(Boolean).join(' · ')),
+        loading ? el('p', { class: 'ph-sum' }, [ skBox('min(260px, 70%)', '12px', 'sk-on-dark') ]) : el('p', { class: 'ph-sum' }, summary.filter(Boolean).join(' · ')),
         p.description ? el('p', { class: 'ph-desc' }, p.description) : null,
         el('div', { class: 'ph-acts' }, actions.filter(Boolean))
       ].filter(Boolean))

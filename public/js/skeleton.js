@@ -67,3 +67,54 @@
       fields
     ]) ], 'Cargando tu información…');
   }
+
+  // Filas sueltas dentro de una tarjeta (Facturación, Moderación): icono + dos líneas.
+  function skelRows(n, label) {
+    const list = el('div', { class: 'sk-rows' });
+    for (let i = 0; i < (n || 3); i++) {
+      list.appendChild(el('div', { class: 'sk-row sk-rowline' }, [ skBox('36px', '36px', 'sk-round-md'),
+        el('div', { class: 'sk-col' }, [ skBox(i % 2 ? '52%' : '64%', '12px'), skBox(i % 2 ? '76%' : '40%', '10px', 'sk-mt') ]),
+        skBox('64px', '26px', 'sk-pill') ]));
+    }
+    return skWrap([list], label);
+  }
+
+  // Fila de pestañas tipo píldora (secciones del proyecto, filtros).
+  function skelTabs(n) {
+    const row = el('div', { class: 'sk-tabs' });
+    for (let i = 0; i < (n || 4); i++) row.appendChild(skBox(i ? '92px' : '118px', '34px', 'sk-pill'));
+    return row;
+  }
+
+  // Portada de un proyecto mientras llega (entrada directa a /project/<id>).
+  function skelHero() {
+    return el('section', { class: 'ph sk-hero', 'aria-hidden': 'true' }, [
+      el('div', { class: 'sk ph-cover sk-on-dark', 'aria-hidden': 'true' }),
+      el('div', { class: 'ph-info' }, [
+        skBox('130px', '11px', 'sk-on-dark'), skBox('46%', '30px', 'sk-on-dark sk-mt2 sk-round-md'), skBox('62%', '12px', 'sk-on-dark sk-mt2'),
+        el('div', { class: 'sk-row sk-mt2' }, [ skBox('44px', '44px', 'sk-on-dark sk-circle'), skBox('44px', '44px', 'sk-on-dark sk-circle'), skBox('44px', '44px', 'sk-on-dark sk-circle') ])
+      ])
+    ]);
+  }
+
+  // Tarjetas de «Colecciones» (Archivos): mosaico 2×2 + título.
+  function skelCollections(n) {
+    const grid = el('div', { class: 'sk-colls' });
+    for (let i = 0; i < (n || 4); i++) {
+      grid.appendChild(el('div', { class: 'sk-card sk-coll' }, [ skBox('100%', 'auto', 'sk-coll-mosaic'),
+        el('div', { class: 'sk-row sk-coll-foot' }, [ skBox('34px', '34px', 'sk-round-md'), el('div', { class: 'sk-col' }, [ skBox('55%', '12px'), skBox('70%', '10px', 'sk-mt') ]) ]) ]));
+    }
+    return skWrap([grid], 'Cargando tus colecciones…');
+  }
+
+  /* Portadas e imágenes: mientras la imagen baja, su caja muestra el mismo
+     brillo (CSS: :has(> img:not(.is-loaded))). Aquí solo se marca cuándo llegó;
+     la imagen nunca se oculta, así que si algo falla se ve igual. */
+  document.addEventListener('load', function (e) {
+    const t = e.target;
+    if (t && t.tagName === 'IMG') t.classList.add('is-loaded');
+  }, true);
+  document.addEventListener('error', function (e) {
+    const t = e.target;
+    if (t && t.tagName === 'IMG') t.classList.add('is-loaded');
+  }, true);

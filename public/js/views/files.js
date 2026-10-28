@@ -89,7 +89,9 @@
     // Primera vez: trae los archivos del servidor.
     if (!filesLoaded) {
       loadFiles();
-      v.appendChild(el('div', { class: 'board-body' }, [ skelGrid(8, { label: 'Cargando tus archivos…' }) ]));
+      // El esqueleto tiene la forma de lo que va a aparecer: Colecciones o la cuadrícula.
+      const t0 = state.filesTab || 'collections';
+      v.appendChild(el('div', { class: 'board-body' }, [ t0 === 'collections' ? skelCollections(4) : skelGrid(8, { label: 'Cargando tus archivos…' }) ]));
       return;
     }
 

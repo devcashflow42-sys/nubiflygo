@@ -115,10 +115,17 @@
     document.querySelectorAll('#nav a[data-route]').forEach(a => {
       a.classList.toggle('active', a.dataset.route === state.route);
     });
-    $('#count-projects').textContent = store.projects.length;
-    $('#count-notes').textContent = store.notes.length;
-    $('#count-keys').textContent = store.apiKeys.length;
-    const cf = $('#count-files'); if (cf) cf.textContent = (store.files || []).filter(f => !f.project_id).length;
+    // Contadores: mientras su lista no llega, una píldora con brillo (no un «0»).
+    const count = (id, ready, n) => {
+      const c = $(id); if (!c) return;
+      c.classList.toggle('is-loading', !ready);
+      c.textContent = ready ? n : '0';
+      if (ready) c.removeAttribute('aria-hidden'); else c.setAttribute('aria-hidden', 'true');
+    };
+    count('#count-projects', typeof projectsLoaded === 'undefined' || projectsLoaded, store.projects.length);
+    count('#count-notes', typeof notesLoaded === 'undefined' || notesLoaded, store.notes.length);
+    count('#count-keys', typeof apiKeysLoaded === 'undefined' || apiKeysLoaded, store.apiKeys.length);
+    count('#count-files', typeof filesLoaded === 'undefined' || filesLoaded, (store.files || []).filter(f => !f.project_id).length);
     const ct = $('#count-trash'); if (ct) ct.textContent = (store.trash || []).length;
 
     const TRASH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>';

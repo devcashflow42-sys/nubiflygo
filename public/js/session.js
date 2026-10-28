@@ -234,7 +234,14 @@
     if (used.length > 1 && pct < used.length * 3.5) fill.classList.add('is-tiny');
     fill.style.width = 'max(' + pct.toFixed(2) + '%, ' + (used.length ? 8 : 0) + 'px)';
     const bar = quota ? el('div', { class: 'stg-bar', role: 'img', 'aria-label': formatBytes(use.total) + ' ' + ofTxt + (pctTxt ? ' (' + pctTxt + ')' : '') }, [ fill ]) : null;
-    const desk = el('div', { class: 'stg-desk' }, [
+    // Mientras llegan los archivos, el espacio usado aún no se sabe: esqueleto
+    // (un «0 B · Aún no has subido archivos» antes de tiempo sería falso).
+    const filesPending = typeof filesLoaded !== 'undefined' && !filesLoaded;
+    const desk = filesPending ? el('div', { class: 'stg-desk' }, [
+      el('div', { class: 'stg-amount' }, [ skBox('64px', '20px', 'sk-round-md'), el('span', {}, ' ' + shortOf) ]),
+      quota ? skBox('100%', '6px', 'sk-pill sk-mt') : null,
+      skBox('70%', '10px', 'sk-mt2'), skBox('55%', '10px', 'sk-mt')
+    ].filter(Boolean)) : el('div', { class: 'stg-desk' }, [
       el('div', { class: 'stg-amount' }, [ el('strong', {}, formatBytes(use.total)), el('span', {}, ' ' + shortOf) ]),
       bar,
       legend.children.length ? legend : el('p', { class: 'stg-empty' }, 'Aún no has subido archivos.')
@@ -244,7 +251,7 @@
     const TICKS = 20, on = quota ? Math.max(use.total > 0 ? 1 : 0, Math.round(pct / 100 * TICKS)) : 0;
     const ticks = el('div', { class: 'stg-ticks', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': String(Math.round(pct)), 'aria-label': 'Espacio usado' });
     for (let i = 0; i < TICKS; i++) ticks.appendChild(el('i', { class: i < on ? 'on' : '' }));
-    const mob = el('div', { class: 'stg-mob' }, [
+    const mob = el('div', { class: 'stg-mob' }, filesPending ? [ skBox('60%', '10px'), skBox('100%', '8px', 'sk-pill sk-mt') ] : [
       el('p', { class: 'stg-sub' }, full && upgrade ? 'Mejora tu plan para tener más espacio.' : formatBytes(use.total) + ' de ' + (quota ? fmtQuota(quota) : 'espacio ilimitado') + (pctTxt ? ' · ' + pctTxt : '')),
       ticks
     ]);

@@ -418,13 +418,14 @@
       cat !== 'music' && cat !== 'photos' ? heroBtn('Nuevo documento', LIB_ICN.plus, () => openDocModal(p)) : null,
       heroBtn('Publicar', LIB_ICN.globe, () => { state.projectTab = 'pub'; render(); }),
       menuBtn
-    ]));
+    ], !p._loaded));
 
+    // Mientras llega el contenido, las pestañas no muestran «0» (aún no se sabe).
     const tab = state.projectTab || 'docs';
     v.appendChild(el('div', { class: 'lib-tabs ph-tabs', role: 'tablist', 'aria-label': 'Secciones del proyecto' }, [
-      tabBtn('docs', KIND_ICON_LIB('mixed'), 'Contenido', docCount, tab),
-      tabBtn('pub', LIB_ICN.globe, 'Publicados', pubCount, tab),
-      tabBtn('apikey', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="m10.85 12.15 7.5-7.5 1.65 1.65 1.5-1.5-3.15-3.15-9 9"/></svg>', 'API key', keyCount, tab),
+      tabBtn('docs', KIND_ICON_LIB('mixed'), 'Contenido', p._loaded ? docCount : null, tab),
+      tabBtn('pub', LIB_ICN.globe, 'Publicados', p._loaded ? pubCount : null, tab),
+      tabBtn('apikey', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="m10.85 12.15 7.5-7.5 1.65 1.65 1.5-1.5-3.15-3.15-9 9"/></svg>', 'API key', (typeof apiKeysLoaded === 'undefined' || apiKeysLoaded) ? keyCount : null, tab),
       tabBtn('settings', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>', 'Ajustes', null, tab)
     ]));
 
@@ -484,9 +485,12 @@
   function renderDetailLoading() {
     const v = $('#view');
     v.innerHTML = '';
-    v.appendChild(el('div', { class: 'board-body' }, [
-      skelGrid(8, { label: 'Cargando el proyecto…' })
-    ]));
+    // Misma forma que el proyecto: barra, portada, pestañas y contenido.
+    v.appendChild(pageToolbar({ back: () => go('projects', { projectId: null }), crumbs: [
+      { label: 'Proyectos', onClick: () => go('projects', { projectId: null }) }, { label: 'Proyecto', here: true } ] }));
+    v.appendChild(skelHero());
+    v.appendChild(el('div', { class: 'ph-tabs sk-ph-tabs' }, [ skelTabs(4) ]));
+    v.appendChild(el('div', { class: 'board-body' }, [ skelGrid(8, { label: 'Cargando el proyecto…' }) ]));
   }
 
   function tabBtn(key, iconHtml, label, count, active) {

@@ -807,7 +807,7 @@
   const MOD_FILTERS = [['open', 'Abiertos'], ['removed', 'Dados de baja'], ['dismissed', 'Descartados'], ['all', 'Todos']];
   function tabModeration(body) {
     if (!state.modFilter) state.modFilter = 'open';
-    const list = el('div', { class: 'mod-list' }, [ el('div', { class: 'mod-empty' }, 'Cargando reportes…') ]);
+    const list = el('div', { class: 'mod-list' }, [ skelList(3) ]);
     const filters = el('div', { class: 'mod-filters' }, MOD_FILTERS.map(function (f) {
       return el('button', { type: 'button', class: 'btn btn-sm ' + (state.modFilter === f[0] ? 'btn-primary' : 'btn-ghost'),
         onclick: function () { state.modFilter = f[0]; viewSettings(); } }, f[1]);

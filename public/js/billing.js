@@ -155,8 +155,8 @@
 
   // Tarjetas de la pestaña Facturación (plan + historial).
   window.renderBillingSection = function (root, u, card) {
-    const planWrap = el('div', {}, [ el('div', { class: 'bill-loading' }, 'Cargando tu suscripción…') ]);
-    const histWrap = el('div', {}, [ el('div', { class: 'bill-loading' }, 'Cargando pagos…') ]);
+    const planWrap = el('div', {}, [ skelRows(1, 'Cargando tu suscripción…') ]);
+    const histWrap = el('div', {}, [ skelRows(3, 'Cargando pagos…') ]);
     root.appendChild(card(CROWN, 'Plan actual', 'Gestiona tu plan, pagos con Mercado Pago y renovación.', [planWrap], null, 'pad'));
     const histCard = card(MP_ICON, 'Historial de pagos', 'Pagos realizados con Mercado Pago.', [histWrap]);
     load().then(() => {
