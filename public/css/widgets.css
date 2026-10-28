@@ -209,20 +209,26 @@
   opacity: 0; transition: opacity .3s ease;
 }
 .mw-stack.has-pages:not(.is-pages) .mw-sheet-pages.is-back::after { opacity: 1; }
-/* Portada de lo que suena: un solo círculo (sin aro de botón alrededor). */
+/* Portada de lo que suena, con el progreso de la canción en un anillo
+   alrededor (el mismo lenguaje que el anillo de reproducir/pausar). Un solo
+   anillo: sin pista de fondo ni borde de botón. */
 .mw-mini {
   position: relative; flex: 0 0 auto; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 50%;
-  overflow: hidden; display: grid; place-items: center; cursor: pointer; background: rgba(255, 255, 255, .15);
+  display: grid; place-items: center; cursor: pointer; background: none;
   transition: transform .15s;
 }
-.mw-mini:active { transform: scale(.9); }
-.mw-mini:focus-visible { outline: 2px solid #e2b9eb; outline-offset: 2px; }
-.mw-mini-cv { position: absolute; inset: 0; display: grid; place-items: center; font-size: 16px; color: #fff; }
+.mw-mini:active { transform: scale(.92); }
+.mw-mini:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.mw-mini-ring { position: absolute; inset: 0; width: 44px; height: 44px; transform: rotate(-90deg); pointer-events: none; overflow: visible; }
+.mw-mini-ring circle { fill: none; stroke-width: 3; }
+.mw-mini-ring .mw-ring-fg { stroke: var(--pg-fg); filter: none; transition: stroke-dashoffset .25s linear, opacity .35s ease; }
+.fw-music:not(.is-playing) .mw-mini-ring .mw-ring-fg { opacity: .5; }
+.mw-mini-cv { position: absolute; inset: 5px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; font-size: 14px; color: #fff; background: rgba(20, 10, 18, .35); }
 .mw-mini-cv img { width: 100%; height: 100%; object-fit: cover; display: block; }
 /* Ecualizador al centro de la portada, sobre un velo: la música sigue sonando. */
-.mw-mini::after { content: ''; position: absolute; inset: 0; background: rgba(20, 10, 18, .38); }
-.mw-mini .mw-mini-eq { position: relative; z-index: 1; width: 18px; height: 16px; gap: 2.5px; }
-.mw-mini .mw-mini-eq i { width: 3px; background: #fff; }
+.mw-mini-cv::after { content: ''; position: absolute; inset: 0; background: rgba(20, 10, 18, .38); }
+.mw-mini .mw-mini-eq { position: relative; z-index: 1; width: 16px; height: 14px; gap: 2px; }
+.mw-mini .mw-mini-eq i { width: 2.5px; background: #fff; }
 /* La rayita de arrastre baja con la cápsula compacta (queda dentro, no sobre el borde). */
 .mw-grip { transition: top .4s cubic-bezier(.22, 1, .36, 1); }
 .mw-stack.is-pages + .mw-grip { top: 8px; }

@@ -45,6 +45,8 @@
 
   // Anillo de progreso del botón reproducir (radio y circunferencia, en px del viewBox 56×56).
   const RING_R = 25, RING_C = 2 * Math.PI * RING_R;
+  // El mismo anillo, en pequeño, alrededor de la portada de la hoja de páginas.
+  const MINI_R = 20.5, MINI_C = 2 * Math.PI * MINI_R;
   // Pequeñas animaciones de clase (se reinician aunque ya estén puestas).
   function flash(node, cls, ms) {
     if (!node || reduceMotion()) return;
@@ -101,6 +103,9 @@
     const mini = el('button', { type: 'button', class: 'mw-mini', 'aria-label': 'Volver al reproductor', title: 'Volver al reproductor' }, [
       miniCv, el('span', { class: 'mw-eq mw-mini-eq', 'aria-hidden': 'true' }, [ el('i'), el('i'), el('i'), el('i') ])
     ]);
+    // Progreso de la canción alrededor de la portada (un solo anillo, sin pista).
+    mini.insertAdjacentHTML('afterbegin', '<svg class="mw-mini-ring" viewBox="0 0 44 44" aria-hidden="true"><circle class="mw-ring-fg" cx="22" cy="22" r="' + MINI_R +
+      '" stroke-dasharray="' + MINI_C.toFixed(2) + '" stroke-dashoffset="' + MINI_C.toFixed(2) + '"/></svg>');
     const pages = el('div', { class: 'mw-pages' });
     const sPages = el('div', { class: 'mw-sheet mw-sheet-pages is-back', role: 'group', 'aria-label': 'Paginación' }, [ mini, pages ]);
     sPages.inert = true;
@@ -113,7 +118,7 @@
     w.compact.append(stack, grip);
 
     w.expandBtn = null;
-    Object.assign(P, { w, cover, title, titleIn, sub, play, playWrap, ringFg: playWrap.querySelector('.mw-ring-fg'), prevBtn: prev, nextBtn: next, fill, buf, knob, bar, tCur, tDur, sMusic, sPages, pages, stack, mini, miniCv });
+    Object.assign(P, { w, cover, title, titleIn, sub, play, playWrap, ringFg: playWrap.querySelector('.mw-ring-fg'), prevBtn: prev, nextBtn: next, fill, buf, knob, bar, tCur, tDur, sMusic, sPages, pages, stack, mini, miniCv, miniFg: mini.querySelector('.mw-ring-fg') });
 
     mini.addEventListener('click', (e) => { e.stopPropagation(); if (P.active === 'pages') swap(-1); });
     prev.addEventListener('click', (e) => { e.stopPropagation(); prevTrack(); });
@@ -260,6 +265,7 @@
     a.addEventListener('timeupdate', () => { if (!P.seeking) paintProgress(); });
     a.addEventListener('ended', () => {
       if (P.ringFg) P.ringFg.style.strokeDashoffset = '0';
+      if (P.miniFg) P.miniFg.style.strokeDashoffset = '0';
       flash(P.playWrap, 'is-done', 900);
       if (!nextTrack(true)) { syncPlaying(); paintProgress(); }
     });
@@ -309,6 +315,7 @@
     P.fill.style.width = '0%'; P.knob.style.left = '0%'; P.buf.style.width = '0%';
     flash(P.playWrap, 'is-reset', 600);
     if (P.ringFg) P.ringFg.style.strokeDashoffset = RING_C.toFixed(2);
+    if (P.miniFg) P.miniFg.style.strokeDashoffset = MINI_C.toFixed(2);
     flash(P.sMusic, 'is-switching', 650);
     a.src = f.downloadUrl + '?inline=1';
     if (autoplay) {
@@ -537,6 +544,7 @@
     const ratio = d ? Math.min(1, t / d) : 0;
     P.fill.style.width = ratio * 100 + '%'; P.knob.style.left = ratio * 100 + '%';
     if (P.ringFg) P.ringFg.style.strokeDashoffset = (RING_C * (1 - ratio)).toFixed(2);
+    if (P.miniFg) P.miniFg.style.strokeDashoffset = (MINI_C * (1 - ratio)).toFixed(2);
     P.tCur.textContent = fmt(t);
     P.bar.setAttribute('aria-valuenow', String(Math.floor(t)));
     P.bar.setAttribute('aria-valuetext', fmt(t) + ' de ' + fmt(d));
