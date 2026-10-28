@@ -220,6 +220,13 @@
       el('span', {}, a.artist)
     ])));
   }
+  // Portada de la fila con el ecualizador de «sonando» encima (como Spotify o
+  // YouTube Music); solo se ve en la fila .is-playing (lo marca music.js).
+  function songCover(f) {
+    const cv = libCover(f.thumbUrl, songAlbum(f) || songTitle(f), '', 'lib-song-cv');
+    cv.appendChild(el('span', { class: 'lib-now', 'aria-hidden': 'true' }, [ el('i'), el('i'), el('i'), el('i') ]));
+    return cv;
+  }
   // queue: lista completa para reproducir en orden (aunque se muestren solo algunas).
   function songList(songs, ctx, paged, queue) {
     const list = el('div', { class: 'lib-songs' });
@@ -232,7 +239,7 @@
       list.appendChild(el('div', { class: 'lib-song' + (now ? ' is-playing' : ''), 'data-fid': String(f.id) }, [
         el('button', { type: 'button', class: 'lib-song-main', onclick: () => playAudio(f, q) }, [
           el('span', { class: 'lib-n' }, String(songs.indexOf(f) + 1)),
-          libCover(f.thumbUrl, songAlbum(f) || songTitle(f), '', 'lib-song-cv'),
+          songCover(f),
           el('span', { class: 'lib-song-t' }, [ el('strong', {}, songTitle(f)), el('span', {}, songArtist(f)) ]),
           el('span', { class: 'lib-song-al' }, songAlbum(f)),
           el('span', { class: 'lib-song-d' }, dur)

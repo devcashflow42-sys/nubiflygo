@@ -84,9 +84,21 @@
 .lib-more { flex-shrink: 0; color: var(--fg-muted); margin-right: 4px; }
 .lib-more svg { width: 16px; height: 16px; }
 .lib-song.is-playing { background: color-mix(in srgb, var(--accent) 9%, transparent); }
-.lib-song.is-playing .lib-song-t strong, .lib-song.is-playing .lib-n { color: var(--accent); }
-.lib-song.is-playing .lib-n { font-size: 0; }
-.lib-song.is-playing .lib-n::before { content: '▶'; font-size: 11px; }
+.lib-song.is-playing .lib-song-t strong { color: var(--accent); }
+/* Canción que suena: ecualizador sobre su portada, como Spotify o YouTube
+   Music (un solo indicador; en pausa las barras se quedan quietas). */
+.lib-now {
+  position: absolute; inset: 0; z-index: 1; display: none;
+  align-items: flex-end; justify-content: center; gap: 3px; padding: 13px 0 12px;
+  background: rgba(13, 15, 26, .55);
+}
+.lib-now i { display: block; width: 3px; height: 30%; border-radius: 2px; background: #fff; animation: mp-eq 1s ease-in-out infinite; }
+.lib-now i:nth-child(2) { animation-delay: -.45s; }
+.lib-now i:nth-child(3) { animation-delay: -.2s; }
+.lib-now i:nth-child(4) { animation-delay: -.7s; }
+.lib-song.is-playing .lib-now { display: flex; }
+body.mp-paused .lib-now i { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) { .lib-now i { animation: none; height: 60%; } }
 
 /* Artista o álbum abierto */
 .lib-focus { display: flex; align-items: center; gap: 14px; }

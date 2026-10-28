@@ -166,24 +166,25 @@
 /* Sin páginas: la hoja 2 no existe (una sola cápsula, como siempre). */
 .mw-stack:not(.has-pages) .mw-sheet-pages { display: none; }
 .mw-sheet-pages { justify-content: center; }
-.mw-pages { display: flex; justify-content: center; width: 100%; --pg-accent: var(--mw-seek); --pg-ink: color-mix(in srgb, var(--mw-bot) 85%, #000); }
+.mw-pages { display: flex; justify-content: center; width: 100%; }
 .mw-pages .pg-box {
   opacity: 1; transform: none; width: 100%; justify-content: space-between;
   background: transparent; border: 0; box-shadow: none; padding: 0 2px;
+  -webkit-backdrop-filter: none; backdrop-filter: none;
 }
 .mw-pages .pg-box::before { display: none; }
 .mw-pages .pg-arrow { width: 44px; height: 44px; }
 .mw-pages .pg-nums { flex: 1; justify-content: center; }
-/* Hoja 2 en cristal malva: el mismo diseño que la paginación flotante (.pg-box). */
-.mw-sheet-pages {
-  background: linear-gradient(165deg, rgba(123, 110, 118, .96) 0%, rgba(100, 85, 95, .97) 60%, rgba(85, 70, 80, .98) 100%);
-  -webkit-backdrop-filter: blur(20px) saturate(1.6); backdrop-filter: blur(20px) saturate(1.6);
-  border: 1px solid rgba(182, 167, 175, .4);
-  box-shadow: inset 0 1px 2px rgba(255, 255, 255, .25), 0 2px 6px rgba(0, 0, 0, .12), 0 16px 30px -10px rgba(40, 20, 35, .55);
-  color: #fff;
+/* Hoja 2 en cristal con borde blanco: el mismo diseño que la paginación
+   flotante (.pg-box; las variables --pg-* están en components.css). */
+.mw-sheet.mw-sheet-pages {
+  background: var(--pg-glass);
+  -webkit-backdrop-filter: blur(18px) saturate(1.8); backdrop-filter: blur(18px) saturate(1.8);
+  border: 1px solid var(--pg-edge);
+  box-shadow: var(--pg-shadow);
+  color: var(--pg-fg);
 }
-.mw-sheet-pages::before { background: linear-gradient(rgba(255, 255, 255, .07), transparent 60%); }
-.mw-sheet-pages .mw-pages, .mw-sheet-pages .pg-box { --pg-accent: #f0d3e5; --pg-ink: #3a2c36; }
+.mw-sheet-pages::before { background: linear-gradient(rgba(255, 255, 255, .18), transparent 60%); }
 /* Hoja 2 compacta: una cápsula del tamaño de la paginación flotante, centrada (no ocupa todo el ancho). */
 .mw-sheet.mw-sheet-pages {
   width: max-content; max-width: calc(100% - 16px); height: 62px;
@@ -225,6 +226,10 @@
 /* La rayita de arrastre baja con la cápsula compacta (queda dentro, no sobre el borde). */
 .mw-grip { transition: top .4s cubic-bezier(.22, 1, .36, 1); }
 .mw-stack.is-pages + .mw-grip { top: 8px; }
+/* Sobre el cristal claro la rayita blanca no se ve: se oscurece (en oscuro sigue blanca). */
+.mw-stack.is-pages + .mw-grip::before { background: rgba(34, 29, 36, .28); }
+:root[data-theme="dark"] .mw-stack.is-pages + .mw-grip::before { background: rgba(255, 255, 255, .36); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .mw-stack.is-pages + .mw-grip::before { background: rgba(255, 255, 255, .36); } }
 /* El filtro de sombra de la pila impide el desenfoque: se quita con la hoja de cristal al frente. */
 .mw-stack.is-pages { filter: none; }
 /* La barra flotante original queda oculta mientras está dentro del reproductor. */
