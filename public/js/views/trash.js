@@ -81,7 +81,7 @@
     v.innerHTML = '';
     const hayAlgo = Array.isArray(store.trash) && store.trash.length > 0;
     v.appendChild(pageToolbar({
-      back: () => go('dashboard'), menu: () => openMobile(), title: 'Papelera',
+      back: () => go('dashboard'), title: 'Papelera',
       actions: hayAlgo ? [
         el('button', { class: 'btn btn-sm', onclick: emptyTrash, html: TR_ICN.trash + '<span style="margin-left:5px">Vaciar</span>' })
       ] : []
@@ -114,9 +114,9 @@
       body.appendChild(sk);
     } else if (!items.length) {
       body.appendChild(emptyBlock('La papelera está vacía',
-        'Lo que borres aparecerá aquí durante ' + (store.trashDays || 30) + ' días, por si cambias de idea.', null));
+        'Lo que borres aparecerá aquí durante ' + (store.trashDays || 30) + ' días, por si cambias de idea.', null, null, EMPTY_ART.trash));
     } else if (!shown.length) {
-      body.appendChild(emptyBlock('Sin resultados', 'Nada en la papelera coincide con tu búsqueda.', null));
+      body.appendChild(emptyBlock('Sin resultados', 'Nada en la papelera coincide con tu búsqueda.', null, null, EMPTY_ART.search));
     } else {
       // Solo se pueden elegir los que se ven (si hay búsqueda, los filtrados).
       const visibles = shown.map(keyOf);

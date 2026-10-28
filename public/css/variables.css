@@ -17,6 +17,10 @@
     --folder-top: #d9e2ef;
     --folder-body: #ffffff;
     --folder-shadow: 0 1px 2px rgba(23,30,56,.04), 0 8px 24px -8px rgba(23,30,56,.08);
+    /* Pastilla del icono en los estados vacíos: gris cálido neutro (opción B). */
+    --empty-ico-bg: #edeae3;
+    --empty-ico-fg: #2b2e34;
+    --empty-ico-border: #e0ddd4;
     --danger: #d9484d;
     --success: #2fa44f;
     --warn: #c58214;
@@ -45,6 +49,10 @@
       --folder-top: #2c2c30;
       --folder-body: #1c1c1f;
       --folder-shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px -8px rgba(0,0,0,.5);
+      /* Pastilla del icono (estados vacíos): gris neutro oscuro + icono claro. */
+      --empty-ico-bg: #1f1f22;
+      --empty-ico-fg: #e6e6ea;
+      --empty-ico-border: #313135;
       color-scheme: dark;
     }
   }
@@ -64,5 +72,9 @@
     --folder-top: #2c2c30;
     --folder-body: #1c1c1f;
     --folder-shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px -8px rgba(0,0,0,.5);
+    /* Pastilla del icono (estados vacíos): gris neutro oscuro + icono claro. */
+    --empty-ico-bg: #1f1f22;
+    --empty-ico-fg: #e6e6ea;
+    --empty-ico-border: #313135;
     color-scheme: dark;
   }

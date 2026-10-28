@@ -55,7 +55,7 @@
     if (!ready.projects) {
       body.appendChild(skelProjects(4));
     } else if (recentProj.length === 0) {
-      body.appendChild(emptyBlock(t('dashboard.emptyProjectsTitle'), t('dashboard.emptyProjectsText'), t('dashboard.createProject'), () => openProjectModal()));
+      body.appendChild(emptyBlock(t('dashboard.emptyProjectsTitle'), t('dashboard.emptyProjectsText'), t('dashboard.createProject'), () => openProjectModal(), EMPTY_ART.projects));
     } else {
       const grid = el('div', { class: 'project-grid' });
       recentProj.forEach(p => grid.appendChild(projectCard(p)));
@@ -75,7 +75,7 @@
     if (!ready.notes) {
       body.appendChild(skelProjects(2));
     } else if (recentNotes.length === 0) {
-      body.appendChild(emptyBlock(t('dashboard.emptyNotesTitle'), t('dashboard.emptyNotesText'), t('dashboard.createNote'), () => createNote()));
+      body.appendChild(emptyBlock(t('dashboard.emptyNotesTitle'), t('dashboard.emptyNotesText'), t('dashboard.createNote'), () => createNote(), EMPTY_ART.notes));
     } else {
       const grid = el('div', { class: 'project-grid' });
       recentNotes.forEach(n => grid.appendChild(noteCard(n)));
@@ -94,13 +94,20 @@
     ]);
   }
 
-  function emptyBlock(title, text, action, onClick) {
+  function emptyBlock(title, text, action, onClick, art) {
+    // Si la sección pasa su propio icono (art), se usa dentro de una pastilla;
+    // si no, se mantiene la ilustración por defecto (montón de carpetas).
+    const illo = art
+      ? el('div', { class: 'empty-art is-ico', 'aria-hidden': 'true' }, [
+          el('div', { class: 'empty-ico', html: art })
+        ])
+      : el('div', { class: 'empty-art', 'aria-hidden': 'true' }, [
+          el('div', { class: 'empty-folder f1' }),
+          el('div', { class: 'empty-folder f3' }),
+          el('div', { class: 'empty-folder f2' })
+        ]);
     const d = el('div', { class: 'empty' }, [
-      el('div', { class: 'empty-art', 'aria-hidden': 'true' }, [
-        el('div', { class: 'empty-folder f1' }),
-        el('div', { class: 'empty-folder f3' }),
-        el('div', { class: 'empty-folder f2' })
-      ]),
+      illo,
       el('h3', {}, title),
       el('p', {}, text)
     ]);

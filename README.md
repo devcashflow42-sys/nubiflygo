@@ -54,13 +54,53 @@ Web + API REST · Node.js / Express o Cloudflare Pages · PostgreSQL (Neon) · A
 
 ## 🖼 Capturas
 
-| Inicio de sesión | Panel principal |
-|---|---|
-| <img src="docs/screenshots/login.png" alt="Login" width="420"> | <img src="docs/screenshots/dashboard.png" alt="Panel" width="420"> |
+Un recorrido por la aplicación. Interfaz limpia, un icono propio para cada
+sección y tema claro/oscuro. _(Las imágenes usan datos de demostración.)_
 
-| Configuración |
+### Inicio — tu espacio de un vistazo
+
+Resumen del espacio de trabajo: proyectos y notas recientes, contadores y el
+uso de almacenamiento por tipo de archivo.
+
+<img src="docs/screenshots/dashboard.png" alt="Panel principal de NubiFlyGo" width="860">
+
+### Proyectos y Notas
+
+| Proyectos | Notas |
+|---|---|
+| Agrupa documentos y archivos por proyecto, con color e icono propios. | Captura ideas y conviértelas en documentos dentro de cada proyecto. |
+| <img src="docs/screenshots/proyectos.png" alt="Sección Proyectos" width="420"> | <img src="docs/screenshots/notas.png" alt="Sección Notas" width="420"> |
+
+### Archivos y API keys
+
+| Archivos | API keys |
+|---|---|
+| Colecciones inteligentes (Música, Fotos, Videos, Documentos) que se ordenan solas. | Genera claves con permisos y mide su uso en tiempo real. |
+| <img src="docs/screenshots/archivos.png" alt="Sección Archivos" width="420"> | <img src="docs/screenshots/apikeys.png" alt="Sección API keys" width="420"> |
+
+### Papelera y Configuración
+
+| Papelera | Configuración |
+|---|---|
+| Lo borrado se guarda 30 días y se puede restaurar antes de eliminarse solo. | Perfil, tema, idioma, plan y seguridad de la cuenta. |
+| <img src="docs/screenshots/papelera.png" alt="Sección Papelera" width="420"> | <img src="docs/screenshots/settings.png" alt="Configuración" width="420"> |
+
+### En el teléfono
+
+Diseño adaptable: menú lateral deslizable y las mismas secciones en pantalla
+pequeña.
+
+<p>
+  <img src="docs/screenshots/movil-inicio.png" alt="Inicio en móvil" width="260">
+  &nbsp;
+  <img src="docs/screenshots/movil-menu.png" alt="Menú en móvil" width="260">
+</p>
+
+### Acceso
+
+| Inicio de sesión |
 |---|
-| <img src="docs/screenshots/settings.png" alt="Configuración" width="420"> |
+| <img src="docs/screenshots/login.png" alt="Pantalla de inicio de sesión" width="420"> |
 
 ---
 

@@ -156,7 +156,7 @@
     const all = groupMusic(files);
     const wrap = el('div', { class: 'lib' });
     if (!all.songs.length) {
-      wrap.appendChild(emptyBlock('Aún no hay música', 'Sube canciones y aquí aparecerán ordenadas por artista y álbum, con sus portadas.', null));
+      wrap.appendChild(emptyBlock('Aún no hay música', 'Sube canciones y aquí aparecerán ordenadas por artista y álbum, con sus portadas.', null, null, EMPTY_ART.music));
       return wrap;
     }
     const pick = (seg) => { st.seg = seg; st.artist = null; st.album = null; render(); };
@@ -259,7 +259,7 @@
     const media = files.filter(f => /^(image|video)$/.test(libKind(f))).sort((a, b) => libDate(b) - libDate(a));
     const wrap = el('div', { class: 'lib' });
     if (!media.length) {
-      wrap.appendChild(emptyBlock('Aún no hay fotos', 'Sube fotos y aquí aparecerán ordenadas por día.', null));
+      wrap.appendChild(emptyBlock('Aún no hay fotos', 'Sube fotos y aquí aparecerán ordenadas por día.', null, null, EMPTY_ART.photos));
       return wrap;
     }
     const open = (f) => (libKind(f) === 'image' ? openImageViewer(f) : openMedia(f, null, media));

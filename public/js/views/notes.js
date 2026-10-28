@@ -51,9 +51,9 @@
       .filter(n => !q || n.title.toLowerCase().includes(q) || (n.content || '').toLowerCase().includes(q))
       .sort((a,b) => b.updatedAt - a.updatedAt);
     if (store.notes.length === 0) {
-      body.appendChild(emptyBlock('Captura lo que piensas', 'Crea notas, resúmenes o ideas. Después puedes analizarlas: conteo de palabras, tiempo de lectura y temas principales.', 'Crear primera nota', () => createNote()));
+      body.appendChild(emptyBlock('Captura lo que piensas', 'Crea notas, resúmenes o ideas. Después puedes analizarlas: conteo de palabras, tiempo de lectura y temas principales.', 'Crear primera nota', () => createNote(), EMPTY_ART.notes));
     } else if (notes.length === 0) {
-      body.appendChild(emptyBlock('Sin resultados', 'Ninguna nota coincide con tu búsqueda.', null));
+      body.appendChild(emptyBlock('Sin resultados', 'Ninguna nota coincide con tu búsqueda.', null, null, EMPTY_ART.search));
     } else {
       const grid = el('div', { class: 'project-grid' });
       notes.forEach(n => grid.appendChild(noteCard(n)));

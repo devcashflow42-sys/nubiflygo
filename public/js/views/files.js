@@ -106,7 +106,8 @@
         'Aún no hay archivos',
         'Sube tus archivos y documentos para publicarlos y tenerlos siempre a la mano.',
         'Subir archivos',
-        () => uploadFiles()
+        () => uploadFiles(),
+        EMPTY_ART.files
       ));
       v.appendChild(body);
       return;
@@ -140,7 +141,7 @@
     ]));
 
     if (files.length === 0) {
-      body.appendChild(emptyBlock('Sin resultados', 'Ningún archivo coincide con tu búsqueda.', null));
+      body.appendChild(emptyBlock('Sin resultados', 'Ningún archivo coincide con tu búsqueda.', null, null, EMPTY_ART.search));
     } else {
       // De 24 en 24 con paginación (ver components/pager.js).
       const pg = paginate(files, 'files:' + tab);

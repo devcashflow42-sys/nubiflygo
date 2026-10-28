@@ -120,9 +120,9 @@
     const q = state.search.toLowerCase();
     const filtered = store.projects.filter(p => !q || p.name.toLowerCase().includes(q));
     if (store.projects.length === 0) {
-      body.appendChild(emptyBlock('Aquí vivirán tus proyectos', 'Crea un proyecto para empezar a organizar documentos, archivos e informes.', 'Crear primer proyecto', () => openProjectModal()));
+      body.appendChild(emptyBlock('Aquí vivirán tus proyectos', 'Crea un proyecto para empezar a organizar documentos, archivos e informes.', 'Crear primer proyecto', () => openProjectModal(), EMPTY_ART.projects));
     } else if (filtered.length === 0) {
-      body.appendChild(emptyBlock('Sin resultados', 'Ningún proyecto coincide con tu búsqueda.', null));
+      body.appendChild(emptyBlock('Sin resultados', 'Ningún proyecto coincide con tu búsqueda.', null, null, EMPTY_ART.search));
     } else {
       // Un solo grupo: cada tarjeta ya enseña lo que guarda, así que agruparlas
       // por categoría solo partía la lista.
@@ -533,9 +533,9 @@
     const q = state.search.toLowerCase();
     const docs = (p.documents || []).filter(d => !q || d.title.toLowerCase().includes(q));
     if (!p.documents || p.documents.length === 0) {
-      body.appendChild(emptyBlock('Aquí vivirá tu trabajo', 'Este proyecto todavía está vacío. Crea tu primer documento o sube archivos para empezar.', 'Crear primer documento', () => openDocModal(p)));
+      body.appendChild(emptyBlock('Aquí vivirá tu trabajo', 'Este proyecto todavía está vacío. Crea tu primer documento o sube archivos para empezar.', 'Crear primer documento', () => openDocModal(p), EMPTY_ART.docs));
     } else if (docs.length === 0) {
-      body.appendChild(emptyBlock('Sin resultados', 'Ningún documento coincide con tu búsqueda.', null));
+      body.appendChild(emptyBlock('Sin resultados', 'Ningún documento coincide con tu búsqueda.', null, null, EMPTY_ART.search));
     } else {
       // Misma cuadrícula que Archivos: 2 columnas en el teléfono, con banner.
       const pg = paginate(docs, 'project:' + p.id);
@@ -552,7 +552,7 @@
     const all = p.documents || [];
     const pub = all.filter(d => d.published);
     if (!all.length) {
-      body.appendChild(emptyBlock('Nada publicado todavía', 'Sube archivos o crea un documento y publícalo para que aparezca aquí.', 'Subir archivos', () => fileInput(p)));
+      body.appendChild(emptyBlock('Nada publicado todavía', 'Sube archivos o crea un documento y publícalo para que aparezca aquí.', 'Subir archivos', () => fileInput(p), EMPTY_ART.publish));
       return;
     }
     body.appendChild(libSec('Publicados'));

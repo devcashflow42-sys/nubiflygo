@@ -21,10 +21,7 @@ async function apiFetch(path, options) {
   let data = null;
   try { data = await res.json(); } catch (e) { /* respuesta sin JSON */ }
   if (res.status === 401) {
-    // Sesión caducada o sin sesión. No vaciamos el diseño ni redirigimos de
-    // golpe: mostramos un aviso (con botón para iniciar sesión) y dejamos que la
-    // vista siga visible con su estado vacío.
-    if (typeof showServerBanner === 'function') showServerBanner('Tu sesión expiró o no has iniciado sesión (error 401).');
+    if (window.NubiAuth) window.NubiAuth.requireLogin();
     const err = new Error('Sesión caducada.');
     err.status = 401;
     throw err;

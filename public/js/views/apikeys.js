@@ -150,7 +150,7 @@
     // únicamente en su pestaña «API key» (no aparecen ni cuentan aquí).
     const account = accountKeys();
     if (account.length === 0) {
-      body.appendChild(emptyBlock('Aún no hay claves', 'Genera tu primera API key para empezar a conectar servicios externos a tu espacio de trabajo.', 'Generar primera key', () => openKeyModal()));
+      body.appendChild(emptyBlock('Aún no hay claves', 'Genera tu primera API key para empezar a conectar servicios externos a tu espacio de trabajo.', 'Generar primera key', () => openKeyModal(), EMPTY_ART.keys));
     } else {
       // Tarjetas resumen (claves de la cuenta, datos reales del mes)
       body.appendChild(usageTiles(account));

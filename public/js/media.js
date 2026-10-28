@@ -564,6 +564,7 @@
       x.upload.onprogress = (ev) => { if (ev.lengthComputable) { task.loaded = base + ev.loaded; paintTask(task); } };
       x.onload = () => {
         task.xhr = null;
+        if (x.status === 401 && window.NubiAuth) window.NubiAuth.requireLogin();
         if (x.status >= 200 && x.status < 300) return resolve();
         let data = null; try { data = JSON.parse(x.responseText); } catch (e) {}
         const err = new Error((data && data.error) || 'Error ' + x.status);
@@ -742,7 +743,7 @@
         task.xhr = null;
         let data = null;
         try { data = JSON.parse(x.responseText); } catch (e) { /* sin JSON */ }
-        if (x.status === 401 && typeof showServerBanner === 'function') showServerBanner('Tu sesión expiró o no has iniciado sesión (error 401).');
+        if (x.status === 401 && window.NubiAuth) window.NubiAuth.requireLogin();
         if (x.status >= 200 && x.status < 300) return resolve(data);
         const err = new Error((data && data.error) || (x.status === 401 ? 'Sesión caducada.' : 'Error ' + x.status));
         err.status = x.status;

@@ -294,10 +294,7 @@
       try { if (typeof ensureApiKeys === 'function') ensureApiKeys(); } catch (e) {}
     })
     .catch(function (err) {
-      // 401: sin sesión. NO redirigimos ni vaciamos la pantalla: dejamos ver el
-      // diseño y mostramos un aviso con botón para iniciar sesión.
-      try { const row = document.querySelector('.sidebar-foot .user-row'); if (row) row.classList.remove('is-loading'); } catch (e) {}
-      if (err && err.status === 401) { showGuestPlaceholder(); showServerBanner('No has iniciado sesión o tu sesión expiró (error 401).'); }
+      if (err && err.status === 401) { window.NubiAuth.requireLogin(); return; }
       else if (err && err.status) { showServerBanner('No se pudo conectar con el servidor (error ' + err.status + '). Mostrando la interfaz.'); }
       // Configuración abierta: que muestre el aviso en vez de quedarse cargando.
       try { if (typeof state !== 'undefined' && (state.route === 'settings' || state.route === 'dashboard') && typeof render === 'function') render(); } catch (e) {}

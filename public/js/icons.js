@@ -9,6 +9,26 @@
   const ICON_DELETE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/></svg>';
   const ICON_DUP = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
 
+  /* ─── Ilustración del estado vacío, distinta para cada sección ───
+     Un icono de línea (trazo 2, puntas redondeadas) que va dentro de una
+     pastilla suave; así cada sección enseña su propio dibujo en lugar de
+     repetir el mismo montón de carpetas en todas. */
+  const EMPTY_ART = (function () {
+    const S = (p) => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + p + '</svg>';
+    return {
+      search:   S('<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>'),
+      trash:    S('<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1.2 13.1a2 2 0 0 1-2 1.9H8.2a2 2 0 0 1-2-1.9L5 6"/><path d="M9 6V4.2A1.2 1.2 0 0 1 10.2 3h3.6A1.2 1.2 0 0 1 15 4.2V6"/><line x1="10" y1="10.5" x2="10" y2="16.5"/><line x1="14" y1="10.5" x2="14" y2="16.5"/>'),
+      files:    S('<rect x="2.5" y="4" width="19" height="5" rx="1.5"/><path d="M4.5 9v8.5a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V9"/><line x1="9.5" y1="13" x2="14.5" y2="13"/>'),
+      projects: S('<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>'),
+      notes:    S('<path d="M12 20H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v6"/><line x1="8" y1="8" x2="15" y2="8"/><line x1="8" y1="12" x2="12" y2="12"/><path d="M18.4 13.6l2 2-5 5H13v-2.4z"/>'),
+      keys:     S('<path d="M21 2l-2 2m-7.6 7.6a5.5 5.5 0 1 1-7.8 7.8 5.5 5.5 0 0 1 7.8-7.8zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3"/>'),
+      docs:     S('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/>'),
+      publish:  S('<circle cx="12" cy="12" r="9"/><line x1="3" y1="12" x2="21" y2="12"/><path d="M12 3a14 14 0 0 1 0 18 14 14 0 0 1 0-18z"/>'),
+      music:    S('<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>'),
+      photos:   S('<rect x="3" y="4.5" width="18" height="15" rx="2.5"/><circle cx="8.5" cy="10" r="2"/><path d="m21 15.5-4.5-4.5L7 20"/>')
+    };
+  })();
+
   /* ─── Iconos que el usuario puede elegir para un proyecto ───
      Mismo trazo que los iconos automáticos de categoría (KIND_ICON_LIB): línea
      de 2 y puntas redondeadas. El id es lo que se guarda en projects.icon, y la

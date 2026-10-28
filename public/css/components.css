@@ -21,6 +21,16 @@
   .empty-folder.f1 { left: 0; top: 20px; transform: rotate(-6deg); }
   .empty-folder.f2 { left: 25px; top: 10px; transform: rotate(2deg); background: color-mix(in srgb, var(--accent-soft) 60%, var(--surface)); }
   .empty-folder.f3 { right: 0; top: 20px; transform: rotate(8deg); }
+  /* Icono propio de cada sección: una pastilla suave con su dibujo, en vez del
+     montón de carpetas. Se adapta a claro/oscuro con las mismas variables. */
+  .empty-art.is-ico { width: auto; height: auto; }
+  .empty-ico {
+    width: 96px; height: 96px; border-radius: 28px;
+    display: grid; place-items: center;
+    background: var(--empty-ico-bg); color: var(--empty-ico-fg);
+    border: 1px solid var(--empty-ico-border); box-shadow: var(--folder-shadow);
+  }
+  .empty-ico svg { width: 44px; height: 44px; }
   .empty h3 {
     font-family: 'Instrument Serif', serif;
     font-weight: 400; font-size: 24px; margin: 0 0 8px;
