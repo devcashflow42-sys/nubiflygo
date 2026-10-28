@@ -18,7 +18,12 @@
     apiGet('/notes')
       .then(function (d) { store.notes = (d.items || []).map(mapServerNote); notesLoaded = true; })
       .catch(function (e) { notesLoaded = true; if (e.status !== 401) toast(e.message || 'No se pudieron cargar las notas'); })
-      .then(function () { notesLoading = false; if (state.route === 'notes' || state.route === 'dashboard') render(); });
+      .then(function () {
+        notesLoading = false;
+        if (state.route === 'notes' || state.route === 'dashboard') render();
+        // En otras secciones basta con el contador del menú (deja su esqueleto).
+        else if (typeof renderNav === 'function') { try { renderNav(); } catch (e) {} }
+      });
   }
 
   /* ───────────── Notes views ───────────── */

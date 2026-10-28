@@ -61,7 +61,11 @@
         if (state.route === 'files' || state.route === 'dashboard' || (state.route === 'projects' && !state.projectId)) render();
         // El almacenamiento del menú se calcula con store.files: se repinta en
         // cualquier sección (p. ej. entrada directa a /project/<id>).
-        else if (window.paintPlanCard) { try { window.paintPlanCard(); } catch (e) {} }
+        else {
+          if (window.paintPlanCard) { try { window.paintPlanCard(); } catch (e) {} }
+          // El contador del menú deja su esqueleto aunque no se redibuje la sección.
+          if (typeof renderNav === 'function') { try { renderNav(); } catch (e) {} }
+        }
       });
   }
 

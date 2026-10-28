@@ -1112,3 +1112,19 @@ body.mp-paused .fb-now i { animation-play-state: paused; }
   }
   /* Eligiendo: la fila deja su columna de botones a la barra de arriba. */
   .tr-row.is-picking { grid-template-columns: 18px 34px minmax(0, 1.5fr) minmax(0, 1.4fr) auto; }
+
+/* API keys: claves de la cuenta y claves de proyectos (agrupadas por proyecto). */
+.key-sec-t { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.key-sec-sub { font-size: 12.5px; color: var(--fg-muted); font-weight: 400; text-transform: none; letter-spacing: 0; }
+.key-sec-proj { margin-top: 40px; padding-top: 22px; border-top: 1px solid var(--border); }
+@media (max-width: 640px) { .section-h:has(> .key-sec-t) { flex-wrap: wrap; row-gap: 6px; } }
+.key-badge.is-scope { background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); }
+.key-empty { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 14px 16px; border: 1px dashed var(--border); border-radius: 14px; color: var(--fg-muted); font-size: 13.5px; }
+.key-group { margin-top: 12px; }
+.key-group + .key-group { margin-top: 20px; }
+.key-group-head { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; min-width: 0; }
+.key-group-head strong { font-size: 14px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.key-group-dot { width: 10px; height: 10px; border-radius: 50%; flex: 0 0 auto; }
+.key-group-n { font-size: 12.5px; color: var(--fg-muted); white-space: nowrap; }
+.key-group-open { margin-left: auto; flex: 0 0 auto; }
+.key-badge.is-scope { white-space: nowrap; }
