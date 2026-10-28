@@ -484,8 +484,11 @@
     .pg-ind { height: 34px; margin-top: -17px; }
   }
   @media (prefers-reduced-motion: reduce) { .pg-box, .pg-ind { transition: none !important; } }
-  /* El contenedor de la lista no debe recortar: así la barra flota sobre la pantalla. */
-  .board-body:has(> .pager) { overflow: visible; }
+  /* El contenedor de la lista no debe recortar ni desplazarse: si conserva
+     overflow:auto, «sticky» se pega a él (que no se mueve) y la barra solo
+     aparece al final de la lista. Vale también cuando la barra va dentro de
+     otra caja (p. ej. la lista de Canciones). */
+  .board-body:has(.pager) { overflow: visible; }
 
 /* ─── Compartir archivo (enlace /s/<token>) ─── */
 .share-box { display: flex; flex-direction: column; gap: 14px; min-width: 0; max-width: 100%; }

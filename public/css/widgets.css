@@ -156,8 +156,12 @@
 .mw-sheet { will-change: transform, opacity, filter; transition: transform .56s cubic-bezier(.2, 1.15, .28, 1), opacity .4s, filter .4s; }
 .mw-sheet.is-front { transform: translate3d(0, 0, 30px) scale(1); opacity: 1; z-index: 3; }
 .mw-sheet.is-back { transform: translate3d(0, -16px, -46px) scale(.94); opacity: .6; filter: brightness(.72); z-index: 2; pointer-events: none; }
-.mw-sheet.is-up { transform: translate3d(0, -150px, 0) rotateX(8deg) scale(.93); opacity: 0; z-index: 4; pointer-events: none; }
-.mw-sheet.is-down { transform: translate3d(0, 150px, 0) rotateX(-8deg) scale(.93); opacity: 0; z-index: 4; pointer-events: none; }
+/* La hoja que sale se apaga EN SU SITIO (se corre apenas y se encoge). Antes
+   subía 150px y cruzaba la lista medio transparente: durante medio segundo se
+   veían dos flotantes. Se apaga antes de terminar de moverse. */
+.mw-sheet.is-up, .mw-sheet.is-down { opacity: 0; z-index: 4; pointer-events: none; transition: transform .32s cubic-bezier(.22, 1, .36, 1), opacity .08s ease, filter .08s; }
+.mw-sheet.is-up { transform: translate3d(0, -10px, 0) scale(.94); }
+.mw-sheet.is-down { transform: translate3d(0, 10px, 0) scale(.94); }
 .mw-sheet.is-drag { transition: none !important; }
 /* Sin páginas: la hoja 2 no existe (una sola cápsula, como siempre). */
 .mw-stack:not(.has-pages) .mw-sheet-pages { display: none; }
@@ -189,8 +193,35 @@
 .mw-sheet-pages .mw-pages .pg-box { width: auto; gap: 8px; padding: 0; }
 .mw-sheet-pages .mw-pages .pg-arrow { width: 44px; height: 44px; }
 .mw-sheet-pages .mw-pages .pg-nums { flex: none; }
-/* Con la hoja 2 al frente, la hoja de la música no asoma por los lados de la cápsula. */
+/* Con la hoja 2 al frente, la hoja de la música no asoma por los lados de la
+   cápsula: lo que suena se ve dentro de la hoja 2 (portada + ecualizador). */
 .mw-stack.is-pages .mw-sheet.is-back { opacity: 0; }
+/* Con la canción al frente, la hoja de páginas asoma por arriba como una
+   pestaña: así se sabe que la paginación está ahí (deslizar hacia arriba). */
+/* La pestaña lleva el color de la portada (un velo encima): se lee como la
+   cara de atrás del MISMO reproductor, no como otro objeto. Al pasar al
+   frente el velo se apaga y queda el cristal malva de la paginación. */
+.mw-stack.has-pages:not(.is-pages) .mw-sheet-pages.is-back { transform: translate3d(0, -20px, -40px) scale(.86); opacity: .75; filter: brightness(.85); }
+.mw-sheet-pages::after {
+  content: ''; position: absolute; inset: 0; z-index: 2; border-radius: inherit; pointer-events: none;
+  background: linear-gradient(165deg, var(--mw-top) 0%, var(--mw-mid) 60%, var(--mw-bot) 100%);
+  opacity: 0; transition: opacity .3s ease;
+}
+.mw-stack.has-pages:not(.is-pages) .mw-sheet-pages.is-back::after { opacity: 1; }
+/* Portada de lo que suena: un solo círculo (sin aro de botón alrededor). */
+.mw-mini {
+  position: relative; flex: 0 0 auto; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 50%;
+  overflow: hidden; display: grid; place-items: center; cursor: pointer; background: rgba(255, 255, 255, .15);
+  transition: transform .15s;
+}
+.mw-mini:active { transform: scale(.9); }
+.mw-mini:focus-visible { outline: 2px solid #e2b9eb; outline-offset: 2px; }
+.mw-mini-cv { position: absolute; inset: 0; display: grid; place-items: center; font-size: 16px; color: #fff; }
+.mw-mini-cv img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* Ecualizador al centro de la portada, sobre un velo: la música sigue sonando. */
+.mw-mini::after { content: ''; position: absolute; inset: 0; background: rgba(20, 10, 18, .38); }
+.mw-mini .mw-mini-eq { position: relative; z-index: 1; width: 18px; height: 16px; gap: 2.5px; }
+.mw-mini .mw-mini-eq i { width: 3px; background: #fff; }
 /* La rayita de arrastre baja con la cápsula compacta (queda dentro, no sobre el borde). */
 .mw-grip { transition: top .4s cubic-bezier(.22, 1, .36, 1); }
 .mw-stack.is-pages + .mw-grip { top: 8px; }

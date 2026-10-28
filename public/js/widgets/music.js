@@ -4,7 +4,8 @@
    · Cápsula con la canción: portada con aro, título, artista, barra de
      tiempo (adelantar/atrasar) y anterior / reproducir-pausar / siguiente.
    · Dos hojas en UNA sola cápsula (cuando la lista tiene páginas):
-       hoja 1 = la canción · hoja 2 = la paginación de la lista.
+       hoja 1 = la canción · hoja 2 = la paginación de la lista (con la
+       portada de lo que suena: un toque vuelve a la canción).
      Se cambia deslizando la cápsula hacia arriba o abajo (o ↑/↓ con el
      teclado); la hoja de atrás asoma por arriba. Mientras el reproductor está
      abierto, la paginación NO flota aparte: se muda a la hoja 2 y al cerrar
@@ -94,8 +95,14 @@
     ]);
 
     // Hoja 2: la paginación de la lista abierta (solo si la lista tiene páginas).
+    // A la izquierda, la portada de lo que suena (con su ecualizador): la
+    // canción nunca desaparece y un toque vuelve al reproductor.
+    const miniCv = el('span', { class: 'mw-mini-cv', 'aria-hidden': 'true', html: ICN.note });
+    const mini = el('button', { type: 'button', class: 'mw-mini', 'aria-label': 'Volver al reproductor', title: 'Volver al reproductor' }, [
+      miniCv, el('span', { class: 'mw-eq mw-mini-eq', 'aria-hidden': 'true' }, [ el('i'), el('i'), el('i'), el('i') ])
+    ]);
     const pages = el('div', { class: 'mw-pages' });
-    const sPages = el('div', { class: 'mw-sheet mw-sheet-pages is-back', role: 'group', 'aria-label': 'Paginación' }, [ pages ]);
+    const sPages = el('div', { class: 'mw-sheet mw-sheet-pages is-back', role: 'group', 'aria-label': 'Paginación' }, [ mini, pages ]);
     sPages.inert = true;
 
     // Sin páginas: arrastrar la cápsula (fuera de botones y de la barra de
@@ -106,8 +113,9 @@
     w.compact.append(stack, grip);
 
     w.expandBtn = null;
-    Object.assign(P, { w, cover, title, titleIn, sub, play, playWrap, ringFg: playWrap.querySelector('.mw-ring-fg'), prevBtn: prev, nextBtn: next, fill, buf, knob, bar, tCur, tDur, sMusic, sPages, pages, stack });
+    Object.assign(P, { w, cover, title, titleIn, sub, play, playWrap, ringFg: playWrap.querySelector('.mw-ring-fg'), prevBtn: prev, nextBtn: next, fill, buf, knob, bar, tCur, tDur, sMusic, sPages, pages, stack, mini, miniCv });
 
+    mini.addEventListener('click', (e) => { e.stopPropagation(); if (P.active === 'pages') swap(-1); });
     prev.addEventListener('click', (e) => { e.stopPropagation(); prevTrack(); });
     play.addEventListener('click', (e) => { e.stopPropagation(); toggle(); });
     next.addEventListener('click', (e) => { e.stopPropagation(); nextTrack(false); });
@@ -205,9 +213,11 @@
         d.t.classList.add('is-drag');
         try { stack.setPointerCapture(e.pointerId); } catch (er) {}
       }
-      const o = Math.max(-120, Math.min(120, dy));
-      d.t.style.transform = 'translate3d(0,' + o + 'px,30px) scale(' + (1 - Math.abs(o) / 1300) + ')';
-      d.t.style.opacity = String(1 - Math.abs(o) / 210);
+      // La hoja sigue al dedo con resistencia y sin salir de la cápsula: si
+      // subiera libre, quedaría flotando sobre la lista junto a la otra hoja.
+      const o = Math.max(-16, Math.min(16, dy * 0.3));
+      d.t.style.transform = 'translate3d(0,' + o + 'px,30px) scale(' + (1 - Math.abs(o) / 400) + ')';
+      d.t.style.opacity = '';   // opaca: que no se transparente la otra hoja
     });
     const end = (e) => {
       if (!d || d.id !== e.pointerId) return;
@@ -284,7 +294,11 @@
     P.index = i; P.track = f;
     window.nowPlayingId = f.id;
     paintCover(f);
-    themeFor(f);
+    paintMini(f);
+    // Recién abierto, el reproductor toma el color de la portada sin pasar
+    // antes por el malva de fábrica (ese destello se veía al empezar).
+    themeFor(f, P.fresh);
+    P.fresh = false;
     const t = trackTitle(f), ar = trackArtist(f), m = f.media || {};
     P.titleIn.textContent = t;
     P.title.setAttribute('title', t);
@@ -362,6 +376,16 @@
   /* ─── Portada ─── */
   function paintCover(f) {
     const box = P.cover, tid = f.id;
+    box.innerHTML = '';
+    if (!f.thumbUrl) { box.innerHTML = ICN.note; return; }
+    const img = el('img', { src: f.thumbUrl, alt: '', decoding: 'async' });
+    img.addEventListener('error', () => { if (P.track && P.track.id === tid && img.parentNode === box) box.innerHTML = ICN.note; });
+    box.appendChild(img);
+  }
+  // La misma portada, en pequeño, dentro de la hoja de páginas.
+  function paintMini(f) {
+    const box = P.miniCv, tid = f.id;
+    P.mini.setAttribute('aria-label', 'Volver al reproductor: ' + trackTitle(f));
     box.innerHTML = '';
     if (!f.thumbUrl) { box.innerHTML = ICN.note; return; }
     const img = el('img', { src: f.thumbUrl, alt: '', decoding: 'async' });
@@ -486,18 +510,20 @@
     T.raf = requestAnimationFrame(step);
   }
   // Tema para la canción f: de la memoria o analizando su portada una sola vez.
-  function themeFor(f) {
+  // instant: sin transición (el reproductor se acaba de abrir).
+  function themeFor(f, instant) {
     const token = ++T.token;
     const url = f && f.thumbUrl;
-    if (!url) { fadeTheme(DEFAULT_THEME); return; }
-    if (T.cache.has(url)) { fadeTheme(T.cache.get(url)); return; }
+    const apply = instant ? (th) => { cancelAnimationFrame(T.raf); setTheme(th); } : fadeTheme;
+    if (!url) { apply(DEFAULT_THEME); return; }
+    if (T.cache.has(url)) { apply(T.cache.get(url)); return; }
     const img = new Image();
     try { if (new URL(url, location.href).origin !== location.origin) img.crossOrigin = 'anonymous'; } catch (e) {}
     img.decoding = 'async';
     const done = (th) => {
       if (T.cache.size > 80) T.cache.delete(T.cache.keys().next().value);
       T.cache.set(url, th);
-      if (token === T.token) fadeTheme(th);              // ¿sigue siendo la canción actual?
+      if (token === T.token) apply(th);                  // ¿sigue siendo la canción actual?
     };
     img.onload = () => { let th = DEFAULT_THEME; try { th = buildTheme(extractColors(img)); } catch (e) { /* CORS: color por defecto */ } done(th); };
     img.onerror = () => done(DEFAULT_THEME);
@@ -646,6 +672,7 @@
     const audioList = (Array.isArray(list) ? list : [f]).filter(x => x && typeof mediaKind === 'function' && mediaKind(x.mime, x.title) === 'audio');
     let i = audioList.findIndex(x => x.id === f.id);
     if (i < 0) { audioList.unshift(f); i = 0; }
+    P.fresh = !FloatingWidgetManager.isMounted('music');
     FloatingWidgetManager.show('music');
     setTimeout(syncPager, 0);
     // Sección donde se empezó (un proyecto o Archivos): solo ahí se marca como sonando.
