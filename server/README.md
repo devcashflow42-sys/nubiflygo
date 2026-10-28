@@ -54,6 +54,8 @@ Copia `.env.example` a `.env` (no se sube al repositorio) y rellena:
 | `STORAGE_PROVIDER` | `s3` (Neon) o `local` (disco, solo pruebas) |
 | `AWS_ENDPOINT_URL_S3`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `STORAGE_BUCKET` | almacenamiento S3 |
 | `MAX_FILE_SIZE_MB` | tamaño máximo por archivo (por defecto 100) |
+| `MAX_MOVIE_SIZE_GB` | tamaño máximo de una película, solo planes de pago (por defecto 10) |
+| `TRANSCODE_HEIGHT`, `TRANSCODE_CRF`, `TRANSCODE_PRESET`, `FFMPEG_PATH`, `FFPROBE_PATH`, `TRANSCODER_TMP` | compresor de películas (`npm run transcoder`, opcionales) |
 | `ALLOWED_ORIGINS` | dominios del frontend permitidos (p. ej. `https://nubiflygo.com,https://www.nubiflygo.com`) |
 | `APP_URL` | dominio público (`https://nubiflygo.com`): enlaces compartidos y regreso de pagos |
 | `LEGACY_SESSION_COOKIE` | `on` (transición) u `off`: acepta o no la cookie antigua `ritmogo_session` |
@@ -84,9 +86,9 @@ El frontend puede seguir en Cloudflare Pages y llamar a este servidor: pon la
 URL del servidor en `API_BASE` (arriba de `public/js/login.js`) y añade el
 dominio de las páginas a `ALLOWED_ORIGINS`.
 
-## Pendiente (siguiente paso)
+## Compresor de películas
 
-Login y registro ya guardan en la base de datos. La **app** (`home.html`)
-todavía guarda proyectos/notas/archivos en el navegador (`store.js`). El
-siguiente paso es cambiar `store.js` para que lea y escriba vía esta API y así
-toda la información quede en PostgreSQL. Los endpoints ya están listos.
+`npm run transcoder` (o `npm run transcoder -- --once`) comprime a 720p las
+películas que se subieron con «Optimizar». Necesita **ffmpeg** y **ffprobe** y
+las mismas variables que el servidor. Ver `transcoder.js` y la sección
+«Compresor de películas» del README principal.

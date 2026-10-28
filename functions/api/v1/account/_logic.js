@@ -9,6 +9,7 @@
 import { getDb } from '../../../_shared/db.js';
 import { json, issueSession, clearCookie } from '../../../_shared/http.js';
 import { hashPassword, verifyPassword } from '../../../_shared/crypto.js';
+import { smallMaxBytes, movieMaxBytes } from '../../../_shared/movies.js';
 import { accountRoute, rowIsAdmin, isAdminEmail } from '../../../_shared/api.js';
 import { EMAIL_RE, normLang, body, cleanInterests, cleanBirthday, isBirthdayToday } from '../../../_shared/util.js';
 import { rateLimit, rateReset, tooMany, clientIp, secLog, ensureSecurityColumns } from '../../../_shared/security.js';
@@ -335,6 +336,8 @@ function shapeUser(u, env) {
   u.has_paid_plan = !u.is_admin && !u.is_guest && !FREE_PLANS.includes(u.plan);
   if (!u.has_paid_plan) { u.plan_expires_at = null; u.plan_cancel_at_period_end = false; }
   if (!Array.isArray(u.interests)) u.interests = [];
+  // Límites de subida: normal y películas (solo planes de pago y el administrador).
+  u.limits = { upload_max_bytes: smallMaxBytes(env), movie_max_bytes: movieMaxBytes(env), movies: !!(u.is_admin || u.has_paid_plan) };
   return u;
 }
 

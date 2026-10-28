@@ -1,0 +1,82 @@
+/* movies.css — Películas: ventana «Subir película», estado «Optimizando» en las
+   tarjetas, declaración de derechos de autor y moderación (reportes). */
+
+/* ─── Ventana «Subir película» ─── */
+.modal.modal-movie { max-width: 520px; }
+.mvu { display: flex; flex-direction: column; gap: 12px; }
+.mvu-head { display: flex; gap: 14px; align-items: center; }
+.mvu-poster {
+  position: relative; flex: 0 0 auto; width: 132px; aspect-ratio: 16 / 9; border-radius: 12px; overflow: hidden;
+  display: grid; place-items: center; color: var(--fg-muted);
+  background: linear-gradient(135deg, color-mix(in srgb, #0ea5e9 22%, var(--surface-sunken)), var(--surface-sunken));
+}
+.mvu-poster svg { width: 30px; height: 30px; }
+.mvu-poster img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.mvu-dur {
+  position: absolute; right: 6px; bottom: 6px; padding: 2px 7px; border-radius: 999px;
+  font-size: 10.5px; font-weight: 600; font-variant-numeric: tabular-nums; color: #fff; background: rgba(10, 10, 11, .7);
+}
+.mvu-title { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.mvu-title strong { font-size: 14.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mvu-facts { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--fg-muted); font-variant-numeric: tabular-nums; }
+.mvu-spin, .fb-opt-spin {
+  width: 12px; height: 12px; flex: 0 0 auto; border-radius: 50%;
+  border: 2px solid currentColor; border-right-color: transparent; animation: mvu-spin .8s linear infinite;
+}
+@keyframes mvu-spin { to { transform: rotate(360deg); } }
+.mvu-card {
+  display: flex; gap: 12px; align-items: flex-start; padding: 14px; border-radius: 14px; cursor: pointer;
+  border: 1px solid var(--border); background: var(--surface-2); transition: border-color .15s, background .15s;
+}
+.mvu-card:has(input:checked) { border-color: color-mix(in srgb, var(--accent) 55%, var(--border)); background: color-mix(in srgb, var(--accent) 6%, var(--surface-2)); }
+.mvu-card input { flex: 0 0 auto; width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--accent); cursor: pointer; }
+.mvu-card strong { display: flex; align-items: center; gap: 6px; font-size: 14px; }
+.mvu-card p { margin: 4px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--fg-muted); }
+.mvu-card .mvu-fine { font-size: 12px; color: var(--fg-muted); }
+/* La declaración es una obligación, no una opción: tono ámbar neutro. */
+.mvu-card.mvu-rights { background: color-mix(in srgb, var(--warn) 7%, var(--surface-2)); border-color: color-mix(in srgb, var(--warn) 30%, var(--border)); }
+.mvu-card.mvu-rights:has(input:checked) { background: color-mix(in srgb, var(--warn) 10%, var(--surface-2)); border-color: color-mix(in srgb, var(--warn) 55%, var(--border)); }
+.mvu-card.mvu-rights input { accent-color: var(--warn); }
+.mvu-rights-t svg { width: 15px; height: 15px; color: var(--warn); }
+.mvu-est {
+  display: inline-block; margin-top: 8px; padding: 4px 10px; border-radius: 999px;
+  font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums;
+  color: var(--success); background: color-mix(in srgb, var(--success) 12%, transparent);
+}
+.mvu-plan { display: flex; gap: 12px; padding: 14px; border-radius: 14px; background: linear-gradient(135deg, #fff7e0, #fdecc8); color: #3d2a05; }
+.mvu-plan strong { font-size: 14px; }
+.mvu-plan p { margin: 4px 0 0; font-size: 12.5px; line-height: 1.5; }
+.mvu-plan-ico { flex: 0 0 auto; width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; color: #fff; background: linear-gradient(135deg, #f5b301, #e08a00); }
+.mvu-plan-ico svg { width: 18px; height: 18px; }
+.mvu-plan.is-error { background: color-mix(in srgb, var(--danger) 10%, var(--surface-2)); color: var(--fg); }
+.modal-foot .btn[disabled] { opacity: .45; cursor: not-allowed; }
+@media (max-width: 480px) {
+  .mvu-poster { width: 104px; }
+}
+
+/* ─── Tarjeta: película optimizándose (servidor con ffmpeg) ───
+   El estado va en el lugar de la etiqueta del tipo; la barra, en el borde de abajo. */
+.fb-badge.fb-opt { display: inline-flex; align-items: center; gap: 5px; font-variant-numeric: tabular-nums; }
+.fb-opt-spin { width: 9px; height: 9px; border-width: 1.6px; }
+.fb-opt-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; z-index: 2; background: rgba(255, 255, 255, .25); }
+.fb-opt-bar i { display: block; height: 100%; background: var(--accent); transition: width .6s ease; }
+@media (prefers-reduced-motion: reduce) { .mvu-spin, .fb-opt-spin { animation-duration: 2.4s; } }
+
+/* ─── Declaración de derechos (compartir / publicar) ─── */
+.rights-box { display: flex; flex-direction: column; gap: 12px; }
+.rights-box > p { margin: 0; font-size: 13px; line-height: 1.55; color: var(--fg-muted); }
+
+/* ─── Configuración → Moderación ─── */
+.mod-filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+.mod-list { display: flex; flex-direction: column; gap: 10px; }
+.mod-item { border: 1px solid var(--border); border-radius: 14px; padding: 14px; background: var(--surface); display: flex; flex-direction: column; gap: 8px; }
+.mod-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.mod-top strong { font-size: 14px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.mod-pill { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--surface-2); color: var(--fg-muted); }
+.mod-pill.is-copyright { background: color-mix(in srgb, var(--danger) 12%, transparent); color: var(--danger); }
+.mod-pill.is-removed { background: color-mix(in srgb, var(--fg) 10%, transparent); color: var(--fg); }
+.mod-details { margin: 0; font-size: 13px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.mod-meta a { color: var(--accent); }
+.mod-meta { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--fg-muted); overflow-wrap: anywhere; }
+.mod-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+.mod-empty { padding: 28px 16px; text-align: center; color: var(--fg-muted); font-size: 13px; border: 1px dashed var(--border); border-radius: 14px; }

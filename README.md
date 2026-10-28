@@ -40,6 +40,8 @@ Web + API REST · Node.js / Express o Cloudflare Pages · PostgreSQL (Neon) · A
 | 📁 **Proyectos** | Agrupa documentos, notas y archivos por proyecto. |
 | 📝 **Notas y documentos** | Crea, edita y publica contenido dentro de cada proyecto. |
 | 📦 **Archivos** | Sube archivos de cualquier tipo a S3 (o disco local en pruebas). |
+| 🎬 **Películas** | Planes de pago: videos de hasta 10 GB por partes (se reanudan) y compresión a 720p con ffmpeg para compartirlos. |
+| ⚖️ **Derechos de autor** | Declaración obligatoria al subir películas y al compartir/publicar videos y música (queda registrada y no se borra); botón «Reportar» en los enlaces y moderación para el administrador. |
 | 🔑 **API keys** | Genera claves con permisos para conectar apps externas o móviles. |
 | ⚙️ **Automatización** | Usa tus propias claves de servicios externos. |
 | 📊 **Informes y actividad** | Resumen del espacio de trabajo y registro de actividad. |
@@ -156,7 +158,8 @@ Copia `server/.env.example` como `server/.env` (Node) o crea las variables en
 |---|---|---|
 | `STORAGE_PROVIDER` | `local` (Node) · `s3` (Cloudflare) | `s3` para un bucket compatible con S3, o `local` para disco (solo pruebas). |
 | `STORAGE_BUCKET` | `ritmogo` | Nombre del bucket S3 donde ya están los archivos. **No lo cambies** al cambiar de marca: es un recurso real con datos. |
-| `MAX_FILE_SIZE_MB` | `100` | Tamaño máximo por archivo. |
+| `MAX_FILE_SIZE_MB` | `100` | Tamaño máximo por archivo (subida normal). |
+| `MAX_MOVIE_SIZE_GB` | `10` | Tamaño máximo de una película (subida por partes, solo planes de pago). |
 | `AWS_ENDPOINT_URL_S3` | — | URL del servicio S3 (Neon, Cloudflare R2, AWS, MinIO…). |
 | `AWS_ACCESS_KEY_ID` | — | Clave de acceso del bucket. |
 | `AWS_SECRET_ACCESS_KEY` | — | Clave secreta del bucket. |
@@ -244,6 +247,25 @@ ALLOWED_ORIGINS="https://nubiflygo.com,https://www.nubiflygo.com"
 
 Para probar en local con Cloudflare, pon las variables en `.dev.vars` y ejecuta
 `npx wrangler pages dev`.
+
+### Compresor de películas (servidor propio con ffmpeg)
+
+Cloudflare no puede ejecutar ffmpeg. Las películas se comprimen en un proceso
+aparte, `server/transcoder.js`, que corre en cualquier servidor con Node y
+**ffmpeg/ffprobe** instalados (VPS, Render, Railway…), con las **mismas**
+variables de base de datos y almacenamiento:
+
+```bash
+cd server && npm install
+npm run transcoder            # se queda trabajando
+npm run transcoder -- --once  # procesa lo pendiente y termina
+```
+
+Opcionales: `TRANSCODE_HEIGHT` (720), `TRANSCODE_CRF` (23), `TRANSCODE_PRESET`
+(veryfast), `FFMPEG_PATH`, `FFPROBE_PATH`, `TRANSCODER_TMP` (necesita espacio
+libre de unas 2 veces la película más grande). Sin el compresor las películas
+se suben igual y se ven en su calidad original; quedan «Optimizando…» hasta que
+el compresor las procese.
 
 ---
 

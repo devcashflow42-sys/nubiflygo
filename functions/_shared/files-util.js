@@ -5,6 +5,7 @@
    ========================================================================== */
 
 import { fmtBytes, toISO } from './util.js';
+import { transcodeView } from './movies.js';
 
 export function extOf(name) {
   const m = String(name || '').match(/\.([a-z0-9]{1,8})$/i);
@@ -83,6 +84,8 @@ export function buildFileItem(row, env) {
     thumbnail: { available: !!meta.thumb_key, url: meta.thumb_key ? thumbUrl : null, width: null, height: null },
     preview: { available: isImage, url: isImage ? downloadUrl : null },
     media: meta.media || null,
+    // Película en compresión (720p): { status, progress, … } o null.
+    transcode: transcodeView(meta),
     size: { bytes: Number(row.size) || 0, formatted: fmtBytes(row.size) },
     storage: { provider: meta.provider || env.STORAGE_PROVIDER || 's3', visibility: meta.visibility || 'private' },
     metadata: {

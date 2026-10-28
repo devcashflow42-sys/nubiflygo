@@ -10,11 +10,21 @@
   }
 
   /* ───────────── Modal ───────────── */
+  let modalSeq = 0;
   function modal(opts) {
     const root = $('#modal-root');
     root.innerHTML = '';
     const foot = el('div', { class: 'modal-foot' });
-    const close = () => { root.classList.remove('show'); setTimeout(() => root.innerHTML = '', 150); };
+    // El vaciado diferido solo borra ESTA ventana: si al cerrarla se abre otra
+    // (p. ej. derechos de autor → compartir), la nueva no desaparece.
+    const seq = ++modalSeq;
+    // opts.onClose: se llama al cerrar de cualquier forma (botón, ✕ o clic fuera).
+    const close = () => {
+      if (seq !== modalSeq) return;
+      root.classList.remove('show');
+      setTimeout(() => { if (seq === modalSeq) root.innerHTML = ''; }, 150);
+      if (opts.onClose) { const f = opts.onClose; opts.onClose = null; f(); }
+    };
 
     (opts.actions || [{ label: t('common.close'), kind: 'ghost', onClick: close }]).forEach(a => {
       const b = el('button', {

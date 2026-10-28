@@ -77,6 +77,7 @@
       published: !!f.published, publishedAt: f.published_at ? Date.parse(f.published_at) : null,
       thumbUrl: (f.thumbnail && f.thumbnail.url) || null,
       media: f.media || null,
+      transcode: f.transcode || null,
       downloadUrl: '/api/v1/files/' + f.id + '/download',
       createdAt: f.created_at ? Date.parse(f.created_at) : Date.now(),
       updatedAt: f.updated_at ? Date.parse(f.updated_at) : Date.now()
@@ -610,7 +611,15 @@
     // para que el estado "Publicado" NO se pierda al recargar.
     try {
       if (d._server) {
-        if (d.kind === 'file') await apiPatch('/files/' + d.id, { published: next });
+        if (d.kind === 'file') {
+          try { await apiPatch('/files/' + d.id, { published: next }); }
+          catch (e) {
+            // Video o canción: se publica después de la declaración de derechos de autor.
+            if (e.code !== 'rights_required') throw e;
+            if (!(await window.askRights(d.title, 'publicar'))) return;
+            await apiPatch('/files/' + d.id, { published: next, accept_rights: true });
+          }
+        }
         else await apiPatch('/documents/' + d.id, { published: next });
       }
     } catch (e) { toast(e.message || 'No se pudo cambiar la publicación'); return; }

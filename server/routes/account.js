@@ -3,6 +3,7 @@
    register · login · logout · profile (GET/PATCH) · avatar (GET/POST/DELETE)
    ========================================================================== */
 
+import { smallMaxBytes, movieMaxBytes } from '../../functions/_shared/movies.js';
 import { Router } from 'express';
 import { query } from '../db.js';
 import { hashPassword, verifyPassword, issueSession, clearSession, requireAuth } from '../auth.js';
@@ -269,6 +270,8 @@ function shapeUser(u) {
   u.has_paid_plan = !u.is_admin && !u.is_guest && u.plan !== 'free';
   if (!u.has_paid_plan) { u.plan_expires_at = null; u.plan_cancel_at_period_end = false; }
   if (!Array.isArray(u.interests)) u.interests = [];
+  // Límites de subida: normal y películas (solo planes de pago y el administrador).
+  u.limits = { upload_max_bytes: smallMaxBytes(process.env), movie_max_bytes: movieMaxBytes(process.env), movies: !!(u.is_admin || u.has_paid_plan) };
   return u;
 }
 

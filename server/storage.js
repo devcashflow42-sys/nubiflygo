@@ -47,15 +47,26 @@ export async function putObject(key, buffer, contentType) {
   return key;
 }
 
-// Devuelve { stream, contentType } para enviar al cliente.
-export async function getObject(key) {
+// Devuelve { stream, contentType, contentLength?, contentRange? } para enviar al
+// cliente. range: cabecera «Range» opcional (bytes=inicio-fin) → respuesta parcial.
+export async function getObject(key, range) {
+  const r = /^bytes=\d*-\d*$/.test(String(range || '')) ? String(range) : null;
   if (config.storageProvider === 's3') {
-    const out = await s3.send(new GetObjectCommand({ Bucket: config.storageBucket, Key: key }));
-    return { stream: out.Body, contentType: out.ContentType };
+    const out = await s3.send(new GetObjectCommand({ Bucket: config.storageBucket, Key: key, ...(r ? { Range: r } : {}) }));
+    return { stream: out.Body, contentType: out.ContentType, contentLength: out.ContentLength ?? null, contentRange: out.ContentRange || null };
   }
   const src = localPath(key);
   if (!fs.existsSync(src)) throw new Error('Archivo no encontrado en el almacenamiento.');
-  return { stream: fs.createReadStream(src), contentType: null };
+  const size = fs.statSync(src).size;
+  const m = r && /^bytes=(\d*)-(\d*)$/.exec(r);
+  if (m && size > 0 && (m[1] !== '' || m[2] !== '')) {
+    let start = m[1] === '' ? Math.max(0, size - Number(m[2])) : Number(m[1]);
+    let end = m[1] === '' || m[2] === '' ? size - 1 : Math.min(size - 1, Number(m[2]));
+    if (start <= end && start < size) {
+      return { stream: fs.createReadStream(src, { start, end }), contentType: null, contentLength: end - start + 1, contentRange: 'bytes ' + start + '-' + end + '/' + size };
+    }
+  }
+  return { stream: fs.createReadStream(src), contentType: null, contentLength: size };
 }
 
 export async function deleteObject(key) {
@@ -84,3 +95,83 @@ export async function deleteObjects(keys) {
     }
   }
 }
+
+/* ─── Subida por partes (películas) ───
+   Misma interfaz que functions/_shared/storage.js. En S3 usa el «multipart
+   upload»; en disco (pruebas) guarda cada parte en una carpeta y al final las
+   une en el archivo. */
+import { CreateMultipartUploadCommand, UploadPartCommand, CompleteMultipartUploadCommand, AbortMultipartUploadCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
+import crypto from 'node:crypto';
+import { pipeline } from 'node:stream/promises';
+
+const MP_DIR = path.join(LOCAL_DIR, '_multipart');
+const mpDir = (uploadId) => {
+  if (!/^[a-f0-9-]{36}$/i.test(String(uploadId))) throw new Error('Subida no válida.');
+  return path.join(MP_DIR, uploadId);
+};
+
+export async function createMultipart(key, contentType) {
+  if (config.storageProvider === 's3') {
+    const out = await s3.send(new CreateMultipartUploadCommand({ Bucket: config.storageBucket, Key: key, ContentType: contentType }));
+    return out.UploadId;
+  }
+  const id = crypto.randomUUID();
+  await fsp.mkdir(mpDir(id), { recursive: true });
+  return id;
+}
+
+// body: Buffer o stream con exactamente `length` bytes. Devuelve el ETag.
+export async function uploadPart(key, uploadId, n, body, length) {
+  if (config.storageProvider === 's3') {
+    const out = await s3.send(new UploadPartCommand({ Bucket: config.storageBucket, Key: key, UploadId: uploadId, PartNumber: n, Body: body, ContentLength: length }));
+    return out.ETag;
+  }
+  const dest = path.join(mpDir(uploadId), String(n));
+  if (Buffer.isBuffer(body)) await fsp.writeFile(dest, body);
+  else await pipeline(body, fs.createWriteStream(dest));
+  const st = await fsp.stat(dest);
+  if (st.size !== length) throw Object.assign(new Error('La parte no tiene el tamaño esperado.'), { status: 400 });
+  return '"' + n + '-' + st.size + '"';
+}
+
+export async function completeMultipart(key, uploadId, parts) {
+  if (config.storageProvider === 's3') {
+    await s3.send(new CompleteMultipartUploadCommand({
+      Bucket: config.storageBucket, Key: key, UploadId: uploadId,
+      MultipartUpload: { Parts: parts.map(p => ({ PartNumber: p.n, ETag: p.etag })) }
+    }));
+    return;
+  }
+  const dest = localPath(key);
+  await fsp.mkdir(path.dirname(dest), { recursive: true });
+  const out = fs.createWriteStream(dest);
+  // Parte por parte en el mismo archivo (sin pipeline: no acumula oyentes por parte).
+  for (const p of parts) {
+    for await (const chunk of fs.createReadStream(path.join(mpDir(uploadId), String(p.n)))) {
+      if (!out.write(chunk)) await new Promise(r => out.once('drain', r));
+    }
+  }
+  await new Promise((resolve, reject) => out.end(err => (err ? reject(err) : resolve())));
+  await fsp.rm(mpDir(uploadId), { recursive: true, force: true });
+}
+
+export async function abortMultipart(key, uploadId) {
+  try {
+    if (config.storageProvider === 's3') await s3.send(new AbortMultipartUploadCommand({ Bucket: config.storageBucket, Key: key, UploadId: uploadId }));
+    else await fsp.rm(mpDir(uploadId), { recursive: true, force: true });
+  } catch {}
+}
+
+// Tamaño real del objeto (o null si no existe).
+export async function headObject(key) {
+  try {
+    if (config.storageProvider === 's3') {
+      const out = await s3.send(new HeadObjectCommand({ Bucket: config.storageBucket, Key: key }));
+      return Number(out.ContentLength) || 0;
+    }
+    return (await fsp.stat(localPath(key))).size;
+  } catch { return null; }
+}
+
+// Ruta local del objeto (solo con STORAGE_PROVIDER=local; la usa el compresor).
+export function localFilePath(key) { return config.storageProvider === 's3' ? null : localPath(key); }

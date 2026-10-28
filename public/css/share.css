@@ -123,3 +123,29 @@ a{color:var(--link);text-decoration:none} a:hover{text-decoration:underline}
 .sh-dl.is-loading .sh-dl-txt, .sh-dl.is-done .sh-dl-txt { color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, .35); }
 .sh-dl-txt svg { width: 18px; height: 18px; }
 .sh-dl.is-loading .sh-dl-txt { font-size: 14.5px; white-space: nowrap; }
+
+/* Responsabilidad y reporte */
+.sh-legal{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:12px;border-top:1px solid var(--border)}
+.sh-legal p{margin:0;font-size:12px;color:var(--faint);line-height:1.45}
+.sh-report{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:999px;border:1px solid var(--border);background:transparent;color:var(--muted);font:600 12.5px Inter,system-ui,sans-serif;cursor:pointer}
+.sh-report:hover{color:#d33;border-color:#d33}
+.sh-report svg{width:14px;height:14px}
+.sh-modal{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.45)}
+.sh-dialog{width:100%;max-width:460px;max-height:90vh;overflow:auto;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px;box-shadow:0 30px 60px -20px rgba(0,0,0,.4)}
+.sh-dialog h2{margin:0 0 6px;font-size:19px}
+.sh-dialog-sub{margin:0 0 14px;font-size:13px;color:var(--muted);overflow-wrap:anywhere}
+.sh-form fieldset{border:0;margin:0 0 12px;padding:0;display:flex;flex-direction:column;gap:8px}
+.sh-form legend{font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:6px}
+.sh-reason{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--border);border-radius:12px;cursor:pointer}
+.sh-reason:has(input:checked){border-color:var(--text)}
+.sh-reason input{margin-top:3px;accent-color:var(--text)}
+.sh-reason span{display:flex;flex-direction:column}
+.sh-reason strong{font-size:13.5px}
+.sh-reason small{font-size:12px;color:var(--muted)}
+.sh-field{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;font-size:12.5px;font-weight:600;color:var(--muted)}
+.sh-field textarea,.sh-field input{font:14px/1.45 Inter,system-ui,sans-serif;color:var(--text);background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:10px 12px;resize:vertical}
+.sh-form-err{min-height:1em;margin:0 0 8px;font-size:12.5px;color:#d33}
+.sh-form-btns{display:flex;justify-content:flex-end;gap:8px}
+.sh-sent{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding:10px 0}
+.sh-sent p{color:var(--muted);font-size:14px;margin:0 0 8px}
+@media (max-width:520px){ .sh-legal{flex-direction:column;align-items:stretch} .sh-report{align-self:flex-start} }

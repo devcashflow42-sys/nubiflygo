@@ -19,6 +19,7 @@
       published: !!f.published,
       thumbUrl: f.thumb_url || (f.thumbnail && f.thumbnail.url) || null,
       media: f.media || null,
+      transcode: f.transcode || null,
       checksum: (f.metadata && f.metadata.checksum_sha256) || null,
       updatedAt: f.created_at ? Date.parse(f.created_at) : Date.now(),
       downloadUrl: '/api/v1/files/' + f.id + '/download'
@@ -35,6 +36,7 @@
       published: !!it.published,
       thumbUrl: (it.thumbnail && it.thumbnail.url) || null,
       media: it.media || null,
+      transcode: it.transcode || null,
       updatedAt: it.created_at ? Date.parse(it.created_at) : Date.now(),
       downloadUrl: '/api/v1/files/' + it.id + '/download'
     };

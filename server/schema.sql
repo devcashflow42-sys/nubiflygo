@@ -274,3 +274,74 @@ CREATE INDEX IF NOT EXISTS idx_files_trash     ON files(user_id, deleted_at)    
 CREATE INDEX IF NOT EXISTS idx_documents_trash ON documents(user_id, deleted_at) WHERE deleted_at IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_notes_trash     ON notes(user_id, deleted_at)     WHERE deleted_at IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_apikeys_trash   ON api_keys(user_id, deleted_at)  WHERE deleted_at IS NOT NULL;
+
+-- ─────────────────────── Películas, derechos y reportes ───────────────────────
+-- (functions/_shared/movies.js también las crea solas la primera vez.)
+-- Subidas por partes de videos grandes (películas, solo planes de pago).
+CREATE TABLE IF NOT EXISTS multipart_uploads (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id       UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  project_id    UUID,
+  storage_key   TEXT NOT NULL,
+  s3_upload_id  TEXT NOT NULL,
+  name          TEXT NOT NULL,
+  mime          TEXT NOT NULL,
+  size          BIGINT NOT NULL,
+  part_size     INTEGER NOT NULL,
+  parts         JSONB NOT NULL DEFAULT '{}'::jsonb,
+  meta          JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_multipart_user ON multipart_uploads(user_id, created_at);
+-- Trabajos para el compresor de video (server/transcoder.js con ffmpeg).
+CREATE TABLE IF NOT EXISTS video_jobs (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  file_id       UUID NOT NULL REFERENCES files(id) ON DELETE CASCADE,
+  user_id       UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  status        TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'done', 'failed')),
+  progress      INTEGER NOT NULL DEFAULT 0,
+  attempts      INTEGER NOT NULL DEFAULT 0,
+  error         TEXT,
+  heartbeat_at  TIMESTAMPTZ,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_video_jobs_status ON video_jobs(status, created_at);
+-- Declaraciones de derechos de autor. SIN llaves foráneas a propósito: el
+-- registro se conserva aunque se borre el archivo o la cuenta.
+CREATE TABLE IF NOT EXISTS rights_acceptances (
+  id                 UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id            UUID NOT NULL,
+  user_email         TEXT,
+  file_id            UUID,
+  file_name          TEXT,
+  file_size          BIGINT,
+  context            TEXT NOT NULL,
+  statement_version  TEXT NOT NULL,
+  statement          TEXT NOT NULL,
+  ip                 TEXT,
+  user_agent         TEXT,
+  accepted_at        TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_rights_file ON rights_acceptances(file_id);
+CREATE INDEX IF NOT EXISTS idx_rights_user ON rights_acceptances(user_id, accepted_at DESC);
+-- Reportes de enlaces compartidos (cualquiera puede reportar; el admin decide).
+CREATE TABLE IF NOT EXISTS share_reports (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  share_token     TEXT NOT NULL,
+  file_id         UUID,
+  owner_id        UUID,
+  file_name       TEXT,
+  reason          TEXT NOT NULL CHECK (reason IN ('copyright', 'illegal', 'other')),
+  details         TEXT,
+  reporter_email  TEXT,
+  reporter_ip     TEXT,
+  status          TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'removed', 'dismissed')),
+  resolved_at     TIMESTAMPTZ,
+  resolved_by     UUID,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_share_reports_status ON share_reports(status, created_at DESC);
+-- Archivo dado de baja por un reporte: no se puede compartir ni publicar.
+ALTER TABLE files ADD COLUMN IF NOT EXISTS takedown_at TIMESTAMPTZ;

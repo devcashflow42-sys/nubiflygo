@@ -17,6 +17,7 @@
     disk: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5"/></svg>',
     check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
     clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+    flag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>',
     broken: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.84 12.25l1.72-1.71a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M5.17 11.75l-1.71 1.71a5 5 0 0 0 7.07 7.07l1.71-1.71"/><line x1="8" y1="2" x2="8" y2="5"/><line x1="2" y1="8" x2="5" y2="8"/><line x1="16" y1="19" x2="16" y2="22"/><line x1="19" y1="16" x2="22" y2="16"/></svg>'
   };
 
@@ -95,7 +96,14 @@
           downloadButton(d),
           el('div', { class: 'sh-row' }, row)
         ]),
-        el('p', { class: 'sh-note' }, 'Descarga solo archivos de personas en quienes confías.')
+        el('p', { class: 'sh-note' }, 'Descarga solo archivos de personas en quienes confías.'),
+        // Responsabilidad y reporte: el contenido es de quien lo comparte.
+        el('div', { class: 'sh-legal' }, [
+          el('p', {}, /^(video|audio)\//.test(f.mime || '')
+            ? 'Quien compartió este archivo declaró tener los derechos de autor y es el único responsable de su contenido.'
+            : 'Este archivo es responsabilidad de quien lo compartió.'),
+          el('button', { class: 'sh-report', type: 'button', html: ICON.flag + ' Reportar', onclick: () => openReport(f) })
+        ])
       ])
     );
   }
@@ -153,6 +161,58 @@
       }
     });
     return a;
+  }
+
+  /* Reportar el enlace (derechos de autor, contenido ilegal u otro). No hace
+     falta cuenta. El administrador lo revisa y puede darlo de baja. */
+  function openReport(f) {
+    if (document.querySelector('.sh-modal')) return;
+    const REASONS = [['copyright', 'Derechos de autor', 'Es una película, serie, canción u obra de otra persona.'],
+      ['illegal', 'Contenido ilegal o dañino', 'Violencia, abuso, estafas u otro contenido prohibido.'],
+      ['other', 'Otro motivo', 'Cuéntanos qué pasa.']];
+    const close = () => { wrap.remove(); document.removeEventListener('keydown', onKey); };
+    const onKey = (e) => { if (e.key === 'Escape') close(); };
+    const msg = el('p', { class: 'sh-form-err', role: 'alert' });
+    const details = el('textarea', { name: 'details', rows: '4', maxlength: '2000', required: true, placeholder: 'Explica el motivo (por ejemplo: soy el dueño de los derechos de esta película y no autoricé que se comparta).' });
+    const email = el('input', { name: 'email', type: 'email', maxlength: '254', placeholder: 'tu@correo.com (opcional, para responderte)' });
+    const send = el('button', { class: 'sh-btn sh-btn-dark', type: 'submit' }, 'Enviar reporte');
+    const form = el('form', { class: 'sh-form', novalidate: true }, [
+      el('fieldset', {}, [ el('legend', {}, 'Motivo') ].concat(REASONS.map((r, i) => el('label', { class: 'sh-reason' }, [
+        el('input', { type: 'radio', name: 'reason', value: r[0], checked: i === 0 }), el('span', {}, [ el('strong', {}, r[1]), el('small', {}, r[2]) ])
+      ])))),
+      el('label', { class: 'sh-field' }, [ el('span', {}, 'Detalles'), details ]),
+      el('label', { class: 'sh-field' }, [ el('span', {}, 'Tu correo'), email ]),
+      msg,
+      el('div', { class: 'sh-form-btns' }, [ el('button', { class: 'sh-btn', type: 'button', onclick: close }, 'Cancelar'), send ])
+    ]);
+    const dialog = el('div', { class: 'sh-dialog', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'sh-rep-t' }, [
+      el('h2', { id: 'sh-rep-t' }, 'Reportar este archivo'),
+      el('p', { class: 'sh-dialog-sub' }, '«' + f.name + '». Revisaremos el reporte y, si corresponde, daremos de baja el archivo. Quien lo compartió no sabrá quién lo reportó.'),
+      form
+    ]);
+    const wrap = el('div', { class: 'sh-modal', onclick: (e) => { if (e.target === wrap) close(); } }, [ dialog ]);
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const reason = (form.querySelector('input[name=reason]:checked') || {}).value;
+      const text = details.value.trim();
+      if (text.length < 10) { msg.textContent = 'Explica el motivo del reporte (mínimo 10 caracteres).'; details.focus(); return; }
+      msg.textContent = ''; send.disabled = true; send.textContent = 'Enviando…';
+      fetch('/api/v1/public/shares/' + token + '/report', {
+        method: 'POST', credentials: 'omit',
+        headers: { 'Content-Type': 'application/json', 'X-NubiFly-Client': 'web' },
+        body: JSON.stringify({ reason, details: text, email: email.value.trim() })
+      }).then(r => r.json().catch(() => ({})).then(d => ({ ok: r.ok, d })))
+        .then(({ ok, d }) => {
+          if (!ok) throw new Error(d.error || 'No se pudo enviar el reporte.');
+          dialog.innerHTML = '';
+          dialog.append(el('div', { class: 'sh-sent' }, [ el('div', { class: 'sh-error-ico', html: ICON.check }), el('h2', {}, 'Reporte enviado'),
+            el('p', {}, 'Gracias. Lo revisaremos lo antes posible.'), el('button', { class: 'sh-btn sh-btn-dark', type: 'button', onclick: close }, 'Listo') ]));
+        })
+        .catch(er => { msg.textContent = er.message || 'No se pudo enviar el reporte.'; send.disabled = false; send.textContent = 'Enviar reporte'; });
+    });
+    document.addEventListener('keydown', onKey);
+    document.body.append(wrap);
+    setTimeout(() => details.focus(), 30);
   }
 
   function fail(title, msg) {

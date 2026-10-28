@@ -4,22 +4,29 @@
      GET /public/shares/:token/preview    → vista previa en línea (imagen, audio, video, PDF, texto)
                                             ?cover=1 → portada de la canción
      GET /public/shares/:token/download   → descarga
+     POST /public/shares/:token/report    → reportar el enlace { reason, details, email? }
+                                            reason: copyright | illegal | other
    ========================================================================== */
 import { getDb } from '../../../_shared/db.js';
 import { json } from '../../../_shared/http.js';
 import { getObject } from '../../../_shared/storage.js';
 import { fileHeaders, serverError, rateLimit, clientIp } from '../../../_shared/security.js';
 import { publicShare, publicView, previewKind } from '../../../_shared/shares.js';
+import { adminEmails } from '../../../_shared/api.js';
+import { body } from '../../../_shared/util.js';
+import { validateReport, createReport, adminIds, REPORT_REASONS } from '../../../_shared/movies.js';
+import { notifySafe } from '../../../_shared/notify.js';
 
 const NOT_FOUND = { error: 'Este enlace no existe o ya no está disponible.' };
 const PRIVATE = { 'Cache-Control': 'private, no-store', 'X-Robots-Tag': 'noindex, nofollow', 'Referrer-Policy': 'no-referrer' };
 
 export async function handle({ request, env }) {
-  if (request.method !== 'GET' && request.method !== 'HEAD') return json({ error: 'Método no permitido.' }, 405);
   const url = new URL(request.url);
   const seg = url.pathname.replace(/^\/api\/v1\/public\/?/, '').split('/').filter(Boolean);   // ['shares', token, sub?]
   if (seg[0] !== 'shares' || !seg[1] || seg.length > 3) return json({ error: 'Ruta no encontrada.' }, 404);
   const sub = seg[2] || '';
+  if (request.method === 'POST' && sub === 'report') return report(request, env, seg[1]);
+  if (request.method !== 'GET' && request.method !== 'HEAD') return json({ error: 'Método no permitido.' }, 405);
   try {
     const db = getDb(env);
     const range = request.headers.get('Range');
@@ -50,5 +57,30 @@ export async function handle({ request, env }) {
     return json({ error: 'Ruta no encontrada.' }, 404);
   } catch (e) {
     return json({ error: 'Error del servidor (código ' + serverError(e, 'public-share') + ').' }, 500);
+  }
+}
+
+/* Reportar un enlace (cualquiera, sin cuenta). Se guarda para el administrador
+   y se le avisa; el dueño no ve quién reportó. Límite: 5 por hora y conexión. */
+async function report(request, env, token) {
+  try {
+    const db = getDb(env);
+    const rl = await rateLimit(db, 'share-report:' + clientIp(request), 5, 3600);
+    if (!rl.ok) return json({ error: 'Ya enviaste varios reportes. Inténtalo más tarde.' }, 429, { 'Retry-After': String(rl.retryAfter) });
+    const r = await publicShare(db, token, null);
+    if (!r) return json(NOT_FOUND, 404, PRIVATE);
+    const v = validateReport(await body(request));
+    if (v.error) return json({ error: v.error }, 400, PRIVATE);
+    await createReport(db, r, v.values, clientIp(request));
+    for (const id of await adminIds(db, adminEmails(env))) {
+      await notifySafe(db, id, {
+        type: 'warning', title: 'Nuevo reporte: ' + (REPORT_REASONS[v.values.reason] || 'reporte'),
+        body: 'Reportaron el archivo «' + String(r.name || '').slice(0, 80) + '». Revísalo en Configuración → Moderación.',
+        link: '/settings', dedupe: 'report:' + token + ':' + new Date().toISOString().slice(0, 13)
+      });
+    }
+    return json({ ok: true, message: 'Gracias. Revisaremos el reporte.' }, 201, PRIVATE);
+  } catch (e) {
+    return json({ error: 'Error del servidor (código ' + serverError(e, 'share-report') + ').' }, 500);
   }
 }

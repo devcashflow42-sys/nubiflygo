@@ -8,6 +8,7 @@
      ("remaining" siempre es 0).
    ========================================================================== */
 
+import { transcodeView } from '../functions/_shared/movies.js';
 import { query } from './db.js';
 import { deleteObjects } from './storage.js';
 
@@ -148,6 +149,8 @@ export function fileItem(row) {
     thumb_url: thumbUrl,
     preview: { available: isImage, url: isImage ? downloadUrl : null },
     media: meta.media || null,
+    // Película en compresión (720p): { status, progress, … } o null.
+    transcode: transcodeView(meta),
     size: { bytes: Number(row.size) || 0, formatted: fmtBytes(row.size) },
     storage: { provider: meta.provider || process.env.STORAGE_PROVIDER || 'local', visibility: meta.visibility || 'private' },
     metadata: { category: meta.category || type, width: meta.width ?? null, height: meta.height ?? null, checksum_sha256: meta.checksum_sha256 || null },

@@ -171,3 +171,59 @@ export async function deleteObjects(env, keys, opts) {
   const processed = done + todo.length;
   return { processed, all: processed >= keys.length };
 }
+
+/* ─── Subida por partes (películas) ───
+   S3 «multipart upload»: se abre la subida, cada parte llega en su propia
+   petición (el navegador → la API → S3) y al final se une en un solo objeto.
+   Las partes van sin hash del contenido (UNSIGNED-PAYLOAD): calcular el
+   SHA-256 de 16 MB por parte gastaría el tiempo de CPU del Worker. */
+const xmlTag = (xml, tag) => (new RegExp('<' + tag + '>([^<]*)</' + tag + '>').exec(xml) || [])[1] || '';
+
+export async function createMultipart(env, key, contentType) {
+  const res = await client(env).fetch(objectUrl(env, key) + '?uploads', {
+    method: 'POST', headers: { 'Content-Type': contentType || 'application/octet-stream' }
+  });
+  if (!res.ok) throw await storageError(res, 'preparar');
+  const id = xmlTag(await res.text(), 'UploadId');
+  if (!id) throw new Error('El almacenamiento no devolvió el id de la subida.');
+  return id;
+}
+
+// body: ArrayBuffer de la parte. Devuelve el ETag que hay que guardar.
+export async function uploadPart(env, key, uploadId, n, body) {
+  const url = objectUrl(env, key) + '?partNumber=' + n + '&uploadId=' + encodeURIComponent(uploadId);
+  const res = await client(env).fetch(url, {
+    method: 'PUT', body, headers: { 'Content-Length': String(body.byteLength), 'X-Amz-Content-Sha256': 'UNSIGNED-PAYLOAD' }
+  });
+  if (!res.ok) throw await storageError(res, 'guardar una parte de');
+  const etag = res.headers.get('ETag');
+  if (!etag) throw new Error('El almacenamiento no devolvió el ETag de la parte.');
+  return etag;
+}
+
+// parts: [{ n, etag }] en orden.
+export async function completeMultipart(env, key, uploadId, parts) {
+  const xml = '<CompleteMultipartUpload>' + parts.map(p =>
+    '<Part><PartNumber>' + p.n + '</PartNumber><ETag>' + xmlEsc(p.etag) + '</ETag></Part>').join('') + '</CompleteMultipartUpload>';
+  const res = await client(env).fetch(objectUrl(env, key) + '?uploadId=' + encodeURIComponent(uploadId), {
+    method: 'POST', body: xml, headers: { 'Content-Type': 'application/xml' }
+  });
+  const text = await res.text();
+  // S3 puede responder 200 con un <Error> dentro del cuerpo.
+  if (!res.ok || /<Error>/.test(text)) {
+    const err = new Error('No se pudo unir el archivo en el almacenamiento (' + res.status + (xmlTag(text, 'Code') ? ' ' + xmlTag(text, 'Code') : '') + ').');
+    err.status = res.status;
+    throw err;
+  }
+}
+
+export async function abortMultipart(env, key, uploadId) {
+  try { await client(env, { retries: 0 }).fetch(objectUrl(env, key) + '?uploadId=' + encodeURIComponent(uploadId), { method: 'DELETE' }); } catch {}
+}
+
+// Tamaño real del objeto (o null si no existe).
+export async function headObject(env, key) {
+  const res = await client(env).fetch(objectUrl(env, key), { method: 'HEAD' });
+  if (!res.ok) return null;
+  return Number(res.headers.get('Content-Length')) || 0;
+}

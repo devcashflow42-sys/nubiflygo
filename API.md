@@ -174,6 +174,50 @@ aunque no tenga cuenta. Nunca ve el proyecto ni otros archivos.
 
 Borrar el archivo también borra sus enlaces.
 
+**Derechos de autor.** Compartir o publicar un **video o una canción** pide, la
+primera vez por archivo, la declaración de derechos: sin ella la API responde
+`400 { code: "rights_required" }`; se repite la petición con `"accept_rights": true`
+(también en `PATCH /files/:id { published: true, accept_rights: true }`). La
+declaración queda registrada (cuenta, fecha, IP, navegador) y **no se borra**.
+Un archivo dado de baja por un reporte responde `403 { code: "taken_down" }`.
+
+| Método y ruta | Descripción | Auth |
+|---|---|---|
+| `POST /public/shares/:token/report` | Reporta el enlace `{ reason: copyright\|illegal\|other, details (10–2000), email? }`. Máximo 5 por hora y conexión | pública |
+| `GET /admin/reports?status=open\|removed\|dismissed\|all` | Reportes (con dueño, declaración de derechos y número de reportes del archivo) | admin (cookie) |
+| `POST /admin/reports/:id/remove` | **Baja**: borra todos los enlaces del archivo, lo despublica y ya no se puede volver a compartir; avisa al dueño | admin (cookie) |
+| `POST /admin/reports/:id/dismiss` | Descarta el reporte | admin (cookie) |
+
+## Películas (videos grandes, solo planes de pago)
+
+Un video de más de `MAX_FILE_SIZE_MB` (100 MB) se sube **por partes** de 16 MB,
+hasta `MAX_MOVIE_SIZE_GB` (10 GB). Solo con un plan de pago vigente (Pro, Mega,
+Super) o el administrador; si no: `402 { code: "plan_required" }`. Es obligatorio
+declarar los derechos de autor (`accept_rights: true`).
+
+| Método y ruta | Descripción |
+|---|---|
+| `POST /files/multipart` | Abre la subida `{ name, size, mime, project_id?, optimize?, media?: { duration, width, height }, accept_rights: true }` → `{ upload: { id, part_size, parts_total, parts_done } }` |
+| `PUT /files/multipart/:id/parts/:n` | Parte `n` (1…`parts_total`) como `application/octet-stream`, con el tamaño exacto (`part_size`, la última el resto) |
+| `GET /files/multipart/:id` | Partes ya recibidas (`parts_done`) para **reanudar** |
+| `POST /files/multipart/:id/complete` | Une las partes y crea el archivo `{ thumb?: "data:image/jpeg;base64,…" }` → `{ data: { item } }` |
+| `DELETE /files/multipart/:id` | Cancela la subida |
+
+Con `optimize: true` (por defecto) la película queda en cola para el compresor
+(`server/transcoder.js`, ffmpeg): se convierte a 720p H.264 y reemplaza al
+original si pesa menos. Mientras tanto se puede ver. El estado viene en cada
+archivo: `transcode: { status: pending|processing|ready|failed, progress, original_size, optimized_size, resolution }`.
+El perfil (`GET /account/profile`) trae `limits: { upload_max_bytes, movie_max_bytes, movies }`.
+
+```bash
+# 1) abrir · 2) subir cada parte · 3) completar
+curl -X POST "$BASE/files/multipart" -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
+  -d '{"name":"pelicula.mp4","size":3800000000,"mime":"video/mp4","accept_rights":true}'
+curl -X PUT "$BASE/files/multipart/$ID/parts/1" -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/octet-stream" --data-binary @parte1.bin
+curl -X POST "$BASE/files/multipart/$ID/complete" -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" -d '{}'
+```
+
 ## Ejemplos para una app móvil (con API key)
 
 ```bash

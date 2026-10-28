@@ -17,7 +17,7 @@ import { crudRouter } from './routes/crud.js';
 import { projects } from './routes/projects.js';
 import { notifications } from './routes/notifications.js';
 import { billing } from './routes/billing.js';
-import { shares, publicShares } from './routes/shares.js';
+import { shares, publicShares, adminReports } from './routes/shares.js';
 import { appPublic, appAdmin, androidGate } from './routes/app.js';
 
 export const api = Router();
@@ -43,6 +43,7 @@ api.use((_req, _res, next) => { ensureTrashColumns().then(() => next(), next); }
 api.use(androidGate);
 api.use('/app', appPublic);
 api.use('/admin/app', appAdmin);
+api.use('/admin/reports', adminReports);
 
 // Cuenta
 api.use('/account', account);

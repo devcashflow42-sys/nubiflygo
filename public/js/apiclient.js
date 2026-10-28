@@ -32,6 +32,7 @@ async function apiFetch(path, options) {
   if (!res.ok) {
     const err = new Error((data && data.error) || ('Error ' + res.status));
     err.status = res.status;
+    err.code = (data && data.code) || null;   // p. ej. rights_required, plan_required, taken_down
     throw err;
   }
   return data;

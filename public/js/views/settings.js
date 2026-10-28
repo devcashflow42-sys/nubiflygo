@@ -801,6 +801,62 @@
     { id: 'integrations', label: 'Integraciones', icon: SI.link, render: tabIntegrations }
   ];
 
+  /* ───────────── Moderación (solo administradores) ─────────────
+     Reportes de enlaces compartidos: dar de baja el archivo (se borran sus
+     enlaces y ya no se puede compartir ni publicar) o descartar el reporte. */
+  const MOD_FILTERS = [['open', 'Abiertos'], ['removed', 'Dados de baja'], ['dismissed', 'Descartados'], ['all', 'Todos']];
+  function tabModeration(body) {
+    if (!state.modFilter) state.modFilter = 'open';
+    const list = el('div', { class: 'mod-list' }, [ el('div', { class: 'mod-empty' }, 'Cargando reportes…') ]);
+    const filters = el('div', { class: 'mod-filters' }, MOD_FILTERS.map(function (f) {
+      return el('button', { type: 'button', class: 'btn btn-sm ' + (state.modFilter === f[0] ? 'btn-primary' : 'btn-ghost'),
+        onclick: function () { state.modFilter = f[0]; viewSettings(); } }, f[1]);
+    }));
+    body.appendChild(card(SI.shield, 'Moderación', 'Reportes de los enlaces compartidos. Quien comparte declaró tener los derechos; si el contenido no es suyo, dalo de baja.', [ filters, list ]));
+    const fmt = function (d) { return d ? new Date(d).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' }) : '—'; };
+    apiGet('/admin/reports?status=' + encodeURIComponent(state.modFilter)).then(function (d) {
+      list.innerHTML = '';
+      const items = (d && d.items) || [];
+      if (!items.length) { list.appendChild(el('div', { class: 'mod-empty' }, state.modFilter === 'open' ? 'No hay reportes pendientes.' : 'No hay reportes en esta lista.')); return; }
+      items.forEach(function (r) {
+        const act = async function (action) {
+          if (action === 'remove') {
+            const ok = await confirmDialog('¿Dar de baja «' + r.file_name + '»?', 'Se desactivan todos sus enlaces y deja de estar publicado. El archivo sigue en la cuenta de su dueño, pero ya no se podrá compartir. Se le avisará.', 'Dar de baja');
+            if (!ok) return;
+          }
+          try {
+            await apiPost('/admin/reports/' + r.id + '/' + action, {});
+            toast(action === 'remove' ? 'Archivo dado de baja' : 'Reporte descartado');
+            viewSettings();
+          } catch (e) { toast(e.message || 'No se pudo completar'); }
+        };
+        list.appendChild(el('div', { class: 'mod-item' }, [
+          el('div', { class: 'mod-top' }, [
+            el('span', { class: 'mod-pill' + (r.reason === 'copyright' ? ' is-copyright' : '') }, r.reason_label),
+            r.status !== 'open' ? el('span', { class: 'mod-pill is-removed' }, r.status === 'removed' ? 'Dado de baja' : 'Descartado') : null,
+            el('strong', { title: r.file_name || '' }, r.file_name || 'Archivo')
+          ].filter(Boolean)),
+          el('p', { class: 'mod-details' }, r.details || ''),
+          el('div', { class: 'mod-meta' }, [
+            el('span', {}, 'Dueño: ' + ((r.owner && (r.owner.email || r.owner.name)) || '—')),
+            el('span', {}, 'Reportó: ' + (r.reporter_email || 'sin correo')),
+            el('span', {}, 'Fecha: ' + fmt(r.created_at)),
+            el('span', {}, r.rights_accepted_at ? 'Declaró derechos: ' + fmt(r.rights_accepted_at) : 'Sin declaración de derechos'),
+            r.reports_for_file > 1 ? el('span', {}, r.reports_for_file + ' reportes de este archivo') : null,
+            r.token ? el('a', { href: '/s/' + r.token, target: '_blank', rel: 'noopener' }, 'Ver enlace ↗') : null
+          ].filter(Boolean)),
+          r.status === 'open' ? el('div', { class: 'mod-actions' }, [
+            btn('Descartar', 'ghost', function () { act('dismiss'); }),
+            btn('Dar de baja', 'danger', function () { act('remove'); })
+          ]) : null
+        ].filter(Boolean)));
+      });
+    }).catch(function (e) {
+      list.innerHTML = '';
+      list.appendChild(el('div', { class: 'mod-empty' }, e.message || 'No se pudieron cargar los reportes.'));
+    });
+  }
+
   function viewSettings() {
     const v = $('#view');
     v.innerHTML = '';
@@ -824,8 +880,10 @@
       return;
     }
 
+    // El administrador ve además la pestaña Moderación.
+    const tabs = u.is_admin ? SETTINGS_TABS.concat([{ id: 'moderation', label: 'Moderación', icon: SI.shield, render: tabModeration }]) : SETTINGS_TABS;
     const tabsBar = el('div', { class: 'set-tabs' });
-    SETTINGS_TABS.forEach(function (tb) {
+    tabs.forEach(function (tb) {
       const b = el('button', { class: 'set-tab' + (state.settingsTab === tb.id ? ' active' : ''), type: 'button',
         html: tb.icon + '<span>' + tb.label + '</span>' });
       b.addEventListener('click', function () { state.settingsTab = tb.id; viewSettings(); try { $('#view').scrollTop = 0; } catch (e) {} });
@@ -834,7 +892,7 @@
     wrap.appendChild(tabsBar);
 
     const body = el('div', { class: 'set-body' });
-    const tab = SETTINGS_TABS.find(function (t) { return t.id === state.settingsTab; }) || SETTINGS_TABS[0];
+    const tab = tabs.find(function (t) { return t.id === state.settingsTab; }) || tabs[0];
     try { tab.render(body, u); } catch (e) { body.appendChild(el('div', { style: { color: 'var(--danger)', padding: '12px' } }, 'Error al cargar esta sección.')); }
     wrap.appendChild(body);
     v.appendChild(wrap);

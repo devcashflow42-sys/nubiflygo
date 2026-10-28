@@ -23,6 +23,8 @@ export async function ensureShares(db) {
     downloads   INTEGER NOT NULL DEFAULT 0,
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now())`);
   await db.query('CREATE INDEX IF NOT EXISTS shares_file_idx ON shares (file_id)');
+  // Archivo dado de baja por un reporte (ver movies.js): sin enlaces públicos.
+  await db.query('ALTER TABLE files ADD COLUMN IF NOT EXISTS takedown_at TIMESTAMPTZ');
   ready = true;
 }
 
@@ -47,7 +49,7 @@ export function previewKind(mime, name) {
 
 const SHARE_SELECT = `SELECT s.token, s.user_id, s.file_id, s.expires_at, s.views, s.downloads, s.created_at,
     f.name, f.size, f.mime, f.storage_key, f.meta, u.name AS owner_name
-  FROM shares s JOIN files f ON f.id = s.file_id AND f.deleted_at IS NULL JOIN users u ON u.id = s.user_id`;
+  FROM shares s JOIN files f ON f.id = s.file_id AND f.deleted_at IS NULL AND f.takedown_at IS NULL JOIN users u ON u.id = s.user_id`;
 
 // Datos que ve el dueño en la app.
 export function ownerView(r, origin) {
@@ -110,11 +112,13 @@ export function publicView(r) {
   };
 }
 
-/* El dueño crea un enlace. Si el archivo ya tiene uno vigente, lo devuelve. */
+/* El dueño crea un enlace. Si el archivo ya tiene uno vigente, lo devuelve.
+   Un archivo dado de baja no se puede compartir: { takenDown: true }. */
 export async function createShare(db, userId, fileId, days) {
   await ensureShares(db);
-  const own = await db.query('SELECT id FROM files WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL', [fileId, userId]);
+  const own = await db.query('SELECT id, takedown_at FROM files WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL', [fileId, userId]);
   if (!own.rows[0]) return null;
+  if (own.rows[0].takedown_at) return { takenDown: true };
   const existing = await db.query(
     `${SHARE_SELECT} WHERE s.file_id = $1 AND s.user_id = $2 AND (s.expires_at IS NULL OR s.expires_at > now())
      ORDER BY s.created_at DESC LIMIT 1`, [fileId, userId]);

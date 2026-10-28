@@ -8,12 +8,17 @@
      GET /admin/app                          → configuración de la app Android + historial
      GET /admin/app/audit?limit=             → historial de cambios
      PUT /admin/app/update | maintenance | suspension → cambia esa sección
+     GET  /admin/reports?status=open|removed|dismissed|all → reportes de enlaces
+     POST /admin/reports/:id/remove   → da de baja el archivo (borra sus enlaces)
+     POST /admin/reports/:id/dismiss  → descarta el reporte
    ========================================================================== */
 import { getDb } from '../../../_shared/db.js';
 import { json } from '../../../_shared/http.js';
 import { dataRoute, rowIsAdmin } from '../../../_shared/api.js';
 import { UUID_RE, pageParams, fmtBytes, toISO } from '../../../_shared/util.js';
 import { rateLimit, tooMany, clientIp, secLog } from '../../../_shared/security.js';
+import { listReports, resolveReport } from '../../../_shared/movies.js';
+import { notifySafe } from '../../../_shared/notify.js';
 import { readConfig, adminView, readAudit, saveSection, validateUpdate, validateMaintenance, validateSuspension, resetAppGateCache } from '../../../_shared/appcontrol.js';
 
 export const handle = dataRoute(async ({ seg, request, env, method, user, auth }) => {
@@ -94,6 +99,30 @@ export const handle = dataRoute(async ({ seg, request, env, method, user, auth }
        FROM users u WHERE u.id = $1`, [seg[2]]);
     if (!rows[0]) return json({ error: 'Usuario no encontrado.' }, 404);
     return json({ success: true, status: 200, data: { item: adminUserItem(rows[0], env) }, error: null });
+  }
+
+  // ── Moderación: reportes de enlaces compartidos ──
+  if (seg[1] === 'reports') {
+    const rl = await rateLimit(db, 'admin-reports:' + user.id, 120, 60);
+    if (!rl.ok) return tooMany(rl.retryAfter);
+    if (!seg[2] && method === 'GET') {
+      const qs = new URL(request.url).searchParams;
+      return json({ success: true, items: await listReports(db, qs.get('status') || 'open', Number(qs.get('limit')) || 50) });
+    }
+    if (UUID_RE.test(seg[2] || '') && (seg[3] === 'remove' || seg[3] === 'dismiss') && !seg[4] && method === 'POST') {
+      const r = await resolveReport(db, seg[2], user.id, seg[3]);
+      if (!r) return json({ error: 'Reporte no encontrado.' }, 404);
+      secLog('admin_report_' + seg[3], request, { admin: user.id, report: seg[2] });
+      if (r.action === 'remove' && r.owner_id) {
+        await notifySafe(db, r.owner_id, {
+          type: 'warning', title: 'Un archivo tuyo fue dado de baja',
+          body: 'Recibimos un reporte sobre «' + String(r.file_name || 'tu archivo').slice(0, 80) + '». Se desactivaron sus enlaces y ya no se puede compartir ni publicar. El archivo sigue en tu cuenta.',
+          link: '/archive'
+        });
+      }
+      return json({ success: true, action: r.action });
+    }
+    return json({ error: 'Ruta de administración no encontrada.' }, 404);
   }
 
   // ── Control de la app Android ──
